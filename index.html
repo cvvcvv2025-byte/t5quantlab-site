@@ -1,0 +1,105 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>T5 Quant Lab｜量化研究、验证与交易工具</title>
+  <meta name="description" content="T5 Quant Lab 是面向交易模型研究、前向验证与交易工具开发的 Research Hub。聚焦 XAUUSD、结构与流动性、执行状态机和可审计交易系统。" />
+  <meta name="theme-color" content="#07111f" />
+  <meta property="og:title" content="T5 Quant Lab" />
+  <meta property="og:description" content="Research → Verification → Tools. 研究、验证、工具。" />
+  <meta property="og:type" content="website" />
+  <meta property="og:url" content="https://t5quantlab.com/" />
+  <link rel="canonical" href="https://t5quantlab.com/" />
+  <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
+  <style>
+    :root{--bg:#07111f;--bg2:#091827;--panel:#0d1e33;--panel2:#102741;--line:#203b5c;--text:#edf6ff;--muted:#94a9c2;--accent:#67b3ff;--mint:#73e2c0;--warn:#ffd166;--max:1160px}
+    *{box-sizing:border-box}html{scroll-behavior:smooth}body{margin:0;background:radial-gradient(circle at 85% 0,#12365f 0,transparent 34%),linear-gradient(180deg,#07111f 0,#081420 100%);color:var(--text);font-family:Inter,-apple-system,BlinkMacSystemFont,"Segoe UI","PingFang SC","Microsoft YaHei",sans-serif;line-height:1.7}a{color:inherit;text-decoration:none}.container{width:min(var(--max),calc(100% - 40px));margin:auto}.topbar{position:sticky;top:0;z-index:50;background:rgba(7,17,31,.82);backdrop-filter:blur(16px);border-bottom:1px solid rgba(255,255,255,.07)}.nav{height:72px;display:flex;align-items:center;justify-content:space-between;gap:24px}.brand{display:flex;align-items:center;gap:12px;font-weight:800;letter-spacing:.01em}.mark{width:38px;height:38px;border-radius:11px;border:1px solid #2a5b89;background:linear-gradient(145deg,#123355,#091523);display:grid;place-items:center;color:var(--mint);font-weight:900}.navlinks{display:flex;gap:22px;color:#b3c5d8;font-size:14px}.navlinks a:hover{color:#fff}.menu{display:none;background:transparent;border:1px solid var(--line);color:#fff;border-radius:9px;padding:8px 10px}.hero{padding:108px 0 76px}.eyebrow{font-size:12px;letter-spacing:.18em;text-transform:uppercase;color:var(--mint);font-weight:800}.hero h1{font-size:clamp(44px,7vw,82px);line-height:1.02;letter-spacing:-.045em;max-width:930px;margin:18px 0 22px}.hero p{font-size:20px;max-width:780px;color:#afc2d7;margin:0 0 32px}.actions{display:flex;gap:12px;flex-wrap:wrap}.btn{display:inline-flex;align-items:center;gap:8px;padding:12px 18px;border-radius:10px;border:1px solid var(--line);font-weight:750;font-size:14px;transition:.18s}.btn:hover{transform:translateY(-1px);border-color:#42668c}.btn.primary{background:#eef7ff;color:#07111f;border-color:#eef7ff}.status{display:grid;grid-template-columns:repeat(3,1fr);gap:1px;background:var(--line);border:1px solid var(--line);border-radius:16px;overflow:hidden;margin-top:42px}.status>div{background:#091827;padding:24px}.label{font-size:11px;letter-spacing:.13em;text-transform:uppercase;color:#7891ac}.value{font-size:18px;font-weight:800;margin-top:5px}.section{padding:78px 0}.head{display:flex;justify-content:space-between;align-items:end;gap:28px;margin-bottom:30px}.head h2{font-size:clamp(32px,5vw,52px);line-height:1.08;letter-spacing:-.035em;margin:0}.head p{max-width:650px;color:var(--muted);margin:0}.grid3{display:grid;grid-template-columns:repeat(3,1fr);gap:18px}.grid2{display:grid;grid-template-columns:repeat(2,1fr);gap:18px}.card{background:linear-gradient(180deg,rgba(16,39,65,.94),rgba(9,26,44,.94));border:1px solid var(--line);border-radius:16px;padding:26px;min-height:210px}.card small{color:var(--mint);font-weight:800;letter-spacing:.12em}.card h3{font-size:21px;margin:10px 0 8px}.card p{color:var(--muted);margin:0}.tag{display:inline-flex;margin-top:18px;border:1px solid var(--line);border-radius:999px;padding:5px 9px;font-size:12px;color:#b9cce0}.tag.live{color:var(--mint);border-color:#2f655e}.tag.wait{color:var(--warn);border-color:#6b592d}.research-list{display:grid;gap:12px}.row{display:grid;grid-template-columns:92px 1fr auto;gap:20px;align-items:center;padding:20px 0;border-top:1px solid var(--line)}.date{font:600 12px ui-monospace,SFMono-Regular,Menlo,monospace;color:#7d96b1}.row h3{margin:0 0 3px;font-size:18px}.row p{margin:0;color:var(--muted);font-size:14px}.arrow{color:#7ea5c9}.callout{padding:26px;border-radius:16px;border:1px solid #28534f;background:rgba(115,226,192,.055)}.callout strong{color:var(--mint)}.steps{counter-reset:s}.step{display:grid;grid-template-columns:44px 1fr;gap:16px;padding:22px 0;border-top:1px solid var(--line)}.step:before{counter-increment:s;content:counter(s);width:34px;height:34px;border:1px solid #315777;border-radius:9px;display:grid;place-items:center;color:var(--accent);font-weight:800}.step h3{margin:1px 0 5px;font-size:18px}.step p{margin:0;color:var(--muted)}.metric{font-size:34px;font-weight:850;letter-spacing:-.03em}.footer{border-top:1px solid rgba(255,255,255,.07);padding:42px 0 54px;color:#7f96af;font-size:13px}.footrow{display:flex;justify-content:space-between;gap:24px;flex-wrap:wrap}.footlinks{display:flex;gap:18px;flex-wrap:wrap}.risk{font-size:12px;color:#7189a4;max-width:850px;margin-top:18px}.pulse{display:inline-block;width:8px;height:8px;border-radius:50%;background:var(--mint);box-shadow:0 0 0 7px rgba(115,226,192,.08);margin-right:8px}
+    @media(max-width:820px){.navlinks{display:none;position:absolute;top:72px;left:16px;right:16px;flex-direction:column;background:#0a192a;border:1px solid var(--line);padding:18px;border-radius:14px}.navlinks.open{display:flex}.menu{display:block}.hero{padding-top:78px}.status,.grid3,.grid2{grid-template-columns:1fr}.head{flex-direction:column;align-items:flex-start}.row{grid-template-columns:1fr}.arrow{display:none}.container{width:min(var(--max),calc(100% - 28px))}}
+  </style>
+</head>
+<body>
+<header class="topbar"><div class="container nav">
+  <a class="brand" href="#top"><span class="mark">T5</span><span>T5 Quant Lab</span></a>
+  <nav class="navlinks" id="navlinks"><a href="#research">Research</a><a href="#models">Models</a><a href="#verification">Verification</a><a href="#tools">Tools</a><a href="#about">About</a><a href="#risk">Risk</a></nav>
+  <button class="menu" id="menu" aria-label="打开菜单">☰</button>
+</div></header>
+
+<main id="top">
+<section class="hero"><div class="container">
+  <div class="eyebrow">Research → Verification → Tools</div>
+  <h1>把交易想法，变成可以审计、验证和复现的系统。</h1>
+  <p>T5 Quant Lab 是一个交易研究与工具实验室。我们聚焦 XAUUSD、价格结构、流动性与执行状态机，用明确规则、历史审计和真实前向验证筛掉“看起来有效”的策略。</p>
+  <div class="actions"><a class="btn primary" href="#research">查看研究</a><a class="btn" href="#verification">查看验证框架</a></div>
+  <div class="status">
+    <div><div class="label">Research Focus</div><div class="value">XAUUSD · Structure · Liquidity</div></div>
+    <div><div class="label">Current Stage</div><div class="value"><span class="pulse"></span>规则冻结 / Forward Prep</div></div>
+    <div><div class="label">Principle</div><div class="value">No promise. Show the evidence.</div></div>
+  </div>
+</div></section>
+
+<section class="section" id="research"><div class="container">
+  <div class="head"><h2>Research</h2><p>研究不是“找一个看起来厉害的指标”。真正的工作是把背景、位置、触发、失效和管理拆成可测试规则，并保留反例。</p></div>
+  <div class="research-list">
+    <div class="row"><div class="date">2026 · ACTIVE</div><div><h3>XAUUSD Entry State Machine</h3><p>Probe / Wait / Main Entry 三段执行状态机，重点研究右侧确认、重复授权和攻击段识别。</p></div><span class="arrow">→</span></div>
+    <div class="row"><div class="date">2026 · ACTIVE</div><div><h3>Liquidity → Reclaim → Takeover</h3><p>从流动性扫取到 Reclaim，再到微结构接管与首次回踩，比较反转与突破接受两类路径。</p></div><span class="arrow">→</span></div>
+    <div class="row"><div class="date">2026 · AUDIT</div><div><h3>Position Management C</h3><p>T1 减仓、成本保护、Runner 看 T2。重点不是美化胜率，而是控制尾部风险与状态冲突。</p></div><span class="arrow">→</span></div>
+  </div>
+</div></section>
+
+<section class="section" id="models"><div class="container">
+  <div class="head"><h2>Models</h2><p>每一个模型都必须回答五个问题：背景是什么、价格在哪里、出现了什么反应、为什么此刻执行、失效后如何退出。</p></div>
+  <div class="grid3">
+    <article class="card"><small>01 · REVERSAL</small><h3>Sweep-Reversal</h3><p>流动性被扫后，不默认反转。等待收回、攻击结构失效和反向接管，再考虑执行。</p><span class="tag live">Research Active</span></article>
+    <article class="card"><small>02 · CONTINUATION</small><h3>Break-Acceptance-Retest</h3><p>实体在关键流动性外侧形成接受后，等待第一次有效回踩守住，再顺突破方向执行。</p><span class="tag live">Research Active</span></article>
+    <article class="card"><small>03 · EXECUTION</small><h3>Probe / Wait / Main</h3><p>把“想进场”拆成三个状态，避免一个 Attack Episode 被重复授权，也降低追单和主观抢跑。</p><span class="tag wait">Forward Prep</span></article>
+  </div>
+</div></section>
+
+<section class="section" id="verification"><div class="container">
+  <div class="head"><h2>Verification</h2><p>回测只是第一层。我们更关心规则冻结之后，系统在真实时间顺序、点差、滑点和状态管理下还能不能工作。</p></div>
+  <div class="grid2">
+    <div class="card"><div class="metric">01</div><h3>Historical Audit</h3><p>逐笔审计 Entry、SL、T1、T2、成交状态、保护动作与重复授权。重点查程序和规则冲突，不只看净利润。</p></div>
+    <div class="card"><div class="metric">02</div><h3>Forward Verification</h3><p>固定版本、小资金、真实标准账户、不人工改逻辑。第三方前向监控上线后，将在这里公开入口和验证状态。</p></div>
+  </div>
+  <div class="callout" style="margin-top:18px"><strong>当前状态：</strong> MQL5 Seller 身份注册已完成；公开前向监控将在旗舰版本冻结并完成账户级复核后上线。这里不会提前展示“模拟成实盘”的营销曲线。</div>
+</div></section>
+
+<section class="section" id="tools"><div class="container">
+  <div class="head"><h2>Tools</h2><p>工具的价值不是让图表更复杂，而是减少遗漏、统一规则、留下可复盘记录。</p></div>
+  <div class="grid3">
+    <article class="card"><small>TRADINGVIEW</small><h3>Decision Overlay</h3><p>在主图呈现进场区、失效位、T1/T2 与必要状态，复杂判断留在后台。</p><span class="tag">In Research</span></article>
+    <article class="card"><small>MT4 / MT5</small><h3>Execution EA</h3><p>把冻结规则树转成可执行 EA，保留显示层、提醒、统计与 CSV 审计输出。</p><span class="tag">Build Stage</span></article>
+    <article class="card"><small>AUDIT</small><h3>Trade Review Data</h3><p>统一记录时间、周期、方向、Entry/SL/T1/T2、是否成交、MFE/MAE 与保护动作。</p><span class="tag">Internal Tooling</span></article>
+  </div>
+</div></section>
+
+<section class="section" id="about"><div class="container">
+  <div class="head"><h2>About T5</h2><p>我们不把“高胜率”当作研究终点。交易系统真正要经得起的是反例、坏行情、执行摩擦和长期重复。</p></div>
+  <div class="grid2">
+    <div>
+      <div class="step"><div><h3>先定义规则</h3><p>把主观语言拆成机器和人工都能复核的条件。</p></div></div>
+      <div class="step"><div><h3>再审计样本</h3><p>保留成功和失败样本，优先查逻辑漏洞，不追求“回测漂亮”。</p></div></div>
+      <div class="step"><div><h3>最后前向验证</h3><p>固定版本，控制变量，用真实时间顺序证明系统是否值得继续。</p></div></div>
+    </div>
+    <div class="card"><small>LAB POLICY</small><h3>研究先于营销</h3><p>Research Hub 的任务是把研究过程、验证标准和工具边界公开化。产品只有在规则和验证都足够清晰之后才进入发布阶段。</p><div style="height:18px"></div><p><strong style="color:#fff">不做：</strong>收益承诺、代客操盘、把回测当实盘、隐藏关键风险。</p></div>
+  </div>
+</div></section>
+
+<section class="section" id="risk"><div class="container">
+  <div class="head"><h2>Risk Disclosure</h2><p>交易研究必须同时公开它不能解决什么。</p></div>
+  <div class="card"><p>外汇、贵金属、期货及差价合约交易具有高风险，可能导致本金损失。本站内容仅用于研究记录、软件工具展示和技术讨论，不构成投资建议、收益承诺、资产管理或代客交易服务。历史回测、模拟结果和前向样本都不能保证未来表现。使用任何策略或软件前，应独立评估风险并确认其适合自身情况。</p></div>
+</div></section>
+</main>
+
+<footer class="footer"><div class="container">
+  <div class="footrow"><div><strong style="color:#d9e8f7">T5 Quant Lab</strong><br/>Research · Verification · Tools</div><div class="footlinks"><a href="#research">Research</a><a href="#verification">Verification</a><a href="#tools">Tools</a><a href="#risk">Risk</a></div></div>
+  <div class="risk">© 2026 T5 Quant Lab. 本站目前为研究中心第一版。产品、验证链接和公开数据将在完成对应阶段后逐步上线。</div>
+</div></footer>
+<script>
+  const menu=document.getElementById('menu'),nav=document.getElementById('navlinks');
+  menu.addEventListener('click',()=>nav.classList.toggle('open'));
+  nav.querySelectorAll('a').forEach(a=>a.addEventListener('click',()=>nav.classList.remove('open')));
+</script>
+</body>
+</html>

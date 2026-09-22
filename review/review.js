@@ -102,13 +102,22 @@
     if(!refreshFormState(true)){
       const firstMissing=!entry?.value?entry:(!sl?.value?sl:(!tp?.value?tp:null));firstMissing?.focus();return;
     }
-    busy=true;refreshFormState(false);loading?.classList.add('show');setStatus('截图正在用于本次复盘分析，请不要关闭页面。');
+    busy=true;refreshFormState(false);loading?.classList.add('show');
+    setStatus('正在读取截图并生成复盘，正常应在几十秒内返回。');
+    const controller=new AbortController();
+    const timeout=setTimeout(()=>controller.abort(),45000);
     try{
       const form=new FormData();form.append('image',selectedFile,selectedFile.name||'trade.png');form.append('entry',entry.value);form.append('sl',sl.value);form.append('tp',tp.value);
-      const res=await fetch('/api/review',{method:'POST',body:form});const data=await res.json().catch(()=>({}));
+      const res=await fetch('/api/review',{method:'POST',body:form,signal:controller.signal});const data=await res.json().catch(()=>({}));
       if(!res.ok)throw new Error(data.error||data.detail||'复盘生成失败');if(!data.review)throw new Error('复盘返回为空');
       render(data.review);setStatus(`复盘已生成，交易方向识别为 ${data.side||inferSide()}。`);
-    }catch(err){console.error(err);setStatus(`复盘暂时无法生成：${err.message||err}`,true)}finally{busy=false;loading?.classList.remove('show');refreshFormState(false)}
+    }catch(err){
+      console.error(err);
+      if(err?.name==='AbortError')setStatus('复盘请求超过 45 秒，已自动停止，没有让页面一直空等。请稍后再试一次。',true);
+      else setStatus(`复盘暂时无法生成：${err.message||err}`,true);
+    }finally{
+      clearTimeout(timeout);busy=false;loading?.classList.remove('show');refreshFormState(false);
+    }
   });
 
   const q=new URLSearchParams(location.search);if(q.get('from')==='liquidity-complete')document.getElementById('baselineBridge')?.classList.add('show');refreshFormState(false);

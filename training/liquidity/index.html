@@ -3,23 +3,42 @@
 <head>
 <meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
 <title>Liquidity Drill｜T5 Decision Lab</title>
-<meta name="description" content="T5 Decision Lab：XAUUSD真实历史案例，隐藏未来行情进行决策训练。">
+<meta name="description" content="T5 Decision Lab：XAUUSD 20个真实历史案例，隐藏未来行情进行决策训练。">
 <link rel="icon" href="/favicon.svg" type="image/svg+xml">
-<link rel="stylesheet" href="/assets/styles.css"><link rel="stylesheet" href="/assets/product.css"><link rel="stylesheet" href="/training/liquidity/liquidity.css">
+<link rel="stylesheet" href="/assets/styles.css"><link rel="stylesheet" href="/assets/product.css"><link rel="stylesheet" href="/training/liquidity/liquidity.css"><link rel="stylesheet" href="/training/liquidity/completion.css">
 </head>
 <body>
 <header class="topbar"><div class="container nav"><a class="brand" href="/"><span class="mark">T5</span><span>T5 Quant Lab</span></a><nav class="navlinks" id="navlinks"><a class="active" href="/training/">训练</a><a href="/review/">复盘</a><a href="/library/">知识库</a><a href="/research/">研究</a><a href="/pricing/">订阅</a><a class="nav-cta" href="/dashboard/">我的 T5</a></nav><button class="menu" id="menu" aria-label="打开菜单">☰</button></div></header>
 <main class="lab-shell">
-<section class="lab-intro container"><div><div class="breadcrumbs"><a href="/">首页</a> / <a href="/training/">训练</a> / Liquidity Drill</div><div class="hero-kicker">XAUUSD · REAL HISTORY · HIDDEN FUTURE</div><h1>Liquidity Drill</h1><p>先在不知道未来走势的情况下框选最重要的外部流动性。提交以后才显示规则答案，再决定是否展开后续行情。</p></div><div class="rule-card"><b>T5 Liquidity Rule v0.1</b><span>过程评分与后续结果分开；后续涨跌不会反推标准答案。</span></div></section>
+<section class="lab-intro container"><div><div class="breadcrumbs"><a href="/">首页</a> / <a href="/training/">训练</a> / Liquidity Drill</div><div class="hero-kicker">XAUUSD · REAL HISTORY · HIDDEN FUTURE</div><h1>Liquidity Drill</h1><p>20个真实历史场景。先在不知道未来走势的情况下框选最重要的外部流动性；提交以后才显示规则答案，再决定是否展开后续行情。</p></div><div class="rule-card"><b>T5 Liquidity Rule v0.1</b><span>过程评分与后续结果分开；后续涨跌不会反推标准答案。</span></div></section>
 <section class="lab-layout container">
-<aside class="lab-side"><div class="side-block"><div class="progress-head"><b>训练进度</b><span id="progressText">0 / 1</span></div><div class="progress-track"><i id="progressFill"></i></div><div id="caseList" class="case-list"></div></div><div class="side-block"><div class="side-title">当前统计</div><div class="side-stat"><span>平均过程分</span><b id="avgScore">—</b></div><div class="side-stat"><span>精确识别</span><b id="exactCount">—</b></div><div class="side-stat"><span>已完成</span><b id="doneCount">0</b></div></div><button id="reportBtn" class="lab-btn secondary full" disabled>查看我的诊断</button><button id="resetBtn" class="text-btn">清空本机训练记录</button></aside>
+<aside class="lab-side"><div class="side-block"><div class="progress-head"><b>训练进度</b><span id="progressText">0 / 20</span></div><div class="progress-track"><i id="progressFill"></i></div><div id="caseList" class="case-list"></div></div><div class="side-block"><div class="side-title">当前统计</div><div class="side-stat"><span>平均过程分</span><b id="avgScore">—</b></div><div class="side-stat"><span>精确识别</span><b id="exactCount">—</b></div><div class="side-stat"><span>已完成</span><b id="doneCount">0</b></div></div><button id="reportBtn" class="lab-btn secondary full" disabled>查看我的诊断</button><button id="resetBtn" class="text-btn">清空本机训练记录</button></aside>
 <section class="lab-main"><div class="case-head"><div><div class="case-meta" id="caseMeta">Scenario #01</div><h2 id="question">请框选当前最重要的外部流动性区域</h2></div><div class="tf-tabs"><button data-tf="H1">H1</button><button data-tf="M15">M15</button><button class="active" data-tf="M5">M5</button></div></div><div class="help">按住鼠标上下拖动，选择一个价格带。松开后区域会保留；提交之前可以重新框选。</div><div class="chart-wrap"><canvas id="chart"></canvas><div class="corner" id="cornerText">未来行情已隐藏</div></div><div class="lab-actions"><button id="clearBtn" class="lab-btn secondary">清除框选</button><button id="submitBtn" class="lab-btn primary">提交答案</button><button id="revealBtn" class="lab-btn secondary" disabled>查看后续12小时</button><div id="futureControls" class="future-controls hidden"><span>后续范围</span><button class="future-btn" data-hours="3">3h</button><button class="future-btn active" data-hours="12">12h</button><button class="future-btn" data-hours="24">24h</button></div><button id="nextBtn" class="lab-btn secondary" disabled>下一题 →</button></div>
 <section id="result" class="result hidden"><div class="result-head"><span id="grade" class="grade"></span><b id="headline"></b><strong id="processScore"></strong></div><div class="compare"><div><small>你的框选</small><b id="userAnswer"></b></div><div><small>T5规则答案</small><b id="ruleAnswer"></b></div></div><div class="explain"><h3>为什么</h3><p id="explainText"></p></div><div id="outcomeBox" class="outcome hidden"><h3>后续反馈</h3><p id="outcomeText"></p></div></section>
-<section id="report" class="diagnostic hidden"><div class="diagnostic-head"><div><div class="section-label">T5 Decision Profile · Liquidity</div><h2>当前训练诊断</h2></div><button id="closeReport" class="lab-btn secondary">返回题目</button></div><div class="diagnostic-grid"><div class="diag-score"><span>平均过程分</span><strong id="reportAvg">—</strong><small>仅代表 Liquidity 规则</small></div><div class="diag-card"><span>Buy-side</span><b id="buyAvg">—</b><small>上方外部流动性</small></div><div class="diag-card"><span>Sell-side</span><b id="sellAvg">—</b><small>下方外部流动性</small></div><div class="diag-card"><span>精确 / 接近 / 偏离</span><b id="distribution">—</b><small>100 / 60 / 0</small></div></div><div class="diag-note"><b>训练建议</b><p id="recommendation"></p></div><div class="weak-list"><h3>值得复盘的题</h3><div id="weakCases"></div></div><div class="report-warning">当前先开放真实案例验证交互。其余19题正在迁入同一训练页，不影响正式站。</div></section></section>
+<section id="report" class="diagnostic hidden"><div class="diagnostic-head"><div><div class="section-label">T5 Decision Profile · Liquidity</div><h2>你的20题诊断</h2></div><button id="closeReport" class="lab-btn secondary">返回题目</button></div><div class="diagnostic-grid"><div class="diag-score"><span>平均过程分</span><strong id="reportAvg">—</strong><small>仅代表 Liquidity 规则</small></div><div class="diag-card"><span>Buy-side</span><b id="buyAvg">—</b><small>上方外部流动性</small></div><div class="diag-card"><span>Sell-side</span><b id="sellAvg">—</b><small>下方外部流动性</small></div><div class="diag-card"><span>精确 / 接近 / 偏离</span><b id="distribution">—</b><small>100 / 60 / 0</small></div></div><div class="diag-note"><b>当前主要训练建议</b><p id="recommendation"></p></div><div class="weak-list"><h3>最值得复盘的3题</h3><div id="weakCases"></div></div><div class="report-warning">这份报告只诊断 Liquidity 区域识别，不代表“整体交易能力”。Structure、Entry、Risk、Management 需要独立训练和真实交易复盘后再建立完整画像。</div></section></section>
 </section>
-<section class="container lab-footer"><div><b>数据说明</b><span>案例来自 XAUUSDcent 历史数据；答案在未来行情揭示前冻结。</span></div><a href="/review/">下一步：把真实交易接进复盘 →</a></section>
+<section class="container lab-footer"><div><b>数据说明</b><span>本套案例来自 XAUUSDcent 历史数据。训练集使用 2026-01-07 之后的有效区间；标准答案在未来行情揭示前冻结。</span></div><a href="/review/">下一步：把真实交易接进复盘 →</a></section>
 </main>
 <script src="/training/liquidity/codec.js"></script>
 <script src="/training/liquidity/cases/case-01.js"></script>
-<script src="/training/liquidity/app.js"></script><script src="/assets/main.js"></script>
+<script src="/training/liquidity/cases/case-02.js"></script>
+<script src="/training/liquidity/cases/case-03.js"></script>
+<script src="/training/liquidity/cases/case-04.js"></script>
+<script src="/training/liquidity/cases/case-05.js"></script>
+<script src="/training/liquidity/cases/case-06.js"></script>
+<script src="/training/liquidity/cases/case-07.js"></script>
+<script src="/training/liquidity/cases/case-08.js"></script>
+<script src="/training/liquidity/cases/case-09.js"></script>
+<script src="/training/liquidity/cases/case-10.js"></script>
+<script src="/training/liquidity/cases/case-11.js"></script>
+<script src="/training/liquidity/cases/case-12.js"></script>
+<script src="/training/liquidity/cases/case-13.js"></script>
+<script src="/training/liquidity/cases/case-14.js"></script>
+<script src="/training/liquidity/cases/case-15.js"></script>
+<script src="/training/liquidity/cases/case-16.js"></script>
+<script src="/training/liquidity/cases/case-17.js"></script>
+<script src="/training/liquidity/cases/case-18.js"></script>
+<script src="/training/liquidity/cases/case-19.js"></script>
+<script src="/training/liquidity/cases/case-20.js"></script>
+<script src="/training/liquidity/app.js"></script><script src="/training/liquidity/completion.js"></script><script src="/assets/main.js"></script>
 </body></html>

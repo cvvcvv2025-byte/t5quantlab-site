@@ -21,10 +21,36 @@
     status.style.color=isError?'#ffd166':'#7891ac';
   }
 
-  function valid(){
-    const ok=!!(selectedFile&&side?.value&&entry?.value&&tradeTime?.value&&!busy);
-    if(submit)submit.disabled=!ok;
-    return ok;
+  function missingFields(){
+    const missing=[];
+    if(!selectedFile)missing.push('截图');
+    if(!side?.value)missing.push('方向');
+    if(!entry?.value)missing.push('Entry');
+    if(!tradeTime?.value)missing.push('入场时间');
+    return missing;
+  }
+
+  function refreshFormState(showMessage=false){
+    const missing=missingFields();
+    if(!submit)return missing.length===0;
+    if(busy){
+      submit.disabled=true;
+      submit.textContent='正在生成复盘…';
+      return false;
+    }
+    // Once a screenshot is loaded, keep the button clickable so the page can explain
+    // exactly what is missing instead of looking broken/inert.
+    submit.disabled=!selectedFile;
+    if(!selectedFile){
+      submit.textContent='先上传交易截图';
+    }else if(missing.length){
+      submit.textContent=`继续填写：还差 ${missing.length} 项`;
+      if(showMessage)setStatus(`还差必填信息：${missing.join('、')}。填完后即可生成复盘。`,true);
+    }else{
+      submit.textContent='生成交易复盘';
+      if(showMessage)setStatus('必填信息已完整，可以生成交易复盘。');
+    }
+    return missing.length===0;
   }
 
   function load(f){
@@ -38,9 +64,9 @@
     preview.hidden=false;
     placeholder.hidden=true;
     name.textContent=f.name||'已粘贴截图';
-    setStatus('截图已载入。继续填写方向、Entry 与入场时间，完成后即可生成复盘。');
     zone.classList.add('has-file');
-    valid();
+    setStatus('截图已载入。还需要填写方向、Entry 与入场时间。');
+    refreshFormState(false);
   }
 
   zone?.addEventListener('click',()=>file?.click());
@@ -57,8 +83,8 @@
     if(imageItem){e.preventDefault();load(imageItem.getAsFile())}
   });
 
-  [side,entry,tradeTime,sltp].forEach(el=>el?.addEventListener('input',valid));
-  side?.addEventListener('change',valid);
+  [side,entry,tradeTime,sltp].forEach(el=>el?.addEventListener('input',()=>refreshFormState(false)));
+  side?.addEventListener('change',()=>refreshFormState(false));
 
   function stateClass(value){
     if(value==='通过')return'pass';
@@ -99,9 +125,12 @@
   }
 
   submit?.addEventListener('click',async()=>{
-    if(!valid())return;
-    busy=true;valid();loading?.classList.add('show');
-    submit.textContent='正在生成复盘…';
+    if(!refreshFormState(true)){
+      const firstMissing=!side?.value?side:(!entry?.value?entry:(!tradeTime?.value?tradeTime:null));
+      firstMissing?.focus();
+      return;
+    }
+    busy=true;refreshFormState(false);loading?.classList.add('show');
     setStatus('截图正在用于本次复盘分析，请不要关闭页面。');
     try{
       const form=new FormData();
@@ -112,7 +141,7 @@
       form.append('sltp',sltp?.value||'');
       const res=await fetch('/api/review',{method:'POST',body:form});
       const data=await res.json().catch(()=>({}));
-      if(!res.ok)throw new Error(data.error||'复盘生成失败');
+      if(!res.ok)throw new Error(data.error||data.detail||'复盘生成失败');
       if(!data.review)throw new Error('复盘返回为空');
       render(data.review);
       setStatus('复盘已生成。请重点检查“信息边界”和“如果重来一次”，不要只看错误标签。');
@@ -120,11 +149,11 @@
       console.error(err);
       setStatus(`复盘暂时无法生成：${err.message||err}`,true);
     }finally{
-      busy=false;loading?.classList.remove('show');submit.textContent='生成交易复盘';valid();
+      busy=false;loading?.classList.remove('show');refreshFormState(false);
     }
   });
 
   const q=new URLSearchParams(location.search);
   if(q.get('from')==='liquidity-complete')document.getElementById('baselineBridge')?.classList.add('show');
-  valid();
+  refreshFormState(false);
 })();

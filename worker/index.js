@@ -1,4 +1,4 @@
-const MODEL = '@cf/qwen/qwen3.8-27b';
+const MODEL = '@cf/google/gemma-4-26b-a4b-it';
 
 const REQUIRED_KEYS = [
   'summary','main_error_tag','confidence','context','location','reaction','entry','management',
@@ -56,7 +56,6 @@ function parseJsonString(text) {
 
 function extractReview(value, depth = 0) {
   if (depth > 8 || value == null) return null;
-
   if (looksLikeReview(value)) return value;
 
   if (typeof value === 'string') {
@@ -73,7 +72,6 @@ function extractReview(value, depth = 0) {
   }
 
   if (typeof value === 'object') {
-    // Different Workers AI models/envelopes place the assistant payload in different fields.
     const preferred = [
       value.response,
       value.result,
@@ -90,8 +88,6 @@ function extractReview(value, depth = 0) {
       const found = extractReview(candidate, depth + 1);
       if (found) return found;
     }
-
-    // Last resort: walk remaining object values, but only for a few levels.
     for (const candidate of Object.values(value)) {
       const found = extractReview(candidate, depth + 1);
       if (found) return found;
@@ -143,25 +139,24 @@ async function reviewTrade(request, env) {
 
   const system = `你是 T5 Quant Lab 的交易复盘引擎。任务是复盘用户已经提交的一笔交易决策，而不是预测未来行情。\n\n硬规则：\n1. 只能使用截图中可见的信息和用户明确填写的 Entry、SL、TP。看不到的周期、未来K线、新闻背景都不得猜测。\n2. 交易方向由价格关系推断：Buy = SL < Entry < TP；Sell = TP < Entry < SL。\n3. 用户没有填写入场日期时间。如果截图没有清晰标出入场时刻，Entry Timing 必须写“信息不足”或降低置信度，绝不能把截图右侧后来出现的K线当成入场前证据。\n4. 盈亏结果不能反推当时决策是否正确。重点拆分 Context、Location、Reaction、Entry、Management。\n5. 信息不足时必须明确写“信息不足”，不要补全隐藏背景。\n6. 禁止给出“现在买/卖”、未来涨跌预测、保证收益或胜率承诺。\n7. 输出要短、具体、可复核。优先指出最主要的一类错误；如果没有足够证据判定错误，main_error_tag 使用 INSUFFICIENT_CONTEXT。\n8. corrective_rule 必须写成下一次可以执行的规则，而不是“耐心”“控制情绪”这类空话。\n9. 只输出一个有效 JSON 对象，不要 Markdown，不要代码块，不要解释 JSON。`;
 
-  const userText = `请复盘这笔交易。\n用户填写：\n- 推断方向：${side}\n- Entry：${entry}\n- Stop Loss：${sl}\n- Take Profit：${tp}\n- 入场时间：未提供\n\n请先判断截图里实际能看见哪些信息。若无法确定哪些K线属于入场前，必须明确限制，不要用事后走势反推。\n\n严格输出以下 JSON 结构：\n{\n  "summary":"一句话结论",\n  "main_error_tag":"EARLY_ENTRY 或 MID_RANGE_ENTRY 或 HTF_CONFLICT 或 NO_RECLAIM 或 SL_TOO_TIGHT 或 TARGET_MISMATCH 或 INSUFFICIENT_CONTEXT 等",\n  "confidence":"高|中|低",\n  "context":{"status":"通过|可接受|未通过|信息不足","note":"..."},\n  "location":{"status":"通过|可接受|未通过|信息不足","note":"..."},\n  "reaction":{"status":"通过|可接受|未通过|信息不足","note":"..."},\n  "entry":{"status":"通过|可接受|未通过|信息不足","note":"..."},\n  "management":{"status":"通过|可接受|未通过|信息不足","note":"..."},\n  "evidence":["证据1","证据2"],\n  "limitations":["限制1"],\n  "corrective_rule":"如果重来一次，具体应满足什么条件再执行",\n  "training_focus":"下一轮最值得训练的一件事",\n  "training_type":"liquidity|structure|entry|management|context|other"\n}`;
+  const userText = `请复盘这笔交易。\n用户填写：\n- 推断方向：${side}\n- Entry：${entry}\n- Stop Loss：${sl}\n- Take Profit：${tp}\n- 入场时间：未提供\n\n先认真读取随请求提供的交易截图。截图是主要证据。请先判断截图里实际能看见哪些结构、区间、流动性位置、价格反应和 Entry/SL/TP 相对位置。若无法确定哪些K线属于入场前，必须明确限制，不要用事后走势反推。\n\n严格输出以下 JSON 结构：\n{\n  "summary":"一句话结论",\n  "main_error_tag":"EARLY_ENTRY 或 MID_RANGE_ENTRY 或 HTF_CONFLICT 或 NO_RECLAIM 或 SL_TOO_TIGHT 或 TARGET_MISMATCH 或 INSUFFICIENT_CONTEXT 等",\n  "confidence":"高|中|低",\n  "context":{"status":"通过|可接受|未通过|信息不足","note":"..."},\n  "location":{"status":"通过|可接受|未通过|信息不足","note":"..."},\n  "reaction":{"status":"通过|可接受|未通过|信息不足","note":"..."},\n  "entry":{"status":"通过|可接受|未通过|信息不足","note":"..."},\n  "management":{"status":"通过|可接受|未通过|信息不足","note":"..."},\n  "evidence":["截图里能直接指出的证据1","截图里能直接指出的证据2"],\n  "limitations":["截图无法支持的判断1"],\n  "corrective_rule":"如果重来一次，具体应满足什么条件再执行",\n  "training_focus":"下一轮最值得训练的一件事",\n  "training_type":"liquidity|structure|entry|management|context|other"\n}`;
 
-  // Qwen 3.8 is a vision model. We intentionally request plain JSON in the prompt
-  // instead of relying on JSON Mode here, then validate the returned object ourselves.
-  const result = await env.AI.run(MODEL, {
-    messages: [
-      { role: 'system', content: system },
-      {
-        role: 'user',
-        content: [
-          { type: 'image_url', image_url: { url: dataUrl } },
-          { type: 'text', text: userText }
-        ]
-      }
-    ],
-    reasoning_effort: 'low',
-    temperature: 0.1,
-    max_completion_tokens: 1600
-  });
+  // Cloudflare's documented Workers AI vision pattern passes the image as the
+  // top-level `image` field. The previous implementation used an OpenAI-style
+  // image_url part inside messages, which was not reliably reaching the vision encoder.
+  const result = await env.AI.run(
+    MODEL,
+    {
+      messages: [
+        { role: 'system', content: system },
+        { role: 'user', content: userText }
+      ],
+      image: dataUrl,
+      temperature: 0.1,
+      max_tokens: 1200
+    },
+    { rejectIfBusy: true }
+  );
 
   const extracted = extractReview(result);
   if (!extracted) {
@@ -181,9 +176,13 @@ export default {
       return env.ASSETS.fetch(request);
     } catch (error) {
       console.error('T5 review error', error);
+      const detail = String(error?.message || error);
+      if (/busy|capacity|429|3040/i.test(detail)) {
+        return json({ error: 'AI 当前繁忙，没有让你一直空等。请稍后再点一次生成复盘。', detail }, 503);
+      }
       return json({
-        error: '复盘结果没有通过结构校验，没有把空白结果展示给你。请稍后重试。',
-        detail: String(error?.message || error)
+        error: '复盘生成失败：模型没有返回可用的结构化结果。',
+        detail
       }, 500);
     }
   }

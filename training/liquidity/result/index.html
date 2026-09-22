@@ -1,0 +1,51 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>你的 Liquidity 诊断｜T5 Decision Lab</title>
+<meta name="description" content="完成20题后的个性化 Liquidity 决策诊断、下一轮训练建议与 T5 Pro 持续训练路径。">
+<link rel="icon" href="/favicon.svg" type="image/svg+xml">
+<link rel="stylesheet" href="/assets/styles.css"><link rel="stylesheet" href="/assets/product.css"><link rel="stylesheet" href="/training/liquidity/result/result.css">
+</head>
+<body>
+<header class="topbar"><div class="container nav"><a class="brand" href="/"><span class="mark">T5</span><span>T5 Quant Lab</span></a><nav class="navlinks" id="navlinks"><a class="active" href="/training/">训练</a><a href="/review/">复盘</a><a href="/library/">知识库</a><a href="/research/">研究</a><a href="/pricing/">订阅</a><a class="nav-cta" href="/dashboard/">我的 T5</a></nav><button class="menu" id="menu" aria-label="打开菜单">☰</button></div></header>
+<main class="result-shell">
+<section class="result-hero container">
+  <div class="result-kicker">BASELINE COMPLETE · LIQUIDITY</div>
+  <h1>这20题不是终点。<br>它只负责告诉你：<span>下一步该练哪里。</span></h1>
+  <p>你刚完成的是一轮陌生行情基线测试。下面的结果只诊断 <b>Liquidity 区域识别</b>，不会把它包装成“整体交易水平”。</p>
+</section>
+<section class="container result-grid">
+  <article class="result-card score-card"><small>LIQUIDITY PROCESS SCORE</small><strong id="avgScore">—</strong><span>/ 100</span><p id="scoreText">读取你的训练记录中…</p></article>
+  <article class="result-card"><small>BUY-SIDE</small><strong id="buyScore">—</strong><p>上方外部流动性</p></article>
+  <article class="result-card"><small>SELL-SIDE</small><strong id="sellScore">—</strong><p>下方外部流动性</p></article>
+  <article class="result-card"><small>精确 / 接近 / 偏离</small><strong class="dist" id="distribution">—</strong><p>100 / 60 / 0</p></article>
+</section>
+<section class="container diagnosis-block">
+  <div class="diagnosis-main">
+    <div class="section-label">WHAT YOUR DATA SAYS</div>
+    <h2 id="primaryIssue">正在识别你的主要问题…</h2>
+    <p id="primaryDetail"></p>
+    <div class="evidence-row"><div><span>区域过宽</span><b id="wideCount">—</b></div><div><span>区域过窄</span><b id="narrowCount">—</b></div><div><span>平均中心偏差</span><b id="centerGap">—</b></div></div>
+  </div>
+  <aside class="weak-card"><span class="section-label">REVIEW FIRST</span><h3>最值得先复盘的3题</h3><div id="weakCases"></div><a href="/training/liquidity/" class="text-link">回到题目复盘 →</a></aside>
+</section>
+<section class="next-step">
+  <div class="container next-inner">
+    <div class="next-copy"><div class="section-label">YOUR NEXT ROUND</div><h2 id="nextTitle">下一轮，不该再随机刷题。</h2><p id="nextDetail">系统会根据本轮最明显的问题，决定新的陌生场景优先级。</p></div>
+    <div class="next-plan">
+      <div class="plan-step"><i>01</i><div><b>只练当前最弱环节</b><span id="focusLabel">等待诊断结果</span></div></div>
+      <div class="plan-step"><i>02</i><div><b>必须换陌生行情</b><span>避免记住旧答案造成“虚假进步”。</span></div></div>
+      <div class="plan-step"><i>03</i><div><b>再用真实交易校验</b><span>把实盘错误重新写回个人画像。</span></div></div>
+    </div>
+  </div>
+</section>
+<section class="container pro-bridge">
+  <div class="bridge-copy"><div class="section-label">CONTINUE WITH YOUR DATA</div><h2>你付费的不是“更多题”。<br>而是让下一轮训练持续来自你的错误。</h2><p>Free 给你第一次基线；Pro 持续给你新的陌生场景、按弱点排序训练，并把真实交易截图复盘重新送回训练闭环。</p></div>
+  <div class="bridge-card"><div class="bridge-item"><b>新的真实市场场景</b><span>持续更新，不靠重复做同一批题。</span></div><div class="bridge-item"><b>弱项驱动训练</b><span>先练最常错的环节，而不是随机刷题。</span></div><div class="bridge-item"><b>真实交易截图复盘</b><span>把你自己的交易错误转成下一轮训练。</span></div><div class="bridge-item"><b>长期 Decision Profile</b><span>验证同类错误到底有没有减少。</span></div><a class="result-cta" href="/pricing/?from=liquidity-result">继续针对我的弱项训练 →</a><a href="/review/?from=liquidity-complete" class="text-link" style="display:block;text-align:center;margin-top:12px">先看看真实交易如何进入我的画像 →</a><button id="backTraining" class="result-secondary">暂不订阅，先回去复盘错题</button><small>当前为产品预览阶段，订阅付款尚未开放，不会产生扣费。</small></div>
+</section>
+<section class="container scope-note"><b>诊断边界</b><p>本页只基于 Liquidity 20题的选择区域、过程分、Buy/Sell-side差异、区域宽度和中心偏差生成。Structure、Entry、Risk、Management 必须通过独立训练与真实交易数据后才能加入完整画像。</p></section>
+</main>
+<footer class="footer"><div class="container"><div class="footrow"><div>© 2026 T5 Quant Lab</div><div class="footlinks"><a href="/training/">训练</a><a href="/review/">复盘</a><a href="/pricing/">订阅</a></div></div><div class="risk">训练与复盘用于研究和能力诊断，不构成投资建议或收益承诺。</div></div></footer>
+<script src="/training/liquidity/result/result.js"></script><script src="/assets/main.js"></script>
+</body></html>

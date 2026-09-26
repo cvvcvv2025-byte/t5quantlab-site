@@ -1,6 +1,6 @@
 {
   "name": "t5quantlab-site",
-  "main": "src/worker.js",
+  "main": "src/gated-worker.js",
   "compatibility_date": "2026-09-26",
   "assets": {
     "directory": ".",

@@ -5,5 +5,18 @@
     "directory": ".",
     "not_found_handling": "404-page",
     "html_handling": "auto-trailing-slash"
-  }
+  },
+  "r2_buckets": [
+    {
+      "binding": "USER_CODE_BUCKET",
+      "bucket_name": "t5quantlab-user-code"
+    }
+  ],
+  "d1_databases": [
+    {
+      "binding": "BUILDER_DB",
+      "database_name": "t5quantlab-builder",
+      "database_id": "332c88ef-ecca-4c9b-a085-2cfea9228b4e"
+    }
+  ]
 }

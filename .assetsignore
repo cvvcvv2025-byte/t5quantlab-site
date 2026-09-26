@@ -1,4 +1,5 @@
 README.md
 wrangler.jsonc
 _headers
+src/**
 .git*

@@ -20,14 +20,26 @@
   <url><loc>https://t5quantlab.com/library/pinbar/</loc><changefreq>monthly</changefreq><priority>0.8</priority></url>
   <url><loc>https://t5quantlab.com/library/wedge-three-pushes/</loc><changefreq>monthly</changefreq><priority>0.8</priority></url>
   <url><loc>https://t5quantlab.com/library/price-action-reading-notes/</loc><changefreq>monthly</changefreq><priority>0.8</priority></url>
-  <url><loc>https://t5quantlab.com/market-lab/</loc><changefreq>weekly</changefreq><priority>0.9</priority></url>
+
+  <url><loc>https://t5quantlab.com/market-lab/</loc><changefreq>weekly</changefreq><priority>0.95</priority></url>
   <url><loc>https://t5quantlab.com/market-lab/practice/</loc><changefreq>weekly</changefreq><priority>0.95</priority></url>
+  <url><loc>https://t5quantlab.com/market-lab/practice/context-structure/</loc><changefreq>monthly</changefreq><priority>0.9</priority></url>
+  <url><loc>https://t5quantlab.com/market-lab/practice/liquidity-execution/</loc><changefreq>monthly</changefreq><priority>0.9</priority></url>
+  <url><loc>https://t5quantlab.com/market-lab/practice/risk-audit/</loc><changefreq>monthly</changefreq><priority>0.9</priority></url>
   <url><loc>https://t5quantlab.com/market-lab/training/</loc><changefreq>weekly</changefreq><priority>0.9</priority></url>
+  <url><loc>https://t5quantlab.com/market-lab/training/2026-08-27-break-retest-short/</loc><changefreq>monthly</changefreq><priority>0.8</priority></url>
+  <url><loc>https://t5quantlab.com/market-lab/training/2026-08-28-head-shoulders-missed/</loc><changefreq>monthly</changefreq><priority>0.8</priority></url>
+  <url><loc>https://t5quantlab.com/market-lab/training/2026-08-28-t1-protection/</loc><changefreq>monthly</changefreq><priority>0.8</priority></url>
+  <url><loc>https://t5quantlab.com/market-lab/2026-08-27-h1-neckline-reclaim-failure/</loc><changefreq>monthly</changefreq><priority>0.8</priority></url>
+  <url><loc>https://t5quantlab.com/market-lab/2026-08-27-m5-secondary-top-break-retest/</loc><changefreq>monthly</changefreq><priority>0.8</priority></url>
+  <url><loc>https://t5quantlab.com/market-lab/2026-08-28-m5-head-shoulders-missed-signal/</loc><changefreq>monthly</changefreq><priority>0.8</priority></url>
+  <url><loc>https://t5quantlab.com/market-lab/2026-08-28-m5-liquidity-absorption-t1-protect/</loc><changefreq>monthly</changefreq><priority>0.8</priority></url>
   <url><loc>https://t5quantlab.com/market-lab/2026-09-14-xauusd-m5-c-to-b/</loc><changefreq>monthly</changefreq><priority>0.75</priority></url>
   <url><loc>https://t5quantlab.com/market-lab/2026-09-14-xauusd-m5-b-reentry/</loc><changefreq>monthly</changefreq><priority>0.75</priority></url>
   <url><loc>https://t5quantlab.com/market-lab/2026-09-14-xauusd-m5-trend-fast-stop/</loc><changefreq>monthly</changefreq><priority>0.75</priority></url>
   <url><loc>https://t5quantlab.com/market-lab/2026-09-14-xauusd-m5-t1-giveback/</loc><changefreq>monthly</changefreq><priority>0.75</priority></url>
   <url><loc>https://t5quantlab.com/market-lab/2026-09-15-xauusd-m5-c-management-pass/</loc><changefreq>monthly</changefreq><priority>0.75</priority></url>
+
   <url><loc>https://t5quantlab.com/research/</loc><changefreq>weekly</changefreq><priority>0.95</priority></url>
   <url><loc>https://t5quantlab.com/research/why-backtests-fail/</loc><changefreq>monthly</changefreq><priority>0.9</priority></url>
   <url><loc>https://t5quantlab.com/research/entry-state-machine/</loc><changefreq>monthly</changefreq><priority>0.85</priority></url>
@@ -36,16 +48,28 @@
   <url><loc>https://t5quantlab.com/research/archived-ema-slope/</loc><changefreq>yearly</changefreq><priority>0.7</priority></url>
   <url><loc>https://t5quantlab.com/research/sweep-reclaim-takeover/</loc><changefreq>monthly</changefreq><priority>0.8</priority></url>
   <url><loc>https://t5quantlab.com/research/reclaim-takeover-micro-break/</loc><changefreq>monthly</changefreq><priority>0.8</priority></url>
+
   <url><loc>https://t5quantlab.com/verification/</loc><changefreq>weekly</changefreq><priority>0.9</priority></url>
   <url><loc>https://t5quantlab.com/verification/audit-checklist/</loc><changefreq>monthly</changefreq><priority>0.85</priority></url>
   <url><loc>https://t5quantlab.com/verification/data-source-parity/</loc><changefreq>monthly</changefreq><priority>0.85</priority></url>
   <url><loc>https://t5quantlab.com/verification/evidence-ledger/</loc><changefreq>weekly</changefreq><priority>0.9</priority></url>
-  <url><loc>https://t5quantlab.com/tools/</loc><changefreq>weekly</changefreq><priority>0.9</priority></url>
+
+  <url><loc>https://t5quantlab.com/tools/</loc><changefreq>weekly</changefreq><priority>0.95</priority></url>
   <url><loc>https://t5quantlab.com/tools/source-code-audit-guide/</loc><changefreq>monthly</changefreq><priority>0.85</priority></url>
   <url><loc>https://t5quantlab.com/tools/ea-release-checklist/</loc><changefreq>monthly</changefreq><priority>0.85</priority></url>
+  <url><loc>https://t5quantlab.com/tools/guides/</loc><changefreq>monthly</changefreq><priority>0.9</priority></url>
+  <url><loc>https://t5quantlab.com/tools/guides/mt4-mt5-ea-install/</loc><changefreq>monthly</changefreq><priority>0.85</priority></url>
+  <url><loc>https://t5quantlab.com/tools/guides/mt4-mt5-indicator-install/</loc><changefreq>monthly</changefreq><priority>0.85</priority></url>
+  <url><loc>https://t5quantlab.com/tools/guides/tradingview-pine-install/</loc><changefreq>monthly</changefreq><priority>0.85</priority></url>
+  <url><loc>https://t5quantlab.com/tools/guides/csv-audit/</loc><changefreq>monthly</changefreq><priority>0.85</priority></url>
   <url><loc>https://t5quantlab.com/tools/indicators/</loc><changefreq>weekly</changefreq><priority>0.9</priority></url>
+  <url><loc>https://t5quantlab.com/tools/indicators/mtf-structure-panel/</loc><changefreq>monthly</changefreq><priority>0.8</priority></url>
+  <url><loc>https://t5quantlab.com/tools/indicators/neckline-mtf/</loc><changefreq>monthly</changefreq><priority>0.8</priority></url>
+  <url><loc>https://t5quantlab.com/tools/indicators/liquidity-framework/</loc><changefreq>monthly</changefreq><priority>0.8</priority></url>
+  <url><loc>https://t5quantlab.com/tools/indicators/progress-candle/</loc><changefreq>monthly</changefreq><priority>0.8</priority></url>
   <url><loc>https://t5quantlab.com/tools/ea/</loc><changefreq>weekly</changefreq><priority>0.85</priority></url>
   <url><loc>https://t5quantlab.com/tools/strategy-builder/</loc><changefreq>weekly</changefreq><priority>0.95</priority></url>
+
   <url><loc>https://t5quantlab.com/refund-policy/</loc><changefreq>yearly</changefreq><priority>0.5</priority></url>
   <url><loc>https://t5quantlab.com/membership/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
 </urlset>

@@ -14,9 +14,14 @@ on:
       - 'scripts/expand-multimethod-phase7.mjs'
       - 'scripts/expand-multimethod-phase8.mjs'
       - 'scripts/expand-multimethod-phase9.mjs'
+      - 'scripts/expand-multimethod-phase10.mjs'
       - 'assets/specialist-trainer.js'
       - 'assets/specialist-trainer.css'
       - 'assets/account-local-training.js'
+      - 'assets/training-review.js'
+      - 'assets/training-review.css'
+      - 'assets/hidden-future-quality.js'
+      - 'assets/hidden-future-quality.css'
       - 'scripts/enrich-public-pages.mjs'
       - '.github/workflows/enrich-public-pages.yml'
 
@@ -49,6 +54,8 @@ jobs:
         run: node scripts/expand-multimethod-phase8.mjs
       - name: Wire My T5 local training phase 9
         run: node scripts/expand-multimethod-phase9.mjs
+      - name: Wire review and Hidden Future quality phase 10
+        run: node scripts/expand-multimethod-phase10.mjs
       - name: Ensure multimethod sitemap routes
         run: node scripts/append-multimethod-sitemap.mjs
       - name: Enrich sitemap public pages
@@ -62,5 +69,5 @@ jobs:
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
           git add .
-          git commit -m "feat: add My T5 local training overview"
+          git commit -m "feat: wire review center and Hidden Future first-attempt ledger"
           git push

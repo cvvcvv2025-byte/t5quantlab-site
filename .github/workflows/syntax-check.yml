@@ -23,5 +23,6 @@ jobs:
         run: |
           node --check src/worker.js
           node --check src/gated-worker.js
+          node --check src/commercial-worker.js
       - name: Check inline page scripts
         run: node scripts/check-inline-js.mjs

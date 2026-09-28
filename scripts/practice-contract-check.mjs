@@ -12,6 +12,7 @@ const packs = [
 
 let total = 0;
 const errors = [];
+const trainer = fs.readFileSync('assets/practice-trainer.js', 'utf8');
 for (const [file, expected, route] of packs) {
   if (!fs.existsSync(file)) {
     errors.push(`${file}: missing`);
@@ -27,16 +28,26 @@ for (const [file, expected, route] of packs) {
   if (choiceCount !== qCount) errors.push(`${file}: choices ${choiceCount} != questions ${qCount}`);
   if (answerCount !== qCount) errors.push(`${file}: answers ${answerCount} != questions ${qCount}`);
   if (correctCount !== qCount) errors.push(`${file}: recognizable correct answers ${correctCount} != questions ${qCount}`);
-
-  const trainer = fs.readFileSync('assets/practice-trainer.js', 'utf8');
   if (!trainer.includes(route)) errors.push(`practice-trainer.js: missing route ${route}`);
 }
 
 if (total !== 96) errors.push(`practice total: expected 96, found ${total}`);
+
+const trainerPage = fs.readFileSync('market-lab/practice/trainer/index.html','utf8');
+const transfer = fs.readFileSync('assets/practice-progress-transfer.js','utf8');
+if (!trainerPage.includes('/assets/practice-progress-transfer.js')) errors.push('trainer page must load progress transfer helper');
+if (!/localStorage/.test(transfer)) errors.push('progress transfer must use browser localStorage');
+if (!/f\.text\s*\(\s*\)/.test(transfer)) errors.push('progress import must read selected JSON locally with File.text()');
+if (!/questionBank\s*:\s*96/.test(transfer)) errors.push('progress export must pin the 96-question bank version');
+if (!/entries\s*>\s*96/.test(transfer)) errors.push('progress import must reject more than 96 question entries');
+if (/\bfetch\s*\(/.test(transfer)) errors.push('progress transfer must not call fetch()');
+if (/new\s+XMLHttpRequest\s*\(/.test(transfer)) errors.push('progress transfer must not use XMLHttpRequest');
+if (/new\s+FormData\s*\(/.test(transfer)) errors.push('progress transfer must not create FormData');
+if (/["'`]\/api\//.test(transfer)) errors.push('progress transfer must not call /api/*');
 
 if (errors.length) {
   console.error('Practice contract check failed:');
   for (const e of errors) console.error(`- ${e}`);
   process.exit(1);
 }
-console.log(`Practice contract OK: ${total} questions across ${packs.length} packs.`);
+console.log(`Practice contract OK: ${total} questions across ${packs.length} packs; local backup/restore protected.`);

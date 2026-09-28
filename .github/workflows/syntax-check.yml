@@ -42,6 +42,8 @@ jobs:
         run: node scripts/practice-contract-check.mjs
       - name: Check multi-method content contract
         run: node scripts/multimethod-contract-check.mjs
+      - name: Check training review contract
+        run: node scripts/training-review-contract-check.mjs
       - name: Check free source inspector contract
         run: node scripts/source-inspector-contract-check.mjs
       - name: Check SEO and case visual contract

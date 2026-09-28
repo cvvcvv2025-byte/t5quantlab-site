@@ -1,6 +1,6 @@
 {
   "name": "t5quantlab-site",
-  "main": "src/final-worker.js",
+  "main": "src/account-worker.js",
   "compatibility_date": "2026-09-26",
   "assets": {
     "directory": ".",

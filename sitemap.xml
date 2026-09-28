@@ -17,6 +17,13 @@
   <url><loc>https://t5quantlab.com/library/break-retest/</loc><changefreq>monthly</changefreq><priority>0.85</priority></url>
   <url><loc>https://t5quantlab.com/library/second-rejection/</loc><changefreq>monthly</changefreq><priority>0.85</priority></url>
   <url><loc>https://t5quantlab.com/library/range-boundary-trading/</loc><changefreq>monthly</changefreq><priority>0.85</priority></url>
+  <url><loc>https://t5quantlab.com/library/target-selection-liquidity/</loc><changefreq>monthly</changefreq><priority>0.9</priority></url>
+  <url><loc>https://t5quantlab.com/library/compression/</loc><changefreq>monthly</changefreq><priority>0.85</priority></url>
+  <url><loc>https://t5quantlab.com/library/failed-auction/</loc><changefreq>monthly</changefreq><priority>0.85</priority></url>
+  <url><loc>https://t5quantlab.com/library/atr-volatility/</loc><changefreq>monthly</changefreq><priority>0.85</priority></url>
+  <url><loc>https://t5quantlab.com/library/session-time/</loc><changefreq>monthly</changefreq><priority>0.8</priority></url>
+  <url><loc>https://t5quantlab.com/library/news-volatility-environment/</loc><changefreq>monthly</changefreq><priority>0.8</priority></url>
+  <url><loc>https://t5quantlab.com/library/trend-age-pullback-quality/</loc><changefreq>monthly</changefreq><priority>0.85</priority></url>
   <url><loc>https://t5quantlab.com/library/risk-position-management/</loc><changefreq>monthly</changefreq><priority>0.85</priority></url>
   <url><loc>https://t5quantlab.com/library/mfe-mae-trade-review/</loc><changefreq>monthly</changefreq><priority>0.85</priority></url>
   <url><loc>https://t5quantlab.com/library/fvg/</loc><changefreq>monthly</changefreq><priority>0.8</priority></url>
@@ -33,6 +40,9 @@
   <url><loc>https://t5quantlab.com/market-lab/practice/context-structure/</loc><changefreq>monthly</changefreq><priority>0.9</priority></url>
   <url><loc>https://t5quantlab.com/market-lab/practice/liquidity-execution/</loc><changefreq>monthly</changefreq><priority>0.9</priority></url>
   <url><loc>https://t5quantlab.com/market-lab/practice/risk-audit/</loc><changefreq>monthly</changefreq><priority>0.9</priority></url>
+  <url><loc>https://t5quantlab.com/market-lab/practice/targets-volatility/</loc><changefreq>monthly</changefreq><priority>0.9</priority></url>
+  <url><loc>https://t5quantlab.com/market-lab/practice/range-compression/</loc><changefreq>monthly</changefreq><priority>0.9</priority></url>
+  <url><loc>https://t5quantlab.com/market-lab/practice/code-migration/</loc><changefreq>monthly</changefreq><priority>0.9</priority></url>
   <url><loc>https://t5quantlab.com/market-lab/training/</loc><changefreq>weekly</changefreq><priority>0.9</priority></url>
   <url><loc>https://t5quantlab.com/market-lab/training/2026-08-27-break-retest-short/</loc><changefreq>monthly</changefreq><priority>0.8</priority></url>
   <url><loc>https://t5quantlab.com/market-lab/training/2026-08-28-head-shoulders-missed/</loc><changefreq>monthly</changefreq><priority>0.8</priority></url>
@@ -73,6 +83,11 @@
   <url><loc>https://t5quantlab.com/tools/guides/mt4-mt5-indicator-install/</loc><changefreq>monthly</changefreq><priority>0.85</priority></url>
   <url><loc>https://t5quantlab.com/tools/guides/tradingview-pine-install/</loc><changefreq>monthly</changefreq><priority>0.85</priority></url>
   <url><loc>https://t5quantlab.com/tools/guides/csv-audit/</loc><changefreq>monthly</changefreq><priority>0.85</priority></url>
+  <url><loc>https://t5quantlab.com/tools/guides/when-ai-source-modification/</loc><changefreq>monthly</changefreq><priority>0.9</priority></url>
+  <url><loc>https://t5quantlab.com/tools/guides/source-worth-fixing/</loc><changefreq>monthly</changefreq><priority>0.9</priority></url>
+  <url><loc>https://t5quantlab.com/tools/guides/mt4-to-mt5-migration/</loc><changefreq>monthly</changefreq><priority>0.9</priority></url>
+  <url><loc>https://t5quantlab.com/tools/guides/pine-to-mql-migration/</loc><changefreq>monthly</changefreq><priority>0.9</priority></url>
+  <url><loc>https://t5quantlab.com/tools/guides/ea-compiles-not-live-ready/</loc><changefreq>monthly</changefreq><priority>0.9</priority></url>
   <url><loc>https://t5quantlab.com/tools/indicators/</loc><changefreq>weekly</changefreq><priority>0.9</priority></url>
   <url><loc>https://t5quantlab.com/tools/indicators/mtf-structure-panel/</loc><changefreq>monthly</changefreq><priority>0.8</priority></url>
   <url><loc>https://t5quantlab.com/tools/indicators/neckline-mtf/</loc><changefreq>monthly</changefreq><priority>0.8</priority></url>

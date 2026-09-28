@@ -6,6 +6,7 @@ on:
     paths:
       - 'sitemap.xml'
       - 'scripts/append-multimethod-sitemap.mjs'
+      - 'scripts/expand-multimethod-phase2.mjs'
       - 'scripts/enrich-public-pages.mjs'
       - '.github/workflows/enrich-public-pages.yml'
 
@@ -22,6 +23,8 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: '22'
+      - name: Expand multimethod phase 2 hubs
+        run: node scripts/expand-multimethod-phase2.mjs
       - name: Ensure multimethod sitemap routes
         run: node scripts/append-multimethod-sitemap.mjs
       - name: Enrich sitemap public pages
@@ -35,5 +38,5 @@ jobs:
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
           git add .
-          git commit -m "seo: enrich public pages with social metadata and recommendations"
+          git commit -m "content: expand multimethod training and indicator routes"
           git push

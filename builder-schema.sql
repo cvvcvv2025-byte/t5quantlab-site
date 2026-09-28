@@ -111,6 +111,37 @@ CREATE TABLE IF NOT EXISTS marketing_consent_events (
 );
 CREATE INDEX IF NOT EXISTS idx_marketing_consent_user ON marketing_consent_events(user_id, created_at);
 
+-- Scheduled promotional / product-update campaigns. Only consented users are eligible at send time.
+CREATE TABLE IF NOT EXISTS marketing_campaigns (
+  campaign_id TEXT PRIMARY KEY,
+  subject TEXT NOT NULL,
+  body_text TEXT NOT NULL,
+  status TEXT NOT NULL DEFAULT 'scheduled',
+  scheduled_at TEXT NOT NULL,
+  created_at TEXT NOT NULL,
+  updated_at TEXT NOT NULL,
+  sent_count INTEGER NOT NULL DEFAULT 0,
+  failed_count INTEGER NOT NULL DEFAULT 0,
+  completed_at TEXT
+);
+CREATE INDEX IF NOT EXISTS idx_marketing_campaign_status_time
+  ON marketing_campaigns(status, scheduled_at);
+
+CREATE TABLE IF NOT EXISTS marketing_deliveries (
+  campaign_id TEXT NOT NULL,
+  user_id TEXT NOT NULL,
+  email TEXT NOT NULL,
+  status TEXT NOT NULL,
+  attempts INTEGER NOT NULL DEFAULT 0,
+  provider_message_id TEXT,
+  error TEXT,
+  updated_at TEXT NOT NULL,
+  sent_at TEXT,
+  PRIMARY KEY(campaign_id, user_id)
+);
+CREATE INDEX IF NOT EXISTS idx_marketing_delivery_status
+  ON marketing_deliveries(campaign_id, status);
+
 CREATE TABLE IF NOT EXISTS orders (
   order_id TEXT PRIMARY KEY,
   order_token_hash TEXT NOT NULL,

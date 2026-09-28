@@ -37,7 +37,9 @@ for(const route0 of urls){
  if(!/name="twitter:title"/i.test(html))tags.push(`<meta name="twitter:title" content="${esc(title)}">`);
  if(!/name="twitter:description"/i.test(html))tags.push(`<meta name="twitter:description" content="${esc(desc)}">`);
  if(tags.length)html=insertAfterDescription(html,tags.join(''));
+ if(!html.includes('/assets/account-nav.css'))html=html.replace('</head>','<link rel="stylesheet" href="/assets/account-nav.css"></head>');
  if(!html.includes('/assets/seo-structured.js'))html=html.replace('</body>','<script src="/assets/seo-structured.js"></script></body>');
+ if(!html.includes('/assets/account-nav.js'))html=html.replace('</body>','<script src="/assets/account-nav.js"></script></body>');
  if(relatedRoute(route)&&!html.includes('/assets/related-content.js'))html=html.replace('</body>','<script src="/assets/related-content.js"></script></body>');
  const before=fs.readFileSync(file,'utf8');
  if(html!==before){fs.writeFileSync(file,html);changed++;}

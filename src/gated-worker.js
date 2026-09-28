@@ -275,15 +275,21 @@ function paypalConfigured(env) {
 function providerStatus(env) {
   return {
     alipay: {
-      enabled: Boolean(env.ALIPAY_APP_ID && env.ALIPAY_PRIVATE_KEY && env.ALIPAY_PUBLIC_KEY),
+      enabled: false,
+      configured: Boolean(env.ALIPAY_APP_ID && env.ALIPAY_PRIVATE_KEY && env.ALIPAY_PUBLIC_KEY),
+      adapter_ready: false,
       currency: "CNY"
     },
     wechat: {
-      enabled: Boolean(env.WECHATPAY_MCH_ID && env.WECHATPAY_API_V3_KEY && env.WECHATPAY_PRIVATE_KEY),
+      enabled: false,
+      configured: Boolean(env.WECHATPAY_MCH_ID && env.WECHATPAY_API_V3_KEY && env.WECHATPAY_PRIVATE_KEY),
+      adapter_ready: false,
       currency: "CNY"
     },
     paypal: {
       enabled: paypalConfigured(env),
+      configured: paypalConfigured(env),
+      adapter_ready: true,
       currency: "USD"
     }
   };

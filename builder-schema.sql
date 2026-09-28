@@ -47,8 +47,6 @@ CREATE TABLE IF NOT EXISTS usage_daily (
   updated_at TEXT NOT NULL
 );
 
--- No visitor receives a grant automatically. A verified successful payment
--- must create an active grant before upload/analyze/modify is allowed.
 CREATE TABLE IF NOT EXISTS builder_access_grants (
   grant_id TEXT PRIMARY KEY,
   token_hash TEXT UNIQUE NOT NULL,
@@ -65,9 +63,6 @@ CREATE TABLE IF NOT EXISTS builder_access_grants (
 CREATE INDEX IF NOT EXISTS idx_builder_access_token_hash
   ON builder_access_grants(token_hash);
 
--- Provider-agnostic payment order. Payment adapters for Alipay, WeChat Pay
--- and PayPal only verify provider callbacks; successful verification must end
--- in the same idempotent order -> grant flow.
 CREATE TABLE IF NOT EXISTS orders (
   order_id TEXT PRIMARY KEY,
   order_token_hash TEXT NOT NULL,
@@ -93,8 +88,6 @@ CREATE UNIQUE INDEX IF NOT EXISTS idx_orders_provider_trade
   ON orders(payment_provider, provider_trade_id)
   WHERE provider_trade_id IS NOT NULL;
 
--- Every verified provider callback gets a unique event key. Replayed webhooks
--- become no-ops, so one payment cannot mint multiple AI grants.
 CREATE TABLE IF NOT EXISTS payment_events (
   event_key TEXT PRIMARY KEY,
   provider TEXT NOT NULL,
@@ -106,3 +99,20 @@ CREATE TABLE IF NOT EXISTS payment_events (
 
 CREATE INDEX IF NOT EXISTS idx_payment_events_order
   ON payment_events(order_id);
+
+-- Maps a T5 order to the provider's checkout/order ID before final capture.
+-- This is separate from provider_trade_id, which stores the final paid transaction/capture ID.
+CREATE TABLE IF NOT EXISTS payment_intents (
+  provider TEXT NOT NULL,
+  provider_order_id TEXT NOT NULL,
+  order_id TEXT NOT NULL,
+  approval_url TEXT,
+  status TEXT NOT NULL DEFAULT 'created',
+  created_at TEXT NOT NULL,
+  updated_at TEXT NOT NULL,
+  PRIMARY KEY(provider, provider_order_id),
+  UNIQUE(provider, order_id)
+);
+
+CREATE INDEX IF NOT EXISTS idx_payment_intents_order
+  ON payment_intents(order_id);

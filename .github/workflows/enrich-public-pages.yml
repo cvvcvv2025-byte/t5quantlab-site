@@ -8,6 +8,7 @@ on:
       - 'scripts/append-multimethod-sitemap.mjs'
       - 'scripts/expand-multimethod-phase2.mjs'
       - 'scripts/expand-multimethod-phase3.mjs'
+      - 'scripts/expand-multimethod-phase4.mjs'
       - 'scripts/enrich-public-pages.mjs'
       - '.github/workflows/enrich-public-pages.yml'
 
@@ -28,6 +29,8 @@ jobs:
         run: node scripts/expand-multimethod-phase2.mjs
       - name: Expand multimethod phase 3 hubs
         run: node scripts/expand-multimethod-phase3.mjs
+      - name: Expand multimethod phase 4 hubs
+        run: node scripts/expand-multimethod-phase4.mjs
       - name: Ensure multimethod sitemap routes
         run: node scripts/append-multimethod-sitemap.mjs
       - name: Enrich sitemap public pages
@@ -41,5 +44,5 @@ jobs:
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
           git add .
-          git commit -m "content: expand Classic TA and specialist training routes"
+          git commit -m "content: expand to 288 drills and 60-book library"
           git push

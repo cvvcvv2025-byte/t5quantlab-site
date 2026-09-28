@@ -4,7 +4,9 @@ const errors=[];
 const need=(file,text,label)=>{const src=fs.readFileSync(file,'utf8');if(!src.includes(text))errors.push(`${label}: missing ${JSON.stringify(text)} in ${file}`)};
 const forbid=(file,re,label)=>{const src=fs.readFileSync(file,'utf8');if(re.test(src))errors.push(`${label}: forbidden pattern ${re} in ${file}`)};
 
-need('wrangler.jsonc','"main": "src/account-worker.js"','account worker entrypoint');
+need('wrangler.jsonc','"main": "src/marketing-worker.js"','top-level worker entrypoint');
+need('src/marketing-worker.js','import app from "./account-worker.js";','marketing wrapper must preserve account worker');
+need('src/account-worker.js','import app from "./final-worker.js";','account worker must preserve payment stack');
 need('src/account-worker.js','/api/auth/request-code','request-code endpoint');
 need('src/account-worker.js','/api/auth/verify-code','verify-code endpoint');
 need('src/account-worker.js','/api/auth/me','session endpoint');

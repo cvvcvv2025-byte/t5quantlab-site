@@ -4,6 +4,7 @@ on:
   push:
     branches: [main]
     paths:
+      - 'sitemap.xml'
       - 'scripts/enrich-public-pages.mjs'
       - '.github/workflows/enrich-public-pages.yml'
 

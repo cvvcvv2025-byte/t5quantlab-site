@@ -61,10 +61,61 @@ CREATE TABLE IF NOT EXISTS builder_access_grants (
 );
 CREATE INDEX IF NOT EXISTS idx_builder_access_token_hash ON builder_access_grants(token_hash);
 
+-- Email-only T5 account. Registration happens automatically after successful code verification.
+CREATE TABLE IF NOT EXISTS users (
+  user_id TEXT PRIMARY KEY,
+  email TEXT UNIQUE NOT NULL,
+  email_verified_at TEXT NOT NULL,
+  status TEXT NOT NULL DEFAULT 'active',
+  marketing_consent INTEGER NOT NULL DEFAULT 0,
+  marketing_consent_at TEXT,
+  marketing_source TEXT,
+  unsubscribed_at TEXT,
+  created_at TEXT NOT NULL,
+  updated_at TEXT NOT NULL,
+  last_login_at TEXT
+);
+CREATE INDEX IF NOT EXISTS idx_users_email ON users(email);
+
+CREATE TABLE IF NOT EXISTS auth_challenges (
+  challenge_id TEXT PRIMARY KEY,
+  email TEXT NOT NULL,
+  code_hash TEXT NOT NULL,
+  ip_hash TEXT,
+  attempts INTEGER NOT NULL DEFAULT 0,
+  expires_at TEXT NOT NULL,
+  consumed_at TEXT,
+  created_at TEXT NOT NULL
+);
+CREATE INDEX IF NOT EXISTS idx_auth_challenges_email_created ON auth_challenges(email, created_at);
+
+CREATE TABLE IF NOT EXISTS auth_sessions (
+  token_hash TEXT PRIMARY KEY,
+  user_id TEXT NOT NULL,
+  created_at TEXT NOT NULL,
+  expires_at TEXT NOT NULL,
+  revoked_at TEXT,
+  ip_hash TEXT,
+  user_agent TEXT
+);
+CREATE INDEX IF NOT EXISTS idx_auth_sessions_user ON auth_sessions(user_id);
+
+-- Immutable consent ledger. Marketing email is opt-in and independent from account/service email.
+CREATE TABLE IF NOT EXISTS marketing_consent_events (
+  event_id TEXT PRIMARY KEY,
+  user_id TEXT NOT NULL,
+  consent INTEGER NOT NULL,
+  source TEXT NOT NULL,
+  ip_hash TEXT,
+  created_at TEXT NOT NULL
+);
+CREATE INDEX IF NOT EXISTS idx_marketing_consent_user ON marketing_consent_events(user_id, created_at);
+
 CREATE TABLE IF NOT EXISTS orders (
   order_id TEXT PRIMARY KEY,
   order_token_hash TEXT NOT NULL,
   builder_token_hash TEXT NOT NULL,
+  user_id TEXT,
   customer_email TEXT,
   product_code TEXT NOT NULL,
   product_name TEXT NOT NULL,
@@ -80,6 +131,7 @@ CREATE TABLE IF NOT EXISTS orders (
   updated_at TEXT NOT NULL
 );
 CREATE INDEX IF NOT EXISTS idx_orders_status ON orders(status);
+CREATE INDEX IF NOT EXISTS idx_orders_user_id ON orders(user_id);
 CREATE UNIQUE INDEX IF NOT EXISTS idx_orders_provider_trade
   ON orders(payment_provider, provider_trade_id) WHERE provider_trade_id IS NOT NULL;
 

@@ -25,6 +25,7 @@ jobs:
           node --check src/gated-worker.js
           node --check src/commercial-worker.js
           node --check src/final-worker.js
+          node --check src/account-worker.js
       - name: Check external JavaScript assets
         run: |
           find assets -type f -name '*.js' -print0 | xargs -0 -n1 node --check
@@ -32,6 +33,8 @@ jobs:
         run: node scripts/check-inline-js.mjs
       - name: Check payment contract
         run: node scripts/payment-contract-check.mjs
+      - name: Check account contract
+        run: node scripts/account-contract-check.mjs
       - name: Check practice trainer contract
         run: node scripts/practice-contract-check.mjs
       - name: Check free source inspector contract

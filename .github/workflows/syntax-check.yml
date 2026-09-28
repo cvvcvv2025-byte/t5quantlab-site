@@ -24,5 +24,8 @@ jobs:
           node --check src/worker.js
           node --check src/gated-worker.js
           node --check src/commercial-worker.js
+          node --check src/final-worker.js
       - name: Check inline page scripts
         run: node scripts/check-inline-js.mjs
+      - name: Check payment contract
+        run: node scripts/payment-contract-check.mjs

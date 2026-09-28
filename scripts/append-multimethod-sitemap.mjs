@@ -10,9 +10,13 @@ const routes=[
  ['/library/indicators/bollinger-bands/','monthly','0.9'],
  ['/library/indicators/adx-dmi/','monthly','0.85'],
  ['/library/indicators/stochastic/','monthly','0.85'],
+ ['/library/indicators/momentum-oscillators/','monthly','0.86'],
+ ['/library/indicators/trend-following-tools/','monthly','0.86'],
  ['/library/indicators/ichimoku/','monthly','0.85'],
  ['/library/indicators/volatility-channels/','monthly','0.88'],
+ ['/library/indicators/pivot-points/','monthly','0.84'],
  ['/library/indicators/volume-indicators/','monthly','0.88'],
+ ['/library/classic-technical-analysis/','monthly','0.92'],
  ['/library/strategy-families/','monthly','0.9'],
  ['/library/books/indicator-route/','monthly','0.9'],
  ['/market-lab/practice/indicator-foundations/','weekly','0.95']

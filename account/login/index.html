@@ -1,0 +1,45 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>登录 T5 Quant Lab</title>
+<meta name="description" content="使用邮箱验证码登录 T5 Quant Lab。无需密码。">
+<meta name="robots" content="noindex,nofollow">
+<link rel="icon" href="/favicon.svg" type="image/svg+xml">
+<link rel="stylesheet" href="/assets/styles.css"><link rel="stylesheet" href="/assets/account.css">
+</head>
+<body>
+<header class="topbar"><div class="container nav"><a class="brand" href="/"><span class="mark">T5</span><span>T5 Quant Lab</span></a><nav class="navlinks" id="navlinks"><a href="/library/">Library</a><a href="/market-lab/">Market Lab</a><a href="/tools/">Tools</a></nav><button class="menu" id="menu">☰</button></div></header>
+<main><section class="page-hero"><div class="container account-wrap"><div class="eyebrow">EMAIL LOGIN · NO PASSWORD</div><h1>使用邮箱继续。</h1><p>第一次验证邮箱会自动创建 T5 账户；以后仍然使用同一邮箱验证码登录，不需要设置密码。</p></div></section>
+<section class="section"><div class="container account-wrap"><div class="account-grid">
+<div class="account-card">
+<h2>登录 / 注册</h2>
+<div class="account-field"><label for="email">邮箱</label><input id="email" type="email" autocomplete="email" placeholder="you@example.com"></div>
+<div id="codeField" class="account-field account-hidden"><label for="code">6位验证码</label><input id="code" class="account-code" inputmode="numeric" autocomplete="one-time-code" maxlength="6" placeholder="000000"></div>
+<label class="account-consent"><input id="marketingOptIn" type="checkbox"><span>接收 T5 产品更新、研究内容和优惠信息。此项为可选，默认不勾选；你可以随时在 My T5 中关闭。</span></label>
+<div class="account-actions"><button class="btn primary" id="sendCode" type="button">获取验证码</button><button class="btn primary account-hidden" id="verifyCode" type="button">验证并继续</button><button class="btn account-hidden" id="resendCode" type="button">重新发送</button></div>
+<div id="status" class="account-status account-hidden"></div>
+</div>
+<div class="account-card">
+<h3>为什么只用邮箱？</h3>
+<div class="account-note"><b>账户与付款分开。</b><br>你的 T5 账户邮箱用于识别训练、订单和 Builder 权限；PayPal 实际付款邮箱可以不同。</div>
+<div class="account-divider"></div>
+<p><b>公开内容仍然免登录。</b></p><p class="muted">Library、Market Lab、Research和免费源码体检继续开放。只有购买、账户管理和后续云端同步才需要登录。</p>
+<div class="account-divider"></div>
+<p><b>营销邮件不是强制项。</b></p><p class="muted">注册账户不代表自动同意推广邮件。只有你主动勾选才会记录营销订阅许可。</p>
+</div>
+</div></div></section></main>
+<footer class="footer"><div class="container"><div class="risk">T5账户用于产品权限、订单与用户自行选择的邮件订阅管理。</div></div></footer>
+<script src="/assets/main.js"></script>
+<script>
+const $=id=>document.getElementById(id);let challengeId='';
+function nextPath(){const n=new URLSearchParams(location.search).get('next')||'/account/';return n.startsWith('/')&&!n.startsWith('//')?n:'/account/'}
+function status(msg,type=''){const x=$('status');x.textContent=msg;x.className='account-status'+(type?' '+type:'');x.classList.remove('account-hidden')}
+async function api(url,opt={}){const r=await fetch(url,{credentials:'same-origin',...opt});let d={};try{d=await r.json()}catch{}if(!r.ok||!d.ok){const e=new Error(d.error||('HTTP '+r.status));e.code=d.code||'';throw e}return d}
+async function boot(){try{const me=await api('/api/auth/me');if(me.authenticated){location.replace(nextPath());return}const cfg=await api('/api/auth/config');if(!cfg.email_login_ready){status('邮箱登录后端已经完成，但邮件发送参数尚未配置。需要先配置 Resend 与账户密钥后才能正式发送验证码。','account-warn');$('sendCode').disabled=true}}catch(e){status(e.message,'account-warn')}}
+$('sendCode').addEventListener('click',async()=>{const email=$('email').value.trim();if(!email){status('请输入邮箱。','account-warn');return}const btn=$('sendCode');btn.disabled=true;try{const d=await api('/api/auth/request-code',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({email})});challengeId=d.challenge_id;$('email').disabled=true;$('codeField').classList.remove('account-hidden');$('verifyCode').classList.remove('account-hidden');$('resendCode').classList.remove('account-hidden');$('sendCode').classList.add('account-hidden');status('验证码已发送。请检查邮箱，10分钟内有效。','account-good');$('code').focus()}catch(e){status(e.message,'account-warn');btn.disabled=false}});
+$('verifyCode').addEventListener('click',async()=>{const code=$('code').value.trim();if(!/^\d{6}$/.test(code)){status('请输入6位验证码。','account-warn');return}const btn=$('verifyCode');btn.disabled=true;try{await api('/api/auth/verify-code',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({email:$('email').value.trim(),challenge_id:challengeId,code,marketing_opt_in:$('marketingOptIn').checked})});status('登录成功，正在进入 My T5…','account-good');location.replace(nextPath())}catch(e){status(e.message,'account-warn');btn.disabled=false}});
+$('resendCode').addEventListener('click',()=>{challengeId='';$('email').disabled=false;$('codeField').classList.add('account-hidden');$('verifyCode').classList.add('account-hidden');$('resendCode').classList.add('account-hidden');$('sendCode').classList.remove('account-hidden');$('sendCode').disabled=false;$('code').value='';status('可以重新发送验证码。')});
+boot();
+</script>
+</body></html>

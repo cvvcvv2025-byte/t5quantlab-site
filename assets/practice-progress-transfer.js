@@ -34,13 +34,8 @@ fileInput.addEventListener('change',async()=>{
  }catch(e){status.textContent='导入失败：'+(e&&e.message?e.message:String(e));}
  fileInput.value='';
 });
-function loadVisualLayer(){
- if(!document.querySelector('link[href="/assets/practice-visuals.css"]')){
-  const link=document.createElement('link');link.rel='stylesheet';link.href='/assets/practice-visuals.css';document.head.appendChild(link);
- }
- if(!document.querySelector('script[src="/assets/practice-visuals.js"]')){
-  const script=document.createElement('script');script.src='/assets/practice-visuals.js';script.defer=true;document.body.appendChild(script);
- }
-}
+function ensureStyle(){if(document.querySelector('link[href="/assets/practice-visuals.css"]'))return;const link=document.createElement('link');link.rel='stylesheet';link.href='/assets/practice-visuals.css';document.head.appendChild(link);}
+function ensureScript(src){if(document.querySelector(`script[src="${src}"]`))return;const script=document.createElement('script');script.src=src;script.defer=true;document.body.appendChild(script);}
+function loadVisualLayer(){ensureStyle();ensureScript('/assets/practice-visuals.js');ensureScript('/assets/practice-visuals-advanced.js');}
 loadVisualLayer();
 })();

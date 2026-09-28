@@ -46,9 +46,11 @@ if (/new\s+FormData\s*\(/.test(transfer)) errors.push('progress transfer must no
 if (/["'`]\/api\//.test(transfer)) errors.push('progress transfer must not call /api/*');
 
 const visualFile='assets/practice-visuals.js';
+const advancedVisualFile='assets/practice-visuals-advanced.js';
 const visualCss='assets/practice-visuals.css';
 if (!fs.existsSync(visualFile)) errors.push('beginner visual scenario script missing');
-if (!fs.existsSync(visualCss)) errors.push('beginner visual scenario stylesheet missing');
+if (!fs.existsSync(advancedVisualFile)) errors.push('advanced visual scenario script missing');
+if (!fs.existsSync(visualCss)) errors.push('practice visual scenario stylesheet missing');
 if (fs.existsSync(visualFile)) {
   const visuals=fs.readFileSync(visualFile,'utf8');
   for(let i=1;i<=24;i++) if(!new RegExp(`\\n${i}:\\{`).test(visuals)) errors.push(`practice-visuals.js: Q${String(i).padStart(3,'0')} visual scene missing`);
@@ -56,15 +58,26 @@ if (fs.existsSync(visualFile)) {
   if(!visuals.includes('最近结构支撑在较远下方')) errors.push('practice-visuals.js: Q002 location visual must show distant structural support');
   if(!visuals.includes('先看图，再读题')) errors.push('practice-visuals.js: visual-first instruction missing');
   if(!visuals.includes('新手建议')) errors.push('practice-visuals.js: beginner guidance missing');
-  if(/\bfetch\s*\(/.test(visuals)) errors.push('practice visual layer must remain API-free');
-  if(/["'`]\/api\//.test(visuals)) errors.push('practice visual layer must not call /api/*');
+  if(/\bfetch\s*\(/.test(visuals)) errors.push('practice beginner visual layer must remain API-free');
+  if(/["'`]\/api\//.test(visuals)) errors.push('practice beginner visual layer must not call /api/*');
+}
+if (fs.existsSync(advancedVisualFile)) {
+  const advanced=fs.readFileSync(advancedVisualFile,'utf8');
+  for(let i=25;i<=96;i++) if(!new RegExp(`\\n${i}:\\[`).test(advanced)) errors.push(`practice-visuals-advanced.js: Q${String(i).padStart(3,'0')} visual scene missing`);
+  if(!advanced.includes('Q025–084 · 半标注识别，可选提示')) errors.push('advanced visuals: semi-labelled training guidance missing');
+  if(!advanced.includes('Q085–096 · 工程状态 / 流程审计')) errors.push('advanced visuals: engineering flow guidance missing');
+  if(!advanced.includes('显示辅助标注')) errors.push('advanced visuals: hint toggle missing');
+  if(!advanced.includes('pv-assist')) errors.push('advanced visuals: hidden assist annotations missing');
+  if(/\bfetch\s*\(/.test(advanced)) errors.push('practice advanced visual layer must remain API-free');
+  if(/["'`]\/api\//.test(advanced)) errors.push('practice advanced visual layer must not call /api/*');
 }
 if (!transfer.includes('/assets/practice-visuals.js')) errors.push('progress helper must load beginner visual scenario script');
-if (!transfer.includes('/assets/practice-visuals.css')) errors.push('progress helper must load beginner visual scenario stylesheet');
+if (!transfer.includes('/assets/practice-visuals-advanced.js')) errors.push('progress helper must load advanced visual scenario script');
+if (!transfer.includes('/assets/practice-visuals.css')) errors.push('progress helper must load visual scenario stylesheet');
 
 if (errors.length) {
   console.error('Practice contract check failed:');
   for (const e of errors) console.error(`- ${e}`);
   process.exit(1);
 }
-console.log(`Practice contract OK: ${total} questions across ${packs.length} packs; local backup/restore and Q001-Q024 visual-first training protected.`);
+console.log(`Practice contract OK: ${total} questions across ${packs.length} packs; Q001-Q024 guided visuals, Q025-Q084 semi-labelled visuals, Q085-Q096 engineering flows, and local progress protected.`);

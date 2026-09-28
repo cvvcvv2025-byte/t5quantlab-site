@@ -9,6 +9,10 @@
     "not_found_handling": "404-page",
     "html_handling": "auto-trailing-slash"
   },
+  "vars": {
+    "AUTH_EMAIL_FROM": "T5 Quant Lab <login@t5quantlab.com>",
+    "MARKETING_EMAIL_FROM": "T5 Quant Lab <updates@t5quantlab.com>"
+  },
   "triggers": {
     "crons": ["*/15 * * * *"]
   },

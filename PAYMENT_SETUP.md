@@ -1,19 +1,86 @@
-# T5 Quant Lab Payment Setup
+# T5 Quant Lab Account + Payment Setup
 
-支付主链冻结为：
+当前身份与支付主链：
 
-`T5 order -> provider payment -> verified callback/capture -> amount+currency check -> idempotent grant -> AI access`
+`email code login -> user_id -> T5 order -> provider payment -> verified capture/webhook -> grant -> account-bound Builder access`
 
-未获得有效 `builder_access_grants` 前，`/api/builder/upload`、`/api/builder/analyze`、`/api/builder/modify` 均不得进入收费 AI 流程。
+公开内容和免费源码体检仍然免登录；购买 Builder Pass、查看订单、管理邮件订阅需要邮箱账户。
+
+## Email account login
+
+T5 使用“邮箱验证码登录”，不设置密码。第一次验证码验证成功会自动创建账户。
+
+需要 Cloudflare Secrets / Variables：
+
+- `ACCOUNT_AUTH_SECRET`：至少 32 字节随机密钥。用于验证码哈希、IP限流哈希、账户到Builder grant的派生令牌、未来退订链接签名。不要放进前端。
+- `RESEND_API_KEY`：Resend API Key。
+- `AUTH_EMAIL_FROM`：已在 Resend 验证可发送的 From，例如 `T5 Quant Lab <login@t5quantlab.com>`。
+
+未配置以上任意一项时：
+
+- `/api/auth/config` 返回 `email_login_ready=false`
+- `/api/auth/request-code` fail closed
+- 登录页明确显示“邮件登录尚未配置”
+- 系统绝不伪装“验证码已发送”
+
+账户接口：
+
+- `GET /api/auth/config`
+- `POST /api/auth/request-code`
+- `POST /api/auth/verify-code`
+- `GET /api/auth/me`
+- `POST /api/auth/logout`
+- `GET /api/account/summary`
+- `POST /api/account/marketing`
+- `POST /api/marketing/unsubscribe`
+- `GET /api/admin/accounts`（需要 `X-Builder-Access-Key`）
+
+登录会话：HttpOnly + Secure + SameSite=Lax，默认 30 天。
+
+验证码：6位数字、10分钟有效、最多6次尝试；邮箱/IP均有请求频率限制。
+
+## Marketing consent
+
+账户注册和营销订阅必须分开：
+
+- `marketing_consent` 默认 `0`
+- 登录页营销勾选框默认不勾选
+- 用户可以在 `/account/` 随时开启/关闭
+- 所有变化记录到 `marketing_consent_events`
+- 营销退订不会影响验证码、付款、权限等必要服务邮件
+
+管理员客户列表：
+
+`/admin/accounts/`
+
+必须输入现有 `BUILDER_ACCESS_KEY` 才能读取。管理员密钥只写入当前标签页 `sessionStorage`，不写入 localStorage。
+
+## Account-bound orders
+
+新的 Builder Pass 订单必须先登录：
+
+1. 登录得到 `t5_session`
+2. `POST /api/orders/create`
+3. `src/account-worker.js` 强制把订单邮箱改为当前 T5 账户邮箱
+4. 订单写入 `orders.user_id`
+5. account worker 剥离 legacy gated worker 在 pending 阶段设置的 Builder cookie
+6. PayPal 付款成功后仍由原支付栈创建 `builder_access_grants`
+7. 登录用户访问 `/api/builder/*` 时，account worker 只从该 `user_id` 的 granted order 解析有效 grant，并向内层门禁注入派生 Builder token
+
+因此 PayPal 付款邮箱可以和 T5 登录邮箱不同；产品权限以 T5 `user_id` 为准。
+
+旧版已有 `t5_builder_access` token 仍由原 gated worker 兼容，不需要立即迁移旧客户。
 
 ## Product pricing
 
 价格不写死在前端。Cloudflare Worker 环境变量：
 
-- `CODE_WORKSHOP_PRICE_CNY_MINOR`：人民币最小货币单位，例如 `9900` = ¥99.00
-- `CODE_WORKSHOP_PRICE_USD_MINOR`：美元最小货币单位，例如 `1900` = $19.00
+- `CODE_WORKSHOP_PRICE_CNY_MINOR`
+- `CODE_WORKSHOP_PRICE_USD_MINOR`
 
-未配置价格时 `/api/orders/create` 必须 fail closed，不能创建真实付款订单。
+首发默认由 commercial worker 固定为 `$14.90 / 30天 / 3次分析 + 2次修改`；如果使用环境价格覆盖，仍需通过支付合同检查。
+
+未配置有效价格时真实付款订单必须 fail closed。
 
 ## PayPal
 
@@ -27,8 +94,8 @@ Cloudflare Secrets：
 
 Cloudflare variable：
 
-- `PAYPAL_ENVIRONMENT=sandbox`：测试
-- `PAYPAL_ENVIRONMENT=live`：正式
+- `PAYPAL_ENVIRONMENT=sandbox`
+- `PAYPAL_ENVIRONMENT=live`
 
 Webhook URL：
 
@@ -39,73 +106,45 @@ Webhook URL：
 - `PAYMENT.CAPTURE.COMPLETED`
 - `PAYMENT.CAPTURE.REFUNDED`
 - `PAYMENT.CAPTURE.REVERSED`
-
-客户端流程：
-
-1. `POST /api/orders/create`
-2. `POST /api/payment/paypal/create`
-3. 跳转 PayPal 的 approval URL
-4. PayPal 返回 `/checkout/`
-5. `POST /api/payment/paypal/capture`
-6. 服务端核对本地订单号、USD 金额、currency、PayPal capture
-7. `completePaidOrder()` 发放 Grant
-8. Webhook 作为异步兜底，同一付款不得重复发放 Grant
-
-## China mainland payment adapter contract
-
-支付宝/微信目前只保留接口，不在未确定商户收单方案时伪装为可用。
-
-候选服务商必须同时满足：
-
-1. 正规商户签约 / 商户号
-2. 服务端 API 创建付款订单
-3. 每笔交易可绑定 T5 `order_id`
-4. HTTPS 异步支付成功通知
-5. 官方验签机制
-6. 主动订单查询 API
-7. 退款 API 或可靠退款通知
-8. 支付成功通知包含可核对的金额与币种
-9. provider transaction id 唯一
-
-最终适配器必须只负责“验证支付事实”，验证成功后统一调用现有 `completePaidOrder()`，禁止为支付宝/微信复制另一套 Grant 逻辑。
-
-预留 Webhook：
-
-- `/api/payment/alipay/webhook`
-- `/api/payment/wechat/webhook`
-
-在适配器未完成前必须返回 `PAYMENT_ADAPTER_NOT_CONFIGURED`，不得发放权限。
+- dispute相关事件（当前 commercial/final workers 已处理创建、更新与解决）
 
 ## Order / Grant protections
 
 必须保持：
 
+- 新订单必须绑定登录 `user_id`
+- pending 订单不得获得 Builder 权限cookie
 - `provider_trade_id` 唯一
 - `payment_events.event_key` 唯一，防 Webhook replay
-- 金额完全匹配才发 Grant
-- 币种完全匹配才发 Grant
+- 金额与币种完全匹配才发 Grant
 - 未付款订单不能使用 AI
 - 全额退款后 Grant 状态改为 `revoked`
+- PayPal dispute 打开时暂停、按最终结果恢复或撤销
 - 重复 AI analyze/modify 请求阻止重复烧 Token
 - AI 请求失败时恢复预留额度
 - 管理员测试付款只有 `ENABLE_PAYMENT_TEST_MODE=true` 时才允许
 
-## Test-only settings
+## Test-only / Admin
 
-管理员测试需要单独 Secret：
+管理员 Secret：
 
 - `BUILDER_ACCESS_KEY`
 
-并显式设置：
+付款测试如需启用：
 
 - `ENABLE_PAYMENT_TEST_MODE=true`
 
 正式环境应关闭 `ENABLE_PAYMENT_TEST_MODE`。
 
-## Files
+## Main files
 
-- `src/gated-worker.js`：支付门禁、订单、Grant、支付适配器
+- `src/account-worker.js`：邮箱登录、user_id、营销许可、订单绑定、账户到Builder grant桥接
+- `src/final-worker.js`：退款资格与最终 dispute safeguard
+- `src/commercial-worker.js`：Builder Pass商业合同、审计与争议逻辑
+- `src/gated-worker.js`：原支付门禁、订单、Grant、PayPal适配器、旧token兼容
 - `builder-schema.sql`：D1 schema
-- `checkout/index.html`：客户结账与付款状态页面
-- `tools/strategy-builder/index.html`：付费权限状态与 AI 使用入口
-- `.github/workflows/syntax-check.yml`：Worker / 页面 JS 语法检查
+- `account/login/index.html`：邮箱验证码登录
+- `account/index.html`：My T5
+- `admin/accounts/index.html`：管理员客户邮箱/订阅状态视图
+- `checkout/index.html`：账户绑定的PayPal结账
+- `.github/workflows/syntax-check.yml`：Worker / 页面 JS / Account / Payment 合同检查

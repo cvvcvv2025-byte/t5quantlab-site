@@ -12,6 +12,9 @@ on:
       - 'scripts/expand-multimethod-phase5.mjs'
       - 'scripts/expand-multimethod-phase6.mjs'
       - 'scripts/expand-multimethod-phase7.mjs'
+      - 'scripts/expand-multimethod-phase8.mjs'
+      - 'assets/specialist-trainer.js'
+      - 'assets/specialist-trainer.css'
       - 'scripts/enrich-public-pages.mjs'
       - '.github/workflows/enrich-public-pages.yml'
 
@@ -40,6 +43,8 @@ jobs:
         run: node scripts/expand-multimethod-phase6.mjs
       - name: Expand multimethod phase 7 hubs
         run: node scripts/expand-multimethod-phase7.mjs
+      - name: Wire specialist trainer phase 8
+        run: node scripts/expand-multimethod-phase8.mjs
       - name: Ensure multimethod sitemap routes
         run: node scripts/append-multimethod-sitemap.mjs
       - name: Enrich sitemap public pages
@@ -53,5 +58,5 @@ jobs:
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
           git add .
-          git commit -m "content: add Start Here learning navigator"
+          git commit -m "feat: upgrade modern practice packs to scored training"
           git push

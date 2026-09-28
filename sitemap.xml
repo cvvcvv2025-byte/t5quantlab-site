@@ -102,4 +102,16 @@
   <url><loc>https://t5quantlab.com/faq/</loc><changefreq>monthly</changefreq><priority>0.75</priority></url>
   <url><loc>https://t5quantlab.com/refund-policy/</loc><changefreq>yearly</changefreq><priority>0.5</priority></url>
   <url><loc>https://t5quantlab.com/membership/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
+  <url><loc>https://t5quantlab.com/library/indicators/</loc><changefreq>weekly</changefreq><priority>0.95</priority></url>
+  <url><loc>https://t5quantlab.com/library/indicators/moving-averages/</loc><changefreq>monthly</changefreq><priority>0.88</priority></url>
+  <url><loc>https://t5quantlab.com/library/indicators/macd/</loc><changefreq>monthly</changefreq><priority>0.9</priority></url>
+  <url><loc>https://t5quantlab.com/library/indicators/rsi/</loc><changefreq>monthly</changefreq><priority>0.9</priority></url>
+  <url><loc>https://t5quantlab.com/library/indicators/bollinger-bands/</loc><changefreq>monthly</changefreq><priority>0.9</priority></url>
+  <url><loc>https://t5quantlab.com/library/indicators/adx-dmi/</loc><changefreq>monthly</changefreq><priority>0.85</priority></url>
+  <url><loc>https://t5quantlab.com/library/indicators/stochastic/</loc><changefreq>monthly</changefreq><priority>0.85</priority></url>
+  <url><loc>https://t5quantlab.com/library/indicators/ichimoku/</loc><changefreq>monthly</changefreq><priority>0.85</priority></url>
+  <url><loc>https://t5quantlab.com/library/indicators/volatility-channels/</loc><changefreq>monthly</changefreq><priority>0.88</priority></url>
+  <url><loc>https://t5quantlab.com/library/indicators/volume-indicators/</loc><changefreq>monthly</changefreq><priority>0.88</priority></url>
+  <url><loc>https://t5quantlab.com/library/strategy-families/</loc><changefreq>monthly</changefreq><priority>0.9</priority></url>
+  <url><loc>https://t5quantlab.com/market-lab/practice/indicator-foundations/</loc><changefreq>weekly</changefreq><priority>0.95</priority></url>
 </urlset>

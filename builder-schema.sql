@@ -92,3 +92,17 @@ CREATE INDEX IF NOT EXISTS idx_orders_status ON orders(status);
 CREATE UNIQUE INDEX IF NOT EXISTS idx_orders_provider_trade
   ON orders(payment_provider, provider_trade_id)
   WHERE provider_trade_id IS NOT NULL;
+
+-- Every verified provider callback gets a unique event key. Replayed webhooks
+-- become no-ops, so one payment cannot mint multiple AI grants.
+CREATE TABLE IF NOT EXISTS payment_events (
+  event_key TEXT PRIMARY KEY,
+  provider TEXT NOT NULL,
+  event_type TEXT NOT NULL,
+  order_id TEXT,
+  provider_trade_id TEXT,
+  created_at TEXT NOT NULL
+);
+
+CREATE INDEX IF NOT EXISTS idx_payment_events_order
+  ON payment_events(order_id);

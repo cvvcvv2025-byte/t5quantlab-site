@@ -1,0 +1,2 @@
+import fs from 'node:fs';
+const file='account/index.html';let s=fs.readFileSync(file,'utf8'),before=s;if(!s.includes('/assets/account-local-training.js'))s=s.replace('</body>','<script src="/assets/account-local-training.js"></script></body>');if(s!==before){fs.writeFileSync(file,s);console.log('updated',file)}else console.log('no change',file);

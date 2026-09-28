@@ -5,7 +5,8 @@ function need(file, text, label) {
   if (!src.includes(text)) throw new Error(`${label}: missing ${JSON.stringify(text)} in ${file}`);
 }
 
-need('wrangler.jsonc', '"main": "src/account-worker.js"', 'worker entrypoint');
+need('wrangler.jsonc', '"main": "src/marketing-worker.js"', 'worker entrypoint');
+need('src/marketing-worker.js', 'import app from "./account-worker.js";', 'marketing wrapper must preserve account stack');
 need('src/account-worker.js', 'import app from "./final-worker.js";', 'account wrapper must preserve commercial/payment stack');
 need('src/commercial-worker.js', 'const PASS_ANALYZE_CREDITS = 3;', 'analysis credits');
 need('src/commercial-worker.js', 'const PASS_MODIFY_CREDITS = 2;', 'modify credits');

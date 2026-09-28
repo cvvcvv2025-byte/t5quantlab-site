@@ -1,0 +1,5 @@
+import fs from 'node:fs';
+function edit(file,fn){let s=fs.readFileSync(file,'utf8'),before=s;s=fn(s);if(s!==before){fs.writeFileSync(file,s);console.log('updated',file)}else console.log('no change',file)}
+edit('market-lab/training/simulator/index.html',s=>{if(!s.includes('/assets/hidden-future-quality.css'))s=s.replace('</head>','<link rel="stylesheet" href="/assets/hidden-future-quality.css"></head>');if(!s.includes('/assets/hidden-future-quality.js'))s=s.replace('<script src="/assets/seo-structured.js"></script>','<script src="/assets/hidden-future-quality.js"></script><script src="/assets/seo-structured.js"></script>');return s});
+edit('market-lab/index.html',s=>{if(s.includes('href="/market-lab/review/"'))return s;const needle='<a class="btn" href="/market-lab/training/">Hidden Future</a>';return s.replace(needle,needle+'<a class="btn" href="/market-lab/review/">错题复盘</a>')});
+edit('sitemap.xml',s=>{const u='https://t5quantlab.com/market-lab/review/';return s.includes(`<loc>${u}</loc>`)?s:s.replace('</urlset>',`  <url><loc>${u}</loc><changefreq>weekly</changefreq><priority>0.9</priority></url>\n</urlset>`)});

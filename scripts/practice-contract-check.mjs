@@ -45,9 +45,26 @@ if (/new\s+XMLHttpRequest\s*\(/.test(transfer)) errors.push('progress transfer m
 if (/new\s+FormData\s*\(/.test(transfer)) errors.push('progress transfer must not create FormData');
 if (/["'`]\/api\//.test(transfer)) errors.push('progress transfer must not call /api/*');
 
+const visualFile='assets/practice-visuals.js';
+const visualCss='assets/practice-visuals.css';
+if (!fs.existsSync(visualFile)) errors.push('beginner visual scenario script missing');
+if (!fs.existsSync(visualCss)) errors.push('beginner visual scenario stylesheet missing');
+if (fs.existsSync(visualFile)) {
+  const visuals=fs.readFileSync(visualFile,'utf8');
+  for(let i=1;i<=24;i++) if(!new RegExp(`\\n${i}:\\{`).test(visuals)) errors.push(`practice-visuals.js: Q${String(i).padStart(3,'0')} visual scene missing`);
+  if(!visuals.includes('前高 / 外部流动性区域')) errors.push('practice-visuals.js: Q002 location visual must show prior-high liquidity');
+  if(!visuals.includes('最近结构支撑在较远下方')) errors.push('practice-visuals.js: Q002 location visual must show distant structural support');
+  if(!visuals.includes('先看图，再读题')) errors.push('practice-visuals.js: visual-first instruction missing');
+  if(!visuals.includes('新手建议')) errors.push('practice-visuals.js: beginner guidance missing');
+  if(/\bfetch\s*\(/.test(visuals)) errors.push('practice visual layer must remain API-free');
+  if(/["'`]\/api\//.test(visuals)) errors.push('practice visual layer must not call /api/*');
+}
+if (!transfer.includes('/assets/practice-visuals.js')) errors.push('progress helper must load beginner visual scenario script');
+if (!transfer.includes('/assets/practice-visuals.css')) errors.push('progress helper must load beginner visual scenario stylesheet');
+
 if (errors.length) {
   console.error('Practice contract check failed:');
   for (const e of errors) console.error(`- ${e}`);
   process.exit(1);
 }
-console.log(`Practice contract OK: ${total} questions across ${packs.length} packs; local backup/restore protected.`);
+console.log(`Practice contract OK: ${total} questions across ${packs.length} packs; local backup/restore and Q001-Q024 visual-first training protected.`);

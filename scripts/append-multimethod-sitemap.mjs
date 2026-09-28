@@ -14,6 +14,7 @@ const routes=[
  ['/library/indicators/volatility-channels/','monthly','0.88'],
  ['/library/indicators/volume-indicators/','monthly','0.88'],
  ['/library/strategy-families/','monthly','0.9'],
+ ['/library/books/indicator-route/','monthly','0.9'],
  ['/market-lab/practice/indicator-foundations/','weekly','0.95']
 ];
 let added=0;

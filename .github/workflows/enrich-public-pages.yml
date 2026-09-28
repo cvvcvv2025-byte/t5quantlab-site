@@ -5,6 +5,7 @@ on:
     branches: [main]
     paths:
       - 'sitemap.xml'
+      - 'scripts/append-multimethod-sitemap.mjs'
       - 'scripts/enrich-public-pages.mjs'
       - '.github/workflows/enrich-public-pages.yml'
 
@@ -21,6 +22,8 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: '22'
+      - name: Ensure multimethod sitemap routes
+        run: node scripts/append-multimethod-sitemap.mjs
       - name: Enrich sitemap public pages
         run: node scripts/enrich-public-pages.mjs
       - name: Commit enriched pages

@@ -20,7 +20,7 @@ if(crumbBox){
  if(title)items.push({'@type':'ListItem',position:pos,name:title,item:canonical});
  if(items.length>=2)graph.push({'@type':'BreadcrumbList','@id':canonical+'#breadcrumb',itemListElement:items});
 }
-const hubs=new Set(['/','/library/','/market-lab/','/research/','/verification/','/tools/']);
+const hubs=new Set(['/','/library/','/market-lab/','/market-lab/practice/','/market-lab/training/','/research/','/verification/','/tools/','/tools/guides/','/tools/indicators/','/tools/ea/','/faq/']);
 const isCase=/^\/market-lab\/20\d{2}-\d{2}-\d{2}-/.test(path);
 const isLeaf=!hubs.has(path)&&!path.includes('/practice/trainer/')&&!path.includes('/strategy-builder/inspect/')&&!path.includes('/checkout/');
 const pageType=hubs.has(path)?'CollectionPage':'WebPage';

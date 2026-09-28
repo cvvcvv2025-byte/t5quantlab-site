@@ -1,4 +1,4 @@
-# T5 Quant Lab Account + Payment Setup
+# T5 Quant Lab Account + Payment + Marketing Setup
 
 当前身份与支付主链：
 
@@ -12,7 +12,7 @@ T5 使用“邮箱验证码登录”，不设置密码。第一次验证码验�
 
 需要 Cloudflare Secrets / Variables：
 
-- `ACCOUNT_AUTH_SECRET`：至少 32 字节随机密钥。用于验证码哈希、IP限流哈希、账户到Builder grant的派生令牌、未来退订链接签名。不要放进前端。
+- `ACCOUNT_AUTH_SECRET`：至少 32 字节随机密钥。用于验证码哈希、IP限流哈希、账户到Builder grant的派生令牌、退订链接签名。不要放进前端。
 - `RESEND_API_KEY`：Resend API Key。
 - `AUTH_EMAIL_FROM`：已在 Resend 验证可发送的 From，例如 `T5 Quant Lab <login@t5quantlab.com>`。
 
@@ -54,6 +54,57 @@ T5 使用“邮箱验证码登录”，不设置密码。第一次验证码验�
 `/admin/accounts/`
 
 必须输入现有 `BUILDER_ACCESS_KEY` 才能读取。管理员密钥只写入当前标签页 `sessionStorage`，不写入 localStorage。
+
+## Scheduled marketing campaigns
+
+管理员营销后台：
+
+`/admin/campaigns/`
+
+功能：
+
+- 查看当前 `marketing_consent=1` 的可营销用户数量
+- 创建主题 + 纯文本正文 + 发送时间
+- 浏览器本地时间自动转 UTC ISO 后提交
+- 查看 scheduled / sending / completed / canceled 状态
+- 查看成功与最终失败数量
+- 尚未开始发送的任务可取消
+
+Cloudflare cron：
+
+`*/15 * * * *`
+
+即每15分钟扫描一次到期Campaign。因此实际发送可能比后台设置的时间晚几分钟。
+
+营销发送规则：
+
+1. 只读取 `users.status='active' AND marketing_consent=1`
+2. 每批最多40个用户
+3. 下一批发送前重新检查订阅状态，中途退订会自动排除
+4. 每个Campaign + User使用唯一 Resend `Idempotency-Key`，防止重复发送
+5. 单个收件人失败最多重试3次
+6. 每封营销邮件自动加入带签名的取消订阅链接
+7. 退订只关闭营销邮件，不影响验证码、付款和必要服务邮件
+8. `marketing_deliveries` 保存每个用户的发送状态、尝试次数、Provider Message ID和失败原因
+
+可选邮件发件人：
+
+- `MARKETING_EMAIL_FROM`：营销专用已验证发件地址，例如 `T5 Quant Lab <updates@t5quantlab.com>`
+- 如果未配置，会回退使用 `AUTH_EMAIL_FROM`
+
+但营销模块仍必须同时具备：
+
+- `RESEND_API_KEY`
+- `ACCOUNT_AUTH_SECRET`
+- `MARKETING_EMAIL_FROM` 或 `AUTH_EMAIL_FROM`
+
+否则创建Campaign会 fail closed，不会假装已经排程成功。
+
+营销API（全部需要 `X-Builder-Access-Key`）：
+
+- `GET /api/admin/campaigns`
+- `POST /api/admin/campaigns`
+- `POST /api/admin/campaigns/cancel`
 
 ## Account-bound orders
 
@@ -138,6 +189,7 @@ Webhook URL：
 
 ## Main files
 
+- `src/marketing-worker.js`：定时Campaign、opt-in收件人过滤、Resend发送、退订链接、重试与投递记录
 - `src/account-worker.js`：邮箱登录、user_id、营销许可、订单绑定、账户到Builder grant桥接
 - `src/final-worker.js`：退款资格与最终 dispute safeguard
 - `src/commercial-worker.js`：Builder Pass商业合同、审计与争议逻辑
@@ -146,5 +198,6 @@ Webhook URL：
 - `account/login/index.html`：邮箱验证码登录
 - `account/index.html`：My T5
 - `admin/accounts/index.html`：管理员客户邮箱/订阅状态视图
+- `admin/campaigns/index.html`：定时营销Campaign后台
 - `checkout/index.html`：账户绑定的PayPal结账
-- `.github/workflows/syntax-check.yml`：Worker / 页面 JS / Account / Payment 合同检查
+- `.github/workflows/syntax-check.yml`：Worker / 页面 JS / Account / Marketing / Payment 合同检查

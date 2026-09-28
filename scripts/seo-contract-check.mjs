@@ -25,11 +25,13 @@ for(const route of routes){
  const html=read(file);
  const canonical=html.match(/<link rel="canonical" href="([^"]+)"/i)?.[1]||'';
  const ogUrl=html.match(/<meta property="og:url" content="([^"]+)"/i)?.[1]||'';
+ const ogType=html.match(/<meta property="og:type" content="([^"]+)"/i)?.[1]||'';
  need(Boolean(canonical),`${file}: canonical missing`);
  need(/<meta name="description" content="[^"]+"/i.test(html),`${file}: meta description missing`);
  need(/<meta property="og:title" content="[^"]+"/i.test(html),`${file}: og:title missing`);
  need(/<meta property="og:description" content="[^"]+"/i.test(html),`${file}: og:description missing`);
- need(/<meta property="og:type" content="(?:website|article)"/i.test(html),`${file}: og:type missing`);
+ need(Boolean(ogType),`${file}: og:type missing`);
+ need(ogType===(hubs.has(route)?'website':'article'),`${file}: og:type must be ${hubs.has(route)?'website':'article'}, found ${ogType||'missing'}`);
  need(Boolean(ogUrl)&&ogUrl===canonical,`${file}: og:url must match canonical`);
  need(/<meta name="twitter:card" content="summary"/i.test(html),`${file}: twitter summary card missing`);
  need(/<meta name="twitter:title" content="[^"]+"/i.test(html),`${file}: twitter:title missing`);
@@ -73,4 +75,4 @@ need(!/FAQPage/.test(seo),'seo-structured.js must not emit deprecated FAQPage ri
 need(sitemap.includes('https://t5quantlab.com/faq/'),'sitemap.xml: FAQ URL missing');
 
 if(errors.length){console.error('SEO contract check failed:');for(const e of errors)console.error('- '+e);process.exit(1);}
-console.log(`SEO contract OK: ${publicHtml} sitemap HTML pages have canonical, social metadata and structured data; leaf recommendations and case visuals verified.`);
+console.log(`SEO contract OK: ${publicHtml} sitemap HTML pages have canonical, correct social types, social metadata and structured data; leaf recommendations and case visuals verified.`);

@@ -20,14 +20,13 @@ const PRODUCT_CATALOG = {
   }
 };
 
-function json(data, status = 200) {
-  return Response.json(data, {
-    status,
-    headers: {
-      "Cache-Control": "no-store",
-      "X-Content-Type-Options": "nosniff"
-    }
+function json(data, status = 200, extraHeaders = {}) {
+  const headers = new Headers({
+    "Cache-Control": "no-store",
+    "X-Content-Type-Options": "nosniff",
+    ...extraHeaders
   });
+  return Response.json(data, { status, headers });
 }
 
 function nowIso() {
@@ -95,14 +94,42 @@ async function ensureAccessDb(env) {
     )`),
     env.BUILDER_DB.prepare(`CREATE INDEX IF NOT EXISTS idx_orders_status ON orders(status)`),
     env.BUILDER_DB.prepare(`CREATE UNIQUE INDEX IF NOT EXISTS idx_orders_provider_trade
-      ON orders(payment_provider, provider_trade_id) WHERE provider_trade_id IS NOT NULL`)
+      ON orders(payment_provider, provider_trade_id) WHERE provider_trade_id IS NOT NULL`),
+    env.BUILDER_DB.prepare(`CREATE TABLE IF NOT EXISTS payment_events (
+      event_key TEXT PRIMARY KEY,
+      provider TEXT NOT NULL,
+      event_type TEXT NOT NULL,
+      order_id TEXT,
+      provider_trade_id TEXT,
+      created_at TEXT NOT NULL
+    )`),
+    env.BUILDER_DB.prepare(`CREATE INDEX IF NOT EXISTS idx_payment_events_order
+      ON payment_events(order_id)`)
   ]);
+}
+
+function parseCookies(request) {
+  const out = {};
+  const raw = request.headers.get("Cookie") || "";
+  for (const part of raw.split(";")) {
+    const idx = part.indexOf("=");
+    if (idx <= 0) continue;
+    const key = part.slice(0, idx).trim();
+    const value = part.slice(idx + 1).trim();
+    if (key) out[key] = decodeURIComponent(value);
+  }
+  return out;
 }
 
 function bearerToken(request) {
   const auth = request.headers.get("Authorization") || "";
   const match = auth.match(/^Bearer\s+(.+)$/i);
-  return (match?.[1] || request.headers.get("X-Builder-Access-Token") || "").trim();
+  const cookies = parseCookies(request);
+  return (match?.[1] || request.headers.get("X-Builder-Access-Token") || cookies.t5_builder_access || "").trim();
+}
+
+function builderCookie(token, maxAgeSeconds = 2592000) {
+  return `t5_builder_access=${encodeURIComponent(token)}; Path=/api/; Max-Age=${maxAgeSeconds}; HttpOnly; Secure; SameSite=Lax`;
 }
 
 async function isAdmin(request, env) {
@@ -228,6 +255,41 @@ function priceFor(env, productCode, currency) {
   return amount;
 }
 
+function providerStatus(env) {
+  return {
+    alipay: {
+      enabled: Boolean(env.ALIPAY_APP_ID && env.ALIPAY_PRIVATE_KEY && env.ALIPAY_PUBLIC_KEY),
+      currency: "CNY"
+    },
+    wechat: {
+      enabled: Boolean(env.WECHATPAY_MCH_ID && env.WECHATPAY_API_V3_KEY && env.WECHATPAY_PRIVATE_KEY),
+      currency: "CNY"
+    },
+    paypal: {
+      enabled: Boolean(env.PAYPAL_CLIENT_ID && env.PAYPAL_CLIENT_SECRET && env.PAYPAL_WEBHOOK_ID),
+      currency: "USD"
+    }
+  };
+}
+
+function handleCatalog(env) {
+  const product = PRODUCT_CATALOG.code_workshop_single;
+  const cny = priceFor(env, "code_workshop_single", "CNY");
+  const usd = priceFor(env, "code_workshop_single", "USD");
+  return json({
+    ok: true,
+    products: [{
+      code: "code_workshop_single",
+      name: product.name,
+      analyze_credits: product.analyzeCredits,
+      modify_credits: product.modifyCredits,
+      expires_days: product.expiresDays,
+      prices: { CNY: cny, USD: usd }
+    }],
+    providers: providerStatus(env)
+  });
+}
+
 async function handleCreateOrder(request, env) {
   await ensureAccessDb(env);
   const body = await request.json();
@@ -236,6 +298,7 @@ async function handleCreateOrder(request, env) {
   if (!product) return json({ ok: false, error: "产品不存在" }, 400);
 
   const currency = String(body.currency || "CNY").toUpperCase();
+  if (!["CNY", "USD"].includes(currency)) return json({ ok: false, error: "暂不支持该币种" }, 400);
   const amountMinor = priceFor(env, productCode, currency);
   if (!amountMinor) {
     return json({
@@ -246,7 +309,7 @@ async function handleCreateOrder(request, env) {
   }
 
   const email = String(body.email || "").trim().toLowerCase().slice(0, 254);
-  if (email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) return json({ ok: false, error: "邮箱格式不正确" }, 400);
+  if (!email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) return json({ ok: false, error: "请输入有效邮箱" }, 400);
 
   const orderId = randomId("T5O");
   const orderToken = randomHex(24);
@@ -261,7 +324,7 @@ async function handleCreateOrder(request, env) {
     (order_id, order_token_hash, builder_token_hash, customer_email, product_code, product_name,
      amount_minor, currency, status, created_at, updated_at)
     VALUES (?, ?, ?, ?, ?, ?, ?, ?, 'pending', ?, ?)`)
-    .bind(orderId, orderTokenHash, builderTokenHash, email || null, productCode, product.name,
+    .bind(orderId, orderTokenHash, builderTokenHash, email, productCode, product.name,
       amountMinor, currency, now, now).run();
 
   return json({
@@ -269,14 +332,13 @@ async function handleCreateOrder(request, env) {
     order: {
       order_id: orderId,
       order_token: orderToken,
-      builder_access_token: builderAccessToken,
       product_code: productCode,
       product_name: product.name,
       amount_minor: amountMinor,
       currency,
       status: "pending"
     }
-  });
+  }, 200, { "Set-Cookie": builderCookie(builderAccessToken, product.expiresDays * 86400) });
 }
 
 async function getAuthorizedOrder(request, env, orderId) {
@@ -297,9 +359,30 @@ async function handleOrderStatus(request, env) {
   return json({ ok: true, order });
 }
 
-async function completePaidOrder(env, { orderId, provider, providerTradeId }) {
+async function handleCancelOrder(request, env) {
   await ensureAccessDb(env);
-  const order = await env.BUILDER_DB.prepare(`SELECT order_id, builder_token_hash, product_code, status, grant_id
+  const body = await request.json();
+  const orderId = String(body.order_id || "");
+  const order = await getAuthorizedOrder(request, env, orderId);
+  if (!order) return json({ ok: false, error: "订单不存在或订单令牌无效" }, 403);
+  if (order.status !== "pending") return json({ ok: false, error: "仅未付款订单可以取消" }, 409);
+  await env.BUILDER_DB.prepare("UPDATE orders SET status = 'canceled', updated_at = ? WHERE order_id = ? AND status = 'pending'")
+    .bind(nowIso(), orderId).run();
+  return json({ ok: true, order_id: orderId, status: "canceled" });
+}
+
+async function recordPaymentEvent(env, { provider, eventId, eventType, orderId = null, providerTradeId = null }) {
+  if (!eventId) return true;
+  const result = await env.BUILDER_DB.prepare(`INSERT INTO payment_events
+    (event_key, provider, event_type, order_id, provider_trade_id, created_at)
+    VALUES (?, ?, ?, ?, ?, ?) ON CONFLICT(event_key) DO NOTHING`)
+    .bind(`${provider}:${eventId}`, provider, eventType, orderId, providerTradeId, nowIso()).run();
+  return Number(result?.meta?.changes || 0) === 1;
+}
+
+async function completePaidOrder(env, { orderId, provider, providerTradeId, paidAmountMinor, currency, eventId = null }) {
+  await ensureAccessDb(env);
+  const order = await env.BUILDER_DB.prepare(`SELECT order_id, builder_token_hash, product_code, amount_minor, currency, status, grant_id
     FROM orders WHERE order_id = ?`).bind(orderId).first();
   if (!order) throw new Error("ORDER_NOT_FOUND");
 
@@ -307,9 +390,26 @@ async function completePaidOrder(env, { orderId, provider, providerTradeId }) {
     return { orderId, grantId: order.grant_id, duplicate: true };
   }
   if (order.status !== "pending" && order.status !== "paid") throw new Error("ORDER_NOT_GRANTABLE");
+  if (Number(paidAmountMinor) !== Number(order.amount_minor)) throw new Error("PAYMENT_AMOUNT_MISMATCH");
+  if (String(currency || "").toUpperCase() !== String(order.currency).toUpperCase()) throw new Error("PAYMENT_CURRENCY_MISMATCH");
+  if (!provider || !providerTradeId) throw new Error("PAYMENT_REFERENCE_REQUIRED");
 
   const product = PRODUCT_CATALOG[order.product_code];
   if (!product) throw new Error("PRODUCT_NOT_FOUND");
+
+  if (eventId) {
+    const isNew = await recordPaymentEvent(env, {
+      provider,
+      eventId,
+      eventType: "payment_completed",
+      orderId,
+      providerTradeId
+    });
+    if (!isNew) {
+      const existing = await env.BUILDER_DB.prepare("SELECT status, grant_id FROM orders WHERE order_id = ?").bind(orderId).first();
+      return { orderId, grantId: existing?.grant_id || null, duplicate: true };
+    }
+  }
 
   const grantId = order.grant_id || randomId("GRANT");
   const created = nowIso();
@@ -339,16 +439,74 @@ async function completePaidOrder(env, { orderId, provider, providerTradeId }) {
   return { orderId, grantId, duplicate: false };
 }
 
+async function revokePaidOrder(env, { orderId, provider, eventId = null, providerTradeId = null }) {
+  await ensureAccessDb(env);
+  const order = await env.BUILDER_DB.prepare("SELECT order_id, status, grant_id FROM orders WHERE order_id = ?").bind(orderId).first();
+  if (!order) throw new Error("ORDER_NOT_FOUND");
+
+  if (eventId) {
+    const isNew = await recordPaymentEvent(env, {
+      provider,
+      eventId,
+      eventType: "payment_refunded",
+      orderId,
+      providerTradeId
+    });
+    if (!isNew) return { orderId, duplicate: true };
+  }
+
+  const updated = nowIso();
+  const statements = [
+    env.BUILDER_DB.prepare("UPDATE orders SET status = 'refunded', updated_at = ? WHERE order_id = ?")
+      .bind(updated, orderId)
+  ];
+  if (order.grant_id) {
+    statements.push(env.BUILDER_DB.prepare("UPDATE builder_access_grants SET status = 'revoked', updated_at = ? WHERE grant_id = ?")
+      .bind(updated, order.grant_id));
+  }
+  await env.BUILDER_DB.batch(statements);
+  return { orderId, duplicate: false };
+}
+
 async function handleAdminMarkPaid(request, env) {
   if (!(await isAdmin(request, env))) return json({ ok: false, error: "Unauthorized" }, 403);
+  if (String(env.ENABLE_PAYMENT_TEST_MODE || "").toLowerCase() !== "true") {
+    return json({ ok: false, error: "Payment test mode is disabled" }, 403);
+  }
   const body = await request.json();
   const orderId = String(body.order_id || "");
   if (!orderId) return json({ ok: false, error: "缺少 order_id" }, 400);
+  const order = await env.BUILDER_DB.prepare("SELECT amount_minor, currency FROM orders WHERE order_id = ?").bind(orderId).first();
+  if (!order) return json({ ok: false, error: "ORDER_NOT_FOUND" }, 404);
   try {
     const result = await completePaidOrder(env, {
       orderId,
       provider: "admin_test",
-      providerTradeId: String(body.provider_trade_id || randomId("TESTPAY"))
+      providerTradeId: String(body.provider_trade_id || randomId("TESTPAY")),
+      paidAmountMinor: Number(order.amount_minor),
+      currency: order.currency,
+      eventId: String(body.event_id || randomId("TESTEVENT"))
+    });
+    return json({ ok: true, ...result });
+  } catch (error) {
+    return json({ ok: false, error: String(error.message || error) }, 409);
+  }
+}
+
+async function handleAdminRefund(request, env) {
+  if (!(await isAdmin(request, env))) return json({ ok: false, error: "Unauthorized" }, 403);
+  if (String(env.ENABLE_PAYMENT_TEST_MODE || "").toLowerCase() !== "true") {
+    return json({ ok: false, error: "Payment test mode is disabled" }, 403);
+  }
+  const body = await request.json();
+  const orderId = String(body.order_id || "");
+  if (!orderId) return json({ ok: false, error: "缺少 order_id" }, 400);
+  try {
+    const result = await revokePaidOrder(env, {
+      orderId,
+      provider: "admin_test",
+      providerTradeId: String(body.provider_trade_id || ""),
+      eventId: String(body.event_id || randomId("TESTREFUND"))
     });
     return json({ ok: true, ...result });
   } catch (error) {
@@ -374,6 +532,10 @@ export default {
       return accessStatus(access);
     }
 
+    if (url.pathname === "/api/payments/catalog" && request.method === "GET") {
+      return handleCatalog(env);
+    }
+
     if (url.pathname === "/api/orders/create" && request.method === "POST") {
       return handleCreateOrder(request, env);
     }
@@ -382,8 +544,16 @@ export default {
       return handleOrderStatus(request, env);
     }
 
+    if (url.pathname === "/api/orders/cancel" && request.method === "POST") {
+      return handleCancelOrder(request, env);
+    }
+
     if (url.pathname === "/api/admin/orders/mark-paid" && request.method === "POST") {
       return handleAdminMarkPaid(request, env);
+    }
+
+    if (url.pathname === "/api/admin/orders/refund" && request.method === "POST") {
+      return handleAdminRefund(request, env);
     }
 
     if (url.pathname === "/api/payment/alipay/webhook" && request.method === "POST") {

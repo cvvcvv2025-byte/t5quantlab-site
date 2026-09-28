@@ -29,7 +29,7 @@ btn.addEventListener('click',async()=>{
   if(!sourceText.trim())throw new Error('源码文件为空');
   const payload={version:1,createdAt:Date.now(),name:f.name,type:f.type||'text/plain',size:f.size,sourceText,changeRequest:request.value||'',report:sessionStorage.getItem('t5_local_inspection_report')||'',platformGuess:(f.name.toLowerCase().endsWith('.mq4')?'MT4':f.name.toLowerCase().endsWith('.mq5')?'MT5':f.name.toLowerCase().endsWith('.pine')?'TradingView':'自动识别')};
   sessionStorage.setItem(KEY,JSON.stringify(payload));
-  location.href='/tools/strategy-builder/?handoff=1#sourcePane';
+  location.href='/tools/strategy-builder/continue/';
  }catch(e){note.textContent='本地交接失败：'+(e&&e.message?e.message:String(e));btn.disabled=false;btn.textContent='带着体检结果进入 Builder';}
 });
 })();

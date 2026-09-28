@@ -32,5 +32,7 @@ jobs:
         run: node scripts/check-inline-js.mjs
       - name: Check payment contract
         run: node scripts/payment-contract-check.mjs
+      - name: Check practice trainer contract
+        run: node scripts/practice-contract-check.mjs
       - name: Check internal content links
         run: node scripts/check-internal-links.mjs

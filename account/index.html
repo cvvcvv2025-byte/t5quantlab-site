@@ -1,0 +1,36 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>My T5｜T5 Quant Lab</title>
+<meta name="description" content="管理 T5 账户、Builder Pass、订单与邮件订阅。">
+<meta name="robots" content="noindex,nofollow">
+<link rel="icon" href="/favicon.svg" type="image/svg+xml">
+<link rel="stylesheet" href="/assets/styles.css"><link rel="stylesheet" href="/assets/account.css">
+</head>
+<body>
+<header class="topbar"><div class="container nav"><a class="brand" href="/"><span class="mark">T5</span><span>T5 Quant Lab</span></a><nav class="navlinks" id="navlinks"><a href="/market-lab/practice/trainer/">训练</a><a href="/tools/strategy-builder/inspect/">源码体检</a><a href="/checkout/">Builder Pass</a></nav><button class="menu" id="menu">☰</button></div></header>
+<main><section class="page-hero"><div class="container account-wrap"><div class="eyebrow">MY T5 · ACCOUNT · ACCESS</div><h1>你的 T5 工作区。</h1><p>账户用于订单、Builder 权限和邮件订阅管理。训练进度目前仍保存在当前浏览器，本页会显示本机训练状态，但暂不上传题目记录。</p></div></section>
+<section class="section"><div class="container account-wrap">
+<div class="account-grid">
+<div class="account-card"><h2>账户</h2><div id="accountLoading" class="account-note">正在读取账户…</div><div id="accountInfo" class="account-hidden"><p class="muted">登录邮箱</p><p class="account-email" id="accountEmail"></p><div class="account-divider"></div><label class="account-consent"><input id="marketingToggle" type="checkbox"><span><b>产品与研究邮件</b><br>接收 T5 新功能、研究内容和优惠信息。可随时关闭；账户验证码和付款通知不受此开关影响。</span></label><div class="account-actions"><button class="btn" id="saveMarketing" type="button">保存邮件设置</button><button class="btn" id="logout" type="button">退出登录</button></div><div id="accountStatus" class="account-status account-hidden"></div></div></div>
+<div class="account-card"><h2>本机训练</h2><div class="account-metric-grid"><div class="account-metric"><b id="trainAttempted">0</b><span>已作答</span></div><div class="account-metric"><b id="trainMastered">0</b><span>已掌握</span></div><div class="account-metric"><b>96</b><span>题库总量</span></div></div><p class="muted">这些数据读取当前浏览器 localStorage，不上传服务器。后续再做可选云同步。</p><div class="account-actions"><a class="btn primary" href="/market-lab/practice/trainer/">继续训练</a></div></div>
+</div>
+<div class="section" style="padding-left:0;padding-right:0;padding-bottom:0"><div class="account-card"><h2>Builder Pass</h2><div id="builderEmpty" class="account-note">正在读取权限…</div><div id="builderInfo" class="account-hidden"><div class="account-metric-grid"><div class="account-metric"><b id="analyzeRemaining">0</b><span>AI分析剩余</span></div><div class="account-metric"><b id="modifyRemaining">0</b><span>完整修改剩余</span></div><div class="account-metric"><b id="expiresAt">—</b><span>到期时间</span></div></div><div class="account-actions"><a class="btn primary" href="/tools/strategy-builder/">进入 Builder</a><a class="btn" href="/checkout/">购买 / 续购</a></div></div></div></div>
+<div class="section" style="padding-left:0;padding-right:0;padding-bottom:0"><div class="account-card"><h2>订单</h2><div id="orders" class="account-list"><div class="account-note">正在读取订单…</div></div></div></div>
+</div></section></main>
+<footer class="footer"><div class="container"><div class="risk">My T5 仅展示当前账户可访问的数据和本机训练摘要。</div></div></footer>
+<script src="/assets/main.js"></script>
+<script>
+const $=id=>document.getElementById(id);
+async function api(url,opt={}){const r=await fetch(url,{credentials:'same-origin',...opt});let d={};try{d=await r.json()}catch{}if(!r.ok||!d.ok){const e=new Error(d.error||('HTTP '+r.status));e.code=d.code||'';throw e}return d}
+function showStatus(msg,type=''){const x=$('accountStatus');x.textContent=msg;x.className='account-status'+(type?' '+type:'');x.classList.remove('account-hidden')}
+function localTraining(){try{const p=JSON.parse(localStorage.getItem('t5_practice_progress_v2')||'{}')||{};const items=Object.entries(p).filter(([k])=>k!=='__meta');$('trainAttempted').textContent=items.length;$('trainMastered').textContent=items.filter(([,v])=>v&&v.mastered).length}catch{}}
+function fmtDate(v){if(!v)return'—';try{return new Date(v).toLocaleDateString('zh-CN')}catch{return v}}
+function renderOrders(orders){const box=$('orders');if(!orders?.length){box.innerHTML='<div class="account-note">当前账户暂无订单。</div>';return}box.innerHTML=orders.map(o=>{const good=o.status==='granted';const warn=['pending','paid'].includes(o.status);return `<div class="account-row"><div><b>${o.product_name||o.product_code}</b><br><small>${o.order_id}<br>${fmtDate(o.created_at)}</small></div><div><span class="account-badge${good?' good':warn?' warn':''}">${o.status}</span><br><small>${o.currency||''} ${Number(o.amount_minor||0)/100}</small></div></div>`}).join('')}
+async function boot(){localTraining();try{const d=await api('/api/account/summary');$('accountLoading').classList.add('account-hidden');$('accountInfo').classList.remove('account-hidden');$('accountEmail').textContent=d.user.email;$('marketingToggle').checked=!!d.user.marketing_consent;renderOrders(d.orders);if(d.builder){$('builderEmpty').classList.add('account-hidden');$('builderInfo').classList.remove('account-hidden');$('analyzeRemaining').textContent=d.builder.analyze_remaining??0;$('modifyRemaining').textContent=d.builder.modify_remaining??0;$('expiresAt').textContent=fmtDate(d.builder.expires_at)}else{$('builderEmpty').textContent='当前没有有效 Builder Pass。免费源码体检仍可直接使用。'}}catch(e){if(e.code==='ACCOUNT_REQUIRED'){location.replace('/account/login/?next=%2Faccount%2F');return}$('accountLoading').textContent=e.message;$('builderEmpty').textContent='暂时无法读取Builder权限。';$('orders').innerHTML='<div class="account-note">暂时无法读取订单。</div>'}}
+$('saveMarketing').addEventListener('click',async()=>{try{await api('/api/account/marketing',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({subscribed:$('marketingToggle').checked})});showStatus($('marketingToggle').checked?'已开启产品与研究邮件。':'已关闭营销邮件。账户和付款服务邮件仍会正常发送。','account-good')}catch(e){showStatus(e.message,'account-warn')}});
+$('logout').addEventListener('click',async()=>{try{await api('/api/auth/logout',{method:'POST'});}catch{}location.replace('/')});
+boot();
+</script>
+</body></html>

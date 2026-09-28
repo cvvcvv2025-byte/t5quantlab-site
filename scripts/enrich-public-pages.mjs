@@ -16,6 +16,7 @@ const relatedRoute=route=>{
  if(route.startsWith('/market-lab/training/')&&!hubs.has(route))return true;
  return false;
 };
+const insertAfterDescription=(html,tag)=>html.replace(/(<meta name="description" content="[^"]*">)/i,`$1${tag}`);
 let changed=0,visited=0;
 for(const route0 of urls){
  const route=route0.endsWith('/')?route0:route0+'/';
@@ -27,10 +28,15 @@ for(const route0 of urls){
  const canonical=html.match(/<link rel="canonical" href="([^"]+)"/i)?.[1]?.trim();
  if(!title||!desc||!canonical)continue;
  const type=hubs.has(route)?'website':'article';
- if(!/property="og:title"/i.test(html)){
-  const social=`<meta property="og:title" content="${esc(title)}"><meta property="og:description" content="${esc(desc)}"><meta property="og:type" content="${type}"><meta property="og:url" content="${esc(canonical)}"><meta name="twitter:card" content="summary"><meta name="twitter:title" content="${esc(title)}"><meta name="twitter:description" content="${esc(desc)}">`;
-  html=html.replace(/(<meta name="description" content="[^"]*">)/i,`$1${social}`);
- }
+ const tags=[];
+ if(!/property="og:title"/i.test(html))tags.push(`<meta property="og:title" content="${esc(title)}">`);
+ if(!/property="og:description"/i.test(html))tags.push(`<meta property="og:description" content="${esc(desc)}">`);
+ if(!/property="og:type"/i.test(html))tags.push(`<meta property="og:type" content="${type}">`);
+ if(!/property="og:url"/i.test(html))tags.push(`<meta property="og:url" content="${esc(canonical)}">`);
+ if(!/name="twitter:card"/i.test(html))tags.push('<meta name="twitter:card" content="summary">');
+ if(!/name="twitter:title"/i.test(html))tags.push(`<meta name="twitter:title" content="${esc(title)}">`);
+ if(!/name="twitter:description"/i.test(html))tags.push(`<meta name="twitter:description" content="${esc(desc)}">`);
+ if(tags.length)html=insertAfterDescription(html,tags.join(''));
  if(!html.includes('/assets/seo-structured.js'))html=html.replace('</body>','<script src="/assets/seo-structured.js"></script></body>');
  if(relatedRoute(route)&&!html.includes('/assets/related-content.js'))html=html.replace('</body>','<script src="/assets/related-content.js"></script></body>');
  const before=fs.readFileSync(file,'utf8');

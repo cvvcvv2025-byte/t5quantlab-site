@@ -104,7 +104,20 @@ async function ensureAccessDb(env) {
       created_at TEXT NOT NULL
     )`),
     env.BUILDER_DB.prepare(`CREATE INDEX IF NOT EXISTS idx_payment_events_order
-      ON payment_events(order_id)`)
+      ON payment_events(order_id)`),
+    env.BUILDER_DB.prepare(`CREATE TABLE IF NOT EXISTS payment_intents (
+      provider TEXT NOT NULL,
+      provider_order_id TEXT NOT NULL,
+      order_id TEXT NOT NULL,
+      approval_url TEXT,
+      status TEXT NOT NULL DEFAULT 'created',
+      created_at TEXT NOT NULL,
+      updated_at TEXT NOT NULL,
+      PRIMARY KEY(provider, provider_order_id),
+      UNIQUE(provider, order_id)
+    )`),
+    env.BUILDER_DB.prepare(`CREATE INDEX IF NOT EXISTS idx_payment_intents_order
+      ON payment_intents(order_id)`)
   ]);
 }
 
@@ -255,6 +268,10 @@ function priceFor(env, productCode, currency) {
   return amount;
 }
 
+function paypalConfigured(env) {
+  return Boolean(env.PAYPAL_CLIENT_ID && env.PAYPAL_CLIENT_SECRET && env.PAYPAL_WEBHOOK_ID);
+}
+
 function providerStatus(env) {
   return {
     alipay: {
@@ -266,7 +283,7 @@ function providerStatus(env) {
       currency: "CNY"
     },
     paypal: {
-      enabled: Boolean(env.PAYPAL_CLIENT_ID && env.PAYPAL_CLIENT_SECRET && env.PAYPAL_WEBHOOK_ID),
+      enabled: paypalConfigured(env),
       currency: "USD"
     }
   };
@@ -468,6 +485,319 @@ async function revokePaidOrder(env, { orderId, provider, eventId = null, provide
   return { orderId, duplicate: false };
 }
 
+function paypalBase(env) {
+  return String(env.PAYPAL_ENVIRONMENT || "sandbox").toLowerCase() === "live"
+    ? "https://api-m.paypal.com"
+    : "https://api-m.sandbox.paypal.com";
+}
+
+async function paypalAccessToken(env) {
+  if (!paypalConfigured(env)) throw new Error("PAYPAL_NOT_CONFIGURED");
+  const auth = btoa(`${env.PAYPAL_CLIENT_ID}:${env.PAYPAL_CLIENT_SECRET}`);
+  const response = await fetch(`${paypalBase(env)}/v1/oauth2/token`, {
+    method: "POST",
+    headers: {
+      "Authorization": `Basic ${auth}`,
+      "Content-Type": "application/x-www-form-urlencoded"
+    },
+    body: "grant_type=client_credentials"
+  });
+  const data = await response.json();
+  if (!response.ok || !data.access_token) throw new Error(data?.error_description || data?.error || "PAYPAL_OAUTH_FAILED");
+  return data.access_token;
+}
+
+function paypalMinor(value) {
+  const m = String(value || "").match(/^(\d+)(?:\.(\d{1,2}))?$/);
+  if (!m) return null;
+  return Number(m[1]) * 100 + Number((m[2] || "").padEnd(2, "0"));
+}
+
+async function paypalJson(env, path, { method = "GET", body = null, requestId = null } = {}) {
+  const token = await paypalAccessToken(env);
+  const headers = new Headers({
+    "Authorization": `Bearer ${token}`,
+    "Content-Type": "application/json"
+  });
+  if (requestId) headers.set("PayPal-Request-Id", requestId.slice(0, 108));
+  const response = await fetch(`${paypalBase(env)}${path}`, {
+    method,
+    headers,
+    body: body == null ? undefined : JSON.stringify(body)
+  });
+  let data = null;
+  try { data = await response.json(); } catch { data = {}; }
+  if (!response.ok) {
+    const err = new Error(data?.message || data?.name || `PAYPAL_HTTP_${response.status}`);
+    err.status = response.status;
+    err.paypal = data;
+    throw err;
+  }
+  return data;
+}
+
+async function handlePayPalCreate(request, env) {
+  if (!paypalConfigured(env)) return paymentAdapterNotConfigured("PayPal");
+  await ensureAccessDb(env);
+  const body = await request.json();
+  const orderId = String(body.order_id || "");
+  const order = await getAuthorizedOrder(request, env, orderId);
+  if (!order) return json({ ok: false, error: "订单不存在或订单令牌无效" }, 403);
+  if (order.status === "granted") return json({ ok: true, already_paid: true, order_id: orderId });
+  if (order.status !== "pending") return json({ ok: false, error: "该订单当前不能发起付款" }, 409);
+  if (order.currency !== "USD") return json({ ok: false, error: "PayPal 订单必须使用 USD" }, 400);
+
+  const existing = await env.BUILDER_DB.prepare(`SELECT provider_order_id, approval_url, status
+    FROM payment_intents WHERE provider = 'paypal' AND order_id = ?`).bind(orderId).first();
+  if (existing?.provider_order_id && existing?.approval_url && existing.status !== "failed") {
+    return json({
+      ok: true,
+      order_id: orderId,
+      paypal_order_id: existing.provider_order_id,
+      approval_url: existing.approval_url,
+      reused: true
+    });
+  }
+
+  const origin = new URL(request.url).origin;
+  const returnUrl = `${origin}/checkout/?provider=paypal&status=return&order_id=${encodeURIComponent(orderId)}`;
+  const cancelUrl = `${origin}/checkout/?provider=paypal&status=cancel&order_id=${encodeURIComponent(orderId)}`;
+  const value = (Number(order.amount_minor) / 100).toFixed(2);
+
+  try {
+    const pp = await paypalJson(env, "/v2/checkout/orders", {
+      method: "POST",
+      requestId: `create-${orderId}`,
+      body: {
+        intent: "CAPTURE",
+        purchase_units: [{
+          reference_id: orderId,
+          custom_id: orderId,
+          invoice_id: orderId,
+          amount: { currency_code: "USD", value }
+        }],
+        payment_source: {
+          paypal: {
+            experience_context: {
+              brand_name: "T5 Quant Lab",
+              shipping_preference: "NO_SHIPPING",
+              user_action: "PAY_NOW",
+              return_url: returnUrl,
+              cancel_url: cancelUrl
+            }
+          }
+        }
+      }
+    });
+    const approvalUrl = (pp.links || []).find(x => x.rel === "payer-action")?.href
+      || (pp.links || []).find(x => x.rel === "approve")?.href;
+    if (!pp.id || !approvalUrl) throw new Error("PAYPAL_APPROVAL_LINK_MISSING");
+    const now = nowIso();
+    await env.BUILDER_DB.prepare(`INSERT INTO payment_intents
+      (provider, provider_order_id, order_id, approval_url, status, created_at, updated_at)
+      VALUES ('paypal', ?, ?, ?, 'created', ?, ?)
+      ON CONFLICT(provider, order_id) DO UPDATE SET provider_order_id = excluded.provider_order_id,
+        approval_url = excluded.approval_url, status = 'created', updated_at = excluded.updated_at`)
+      .bind(pp.id, orderId, approvalUrl, now, now).run();
+    return json({ ok: true, order_id: orderId, paypal_order_id: pp.id, approval_url: approvalUrl });
+  } catch (error) {
+    return json({ ok: false, error: `PayPal下单失败：${error.message || error}` }, 502);
+  }
+}
+
+function paypalCaptureFromOrder(ppOrder) {
+  for (const unit of ppOrder?.purchase_units || []) {
+    for (const capture of unit?.payments?.captures || []) {
+      if (capture?.status === "COMPLETED") return { capture, unit };
+    }
+  }
+  return null;
+}
+
+async function handlePayPalCapture(request, env) {
+  if (!paypalConfigured(env)) return paymentAdapterNotConfigured("PayPal");
+  await ensureAccessDb(env);
+  const body = await request.json();
+  const orderId = String(body.order_id || "");
+  const paypalOrderId = String(body.paypal_order_id || "");
+  const order = await getAuthorizedOrder(request, env, orderId);
+  if (!order) return json({ ok: false, error: "订单不存在或订单令牌无效" }, 403);
+  if (order.status === "granted") return json({ ok: true, order_id: orderId, status: "granted", duplicate: true });
+  if (order.status !== "pending" && order.status !== "paid") return json({ ok: false, error: "该订单当前不能完成付款" }, 409);
+  if (!paypalOrderId) return json({ ok: false, error: "缺少 PayPal order id" }, 400);
+
+  const intent = await env.BUILDER_DB.prepare(`SELECT provider_order_id FROM payment_intents
+    WHERE provider = 'paypal' AND order_id = ?`).bind(orderId).first();
+  if (!intent || intent.provider_order_id !== paypalOrderId) return json({ ok: false, error: "PayPal订单与T5订单不匹配" }, 409);
+
+  let ppOrder;
+  try {
+    try {
+      ppOrder = await paypalJson(env, `/v2/checkout/orders/${encodeURIComponent(paypalOrderId)}/capture`, {
+        method: "POST",
+        requestId: `capture-${orderId}`,
+        body: {}
+      });
+    } catch (captureError) {
+      if (captureError.status !== 422) throw captureError;
+      ppOrder = await paypalJson(env, `/v2/checkout/orders/${encodeURIComponent(paypalOrderId)}`);
+    }
+
+    const found = paypalCaptureFromOrder(ppOrder);
+    if (!found) throw new Error("PAYPAL_CAPTURE_NOT_COMPLETED");
+    const { capture, unit } = found;
+    if (String(unit?.custom_id || unit?.invoice_id || "") !== orderId) throw new Error("PAYPAL_ORDER_REFERENCE_MISMATCH");
+    const paidMinor = paypalMinor(capture?.amount?.value);
+    const currency = String(capture?.amount?.currency_code || "").toUpperCase();
+    const result = await completePaidOrder(env, {
+      orderId,
+      provider: "paypal",
+      providerTradeId: String(capture.id || ""),
+      paidAmountMinor: paidMinor,
+      currency,
+      eventId: `capture:${capture.id}`
+    });
+    await env.BUILDER_DB.prepare(`UPDATE payment_intents SET status = 'captured', updated_at = ?
+      WHERE provider = 'paypal' AND provider_order_id = ?`).bind(nowIso(), paypalOrderId).run();
+    return json({ ok: true, order_id: orderId, status: "granted", ...result });
+  } catch (error) {
+    return json({ ok: false, error: `PayPal收款确认失败：${error.message || error}` }, 502);
+  }
+}
+
+async function verifyPayPalWebhook(request, env) {
+  if (!paypalConfigured(env)) throw new Error("PAYPAL_NOT_CONFIGURED");
+  const raw = await request.text();
+  let event;
+  try { event = JSON.parse(raw); } catch { throw new Error("PAYPAL_WEBHOOK_INVALID_JSON"); }
+  const payload = {
+    auth_algo: request.headers.get("PAYPAL-AUTH-ALGO") || "",
+    cert_url: request.headers.get("PAYPAL-CERT-URL") || "",
+    transmission_id: request.headers.get("PAYPAL-TRANSMISSION-ID") || "",
+    transmission_sig: request.headers.get("PAYPAL-TRANSMISSION-SIG") || "",
+    transmission_time: request.headers.get("PAYPAL-TRANSMISSION-TIME") || "",
+    webhook_id: env.PAYPAL_WEBHOOK_ID,
+    webhook_event: event
+  };
+  if (!payload.auth_algo || !payload.cert_url || !payload.transmission_id || !payload.transmission_sig || !payload.transmission_time) {
+    throw new Error("PAYPAL_WEBHOOK_HEADERS_MISSING");
+  }
+  const verification = await paypalJson(env, "/v1/notifications/verify-webhook-signature", {
+    method: "POST",
+    body: payload
+  });
+  if (verification?.verification_status !== "SUCCESS") throw new Error("PAYPAL_WEBHOOK_SIGNATURE_INVALID");
+  return event;
+}
+
+async function localOrderFromPayPalEvent(env, event) {
+  const resource = event?.resource || {};
+  const providerOrderId = resource?.supplementary_data?.related_ids?.order_id || "";
+  if (providerOrderId) {
+    const intent = await env.BUILDER_DB.prepare(`SELECT order_id FROM payment_intents
+      WHERE provider = 'paypal' AND provider_order_id = ?`).bind(providerOrderId).first();
+    if (intent?.order_id) return { orderId: intent.order_id, providerOrderId };
+  }
+  const direct = String(resource.custom_id || resource.invoice_id || "");
+  if (direct) return { orderId: direct, providerOrderId };
+
+  const up = (resource.links || []).find(x => x.rel === "up")?.href || "";
+  const captureMatch = up.match(/\/captures\/([^/?#]+)/);
+  if (captureMatch) {
+    const order = await env.BUILDER_DB.prepare(`SELECT order_id FROM orders
+      WHERE payment_provider = 'paypal' AND provider_trade_id = ?`).bind(captureMatch[1]).first();
+    if (order?.order_id) return { orderId: order.order_id, providerOrderId };
+  }
+  return null;
+}
+
+async function handlePayPalWebhook(request, env) {
+  if (!paypalConfigured(env)) return paymentAdapterNotConfigured("PayPal");
+  await ensureAccessDb(env);
+  let event;
+  try {
+    event = await verifyPayPalWebhook(request, env);
+  } catch (error) {
+    return json({ ok: false, error: String(error.message || error) }, 400);
+  }
+
+  const eventType = String(event.event_type || "");
+  const eventId = String(event.id || "");
+  const resource = event.resource || {};
+  const local = await localOrderFromPayPalEvent(env, event);
+
+  try {
+    if (eventType === "PAYMENT.CAPTURE.COMPLETED") {
+      if (!local?.orderId) throw new Error("PAYPAL_LOCAL_ORDER_NOT_FOUND");
+      const paidMinor = paypalMinor(resource?.amount?.value);
+      const currency = String(resource?.amount?.currency_code || "").toUpperCase();
+      await completePaidOrder(env, {
+        orderId: local.orderId,
+        provider: "paypal",
+        providerTradeId: String(resource.id || ""),
+        paidAmountMinor: paidMinor,
+        currency,
+        eventId: eventId || `capture:${resource.id}`
+      });
+      if (local.providerOrderId) {
+        await env.BUILDER_DB.prepare(`UPDATE payment_intents SET status = 'captured', updated_at = ?
+          WHERE provider = 'paypal' AND provider_order_id = ?`).bind(nowIso(), local.providerOrderId).run();
+      }
+      return json({ ok: true });
+    }
+
+    if (eventType === "PAYMENT.CAPTURE.REFUNDED") {
+      if (!local?.orderId) return json({ ok: true, ignored: true });
+      const order = await env.BUILDER_DB.prepare("SELECT amount_minor, currency FROM orders WHERE order_id = ?")
+        .bind(local.orderId).first();
+      const refundMinor = paypalMinor(resource?.amount?.value);
+      const currency = String(resource?.amount?.currency_code || "").toUpperCase();
+      if (order && refundMinor === Number(order.amount_minor) && currency === String(order.currency).toUpperCase()) {
+        await revokePaidOrder(env, {
+          orderId: local.orderId,
+          provider: "paypal",
+          providerTradeId: String(resource.id || ""),
+          eventId: eventId || `refund:${resource.id}`
+        });
+      } else {
+        await recordPaymentEvent(env, {
+          provider: "paypal",
+          eventId: eventId || `partial-refund:${resource.id}`,
+          eventType: "payment_partial_refund",
+          orderId: local.orderId,
+          providerTradeId: String(resource.id || "")
+        });
+      }
+      return json({ ok: true });
+    }
+
+    if (eventType === "PAYMENT.CAPTURE.REVERSED") {
+      if (local?.orderId) {
+        await revokePaidOrder(env, {
+          orderId: local.orderId,
+          provider: "paypal",
+          providerTradeId: String(resource.id || ""),
+          eventId: eventId || `reversal:${resource.id}`
+        });
+      }
+      return json({ ok: true });
+    }
+
+    if (eventId) {
+      await recordPaymentEvent(env, {
+        provider: "paypal",
+        eventId,
+        eventType: eventType || "unhandled",
+        orderId: local?.orderId || null,
+        providerTradeId: String(resource.id || "") || null
+      });
+    }
+    return json({ ok: true, ignored: true });
+  } catch (error) {
+    return json({ ok: false, error: String(error.message || error) }, 500);
+  }
+}
+
 async function handleAdminMarkPaid(request, env) {
   if (!(await isAdmin(request, env))) return json({ ok: false, error: "Unauthorized" }, 403);
   if (String(env.ENABLE_PAYMENT_TEST_MODE || "").toLowerCase() !== "true") {
@@ -548,6 +878,14 @@ export default {
       return handleCancelOrder(request, env);
     }
 
+    if (url.pathname === "/api/payment/paypal/create" && request.method === "POST") {
+      return handlePayPalCreate(request, env);
+    }
+
+    if (url.pathname === "/api/payment/paypal/capture" && request.method === "POST") {
+      return handlePayPalCapture(request, env);
+    }
+
     if (url.pathname === "/api/admin/orders/mark-paid" && request.method === "POST") {
       return handleAdminMarkPaid(request, env);
     }
@@ -563,7 +901,7 @@ export default {
       return paymentAdapterNotConfigured("WeChat Pay");
     }
     if (url.pathname === "/api/payment/paypal/webhook" && request.method === "POST") {
-      return paymentAdapterNotConfigured("PayPal");
+      return handlePayPalWebhook(request, env);
     }
 
     if (PAID_BUILDER_ROUTES.has(url.pathname)) {

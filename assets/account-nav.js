@@ -2,6 +2,15 @@
   const nav=document.getElementById('navlinks')||document.querySelector('.navlinks');
   if(!nav||nav.querySelector('[data-t5-account-nav]'))return;
 
+  const start=document.createElement('a');
+  start.href='/start/';
+  start.textContent='Start Here';
+  start.className='start-nav-link';
+  start.setAttribute('data-t5-start-nav','1');
+  start.setAttribute('aria-label','打开 T5 学习导航器');
+  if(location.pathname==='/start/'||location.pathname.startsWith('/start/'))start.classList.add('is-current');
+  nav.appendChild(start);
+
   const link=document.createElement('a');
   link.href='/account/login/';
   link.textContent='登录 / 注册';

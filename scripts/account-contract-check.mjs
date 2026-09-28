@@ -35,6 +35,13 @@ need('account/login/index.html','默认不勾选','marketing opt-in must be expl
 forbid('account/login/index.html',/type=["']password["']/i,'login page must not ask for password');
 need('account/index.html','/api/account/summary','My T5 account summary');
 need('account/index.html','/api/account/marketing','My T5 marketing preference');
+need('account/index.html','/assets/account-local-training.js','My T5 local training overview');
+need('assets/account-local-training.js','t5_practice_progress_v2','legacy 132 local progress');
+need('assets/account-local-training.js','t5_specialist_progress_v1','specialist local progress');
+need('assets/account-local-training.js','t5_hidden_future_sim_v1','Hidden Future local progress');
+need('assets/account-local-training.js','288','specialist total shown locally');
+need('assets/account-local-training.js','localStorage','training summary remains browser-local');
+forbid('assets/account-local-training.js',/\bfetch\s*\(|XMLHttpRequest|sendBeacon\s*\(/i,'local training summary must not upload training data');
 need('checkout/index.html','readonly placeholder="请先登录"','checkout email must be account-bound and readonly');
 need('checkout/index.html','/api/auth/me','checkout login guard');
 need('checkout/index.html','ACCOUNT_REQUIRED','checkout handles auth requirement');
@@ -43,4 +50,4 @@ need('admin/accounts/index.html','sessionStorage','admin key must not be persist
 need('unsubscribe/index.html','/api/marketing/unsubscribe','unsubscribe page');
 
 if(errors.length){console.error('Account contract check failed:');for(const e of errors)console.error('- '+e);process.exit(1)}
-console.log('Account contract OK: email-only auth, opt-in marketing, user-bound orders and Builder bridge protected.');
+console.log('Account contract OK: email-only auth, opt-in marketing, user-bound orders and local-only training summary protected.');

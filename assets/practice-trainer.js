@@ -1,6 +1,8 @@
 (()=>{
 'use strict';
-const STORAGE_KEY='t5_practice_progress_v1';
+const STORAGE_KEY='t5_practice_progress_v2';
+const LEGACY_KEY='t5_practice_progress_v1';
+const META_KEY='__meta';
 const PACKS=[
  {url:'/market-lab/practice/',name:'基础混合题',topic:'Mixed',range:'Q001–024'},
  {url:'/market-lab/practice/context-structure/',name:'Context & Structure',topic:'Context / Structure',range:'Q025–036'},
@@ -10,40 +12,85 @@ const PACKS=[
  {url:'/market-lab/practice/range-compression/',name:'Range & Compression',topic:'Range / Compression',range:'Q073–084'},
  {url:'/market-lab/practice/code-migration/',name:'Code Migration & EA Engineering',topic:'EA Engineering',range:'Q085–096'}
 ];
+const RECOMMENDATIONS={
+ 'Context / Structure':[
+  ['/library/multi-timeframe-context-execution/','多周期 Context → Execution'],
+  ['/library/market-structure-bos-choch/','BOS / CHOCH'],
+  ['/library/neckline-structure-takeover/','颈线与趋势接管']
+ ],
+ 'Liquidity / Execution':[
+  ['/library/internal-external-liquidity/','内部 / 外部流动性'],
+  ['/library/liquidity-sweep-reclaim/','Sweep / Reclaim'],
+  ['/library/acceptance-vs-rejection/','Acceptance vs Rejection']
+ ],
+ 'Risk / Audit':[
+  ['/library/risk-position-management/','风险与持仓管理'],
+  ['/library/mfe-mae-trade-review/','MFE / MAE复盘'],
+  ['/verification/audit-checklist/','账户级EA审计']
+ ],
+ 'Targets / Volatility':[
+  ['/library/target-selection-liquidity/','目标选择'],
+  ['/library/atr-volatility/','ATR与波动率'],
+  ['/library/session-time/','Session与时间段']
+ ],
+ 'Range / Compression':[
+  ['/library/range-boundary-trading/','区间边界'],
+  ['/library/compression/','Compression'],
+  ['/library/failed-auction/','Failed Auction']
+ ],
+ 'EA Engineering':[
+  ['/tools/guides/mt4-to-mt5-migration/','MT4 → MT5迁移'],
+  ['/tools/guides/pine-to-mql-migration/','Pine → MQL迁移'],
+  ['/tools/guides/ea-compiles-not-live-ready/','能编译为什么还不能实盘']
+ ],
+ 'Mixed':[
+  ['/library/','Library学习地图'],
+  ['/market-lab/','Market Lab'],
+  ['/verification/','Verification']
+ ]
+};
 const $=id=>document.getElementById(id);
 const state={questions:[],filtered:[],index:0,pack:'all',mode:'all',progress:loadProgress(),loaded:false};
-function loadProgress(){try{return JSON.parse(localStorage.getItem(STORAGE_KEY)||'{}')||{};}catch{return {};}}
+function now(){return new Date().toISOString();}
+function baseMeta(){return{currentStreak:0,bestStreak:0,firstAttempts:0,firstCorrect:0};}
+function normalizeEntry(p){if(!p||typeof p!=='object')return null;if(typeof p.attempts==='number')return p;const firstCorrect=!!p.correct;return{attempts:1,firstSelected:p.selected||'',firstCorrect,lastSelected:p.selected||'',lastCorrect:firstCorrect,mastered:firstCorrect,wrongCount:firstCorrect?0:1,answeredAt:p.answeredAt||now(),masteredAt:firstCorrect?(p.answeredAt||now()):null,topic:p.topic||'Mixed',pack:p.pack||''};}
+function migrateLegacy(){try{const legacy=JSON.parse(localStorage.getItem(LEGACY_KEY)||'{}')||{};if(!Object.keys(legacy).length)return null;const out={[META_KEY]:baseMeta()};for(const [k,v] of Object.entries(legacy)){const n=normalizeEntry(v);if(!n)continue;out[k]=n;out[META_KEY].firstAttempts++;if(n.firstCorrect){out[META_KEY].firstCorrect++;out[META_KEY].currentStreak++;out[META_KEY].bestStreak=Math.max(out[META_KEY].bestStreak,out[META_KEY].currentStreak);}else out[META_KEY].currentStreak=0;}return out;}catch{return null;}}
+function loadProgress(){try{let data=JSON.parse(localStorage.getItem(STORAGE_KEY)||'null');if(!data)data=migrateLegacy();if(!data)data={[META_KEY]:baseMeta()};if(!data[META_KEY])data[META_KEY]=baseMeta();return data;}catch{return{[META_KEY]:baseMeta()};}}
 function saveProgress(){localStorage.setItem(STORAGE_KEY,JSON.stringify(state.progress));}
+function meta(){return state.progress[META_KEY]||(state.progress[META_KEY]=baseMeta());}
 function stripTags(html){const d=document.createElement('div');d.innerHTML=html;return d.textContent||'';}
-function parseChoices(el){if(!el)return[];let raw=el.innerHTML.replace(/<br\s*\/?\s*>/gi,'\n').replace(/&nbsp;/gi,' ');raw=stripTags(raw).replace(/\u3000/g,' ').trim();const out=[];const re=/(?:^|\s)([A-D])[\.．、]\s*([\s\S]*?)(?=(?:\s+[A-D][\.．、]\s*)|$)/g;let m;while((m=re.exec(raw))){out.push({letter:m[1],text:m[2].trim()});}if(out.length<2){const parts=raw.split(/(?=[A-D][\.．、])/).map(s=>s.trim()).filter(Boolean);for(const p of parts){const mm=p.match(/^([A-D])[\.．、]\s*(.+)$/);if(mm)out.push({letter:mm[1],text:mm[2].trim()});}}
- return out;
-}
+function parseChoices(el){if(!el)return[];let raw=el.innerHTML.replace(/<br\s*\/?\s*>/gi,'\n').replace(/&nbsp;/gi,' ');raw=stripTags(raw).replace(/\u3000/g,' ').trim();const out=[];const re=/(?:^|\s)([A-D])[\.．、]\s*([\s\S]*?)(?=(?:\s+[A-D][\.．、]\s*)|$)/g;let m;while((m=re.exec(raw))){out.push({letter:m[1],text:m[2].trim()});}if(out.length<2){const parts=raw.split(/(?=[A-D][\.．、])/).map(s=>s.trim()).filter(Boolean);for(const p of parts){const mm=p.match(/^([A-D])[\.．、]\s*(.+)$/);if(mm)out.push({letter:mm[1],text:mm[2].trim()});}}return out;}
 function parseCorrect(q){const t=q.querySelector('.answer strong')?.textContent||'';const m=t.match(/(?:答案\s*[:：]\s*)?([A-D])(?=[。．\.、\s]|$)/i);return m?m[1].toUpperCase():null;}
 function inferBaseTopic(label){const s=(label||'').toUpperCase();if(/AUDIT|EA|STATE|REPAINT|LOOKAHEAD|PARITY/.test(s))return'EA Engineering';if(/RISK|T1|T2|MFE|MAE|SL|RUNNER/.test(s))return'Risk / Audit';if(/LIQUID|SWEEP|RECLAIM|FVG|ORDER BLOCK|OB/.test(s))return'Liquidity / Execution';if(/SESSION|ATR|VOLAT|TARGET|FILL R|PLANNED R/.test(s))return'Targets / Volatility';if(/RANGE|COMPRESSION|AUCTION/.test(s))return'Range / Compression';if(/BOS|CHOCH|NECKLINE|CONTEXT|TIMEFRAME|LOWER HIGH|STRUCTURE/.test(s))return'Context / Structure';return'Mixed';}
 async function loadPack(pack,packIndex){const r=await fetch(pack.url,{cache:'no-store'});if(!r.ok)throw new Error(pack.name+' 加载失败');const html=await r.text();const doc=new DOMParser().parseFromString(html,'text/html');return [...doc.querySelectorAll('.q')].map((q,i)=>{const label=q.querySelector('small')?.textContent.trim()||`${pack.name} ${i+1}`;const correct=parseCorrect(q);const choices=parseChoices(q.querySelector('.choices'));return{id:`p${packIndex}-q${i+1}`,packIndex,packName:pack.name,packUrl:pack.url,range:pack.range,topic:pack.topic==='Mixed'?inferBaseTopic(label):pack.topic,label,question:q.querySelector('h3')?.textContent.trim()||'',choices,correct,explanation:q.querySelector('.answer')?.innerHTML||'',sourceIndex:i+1};}).filter(q=>q.question&&q.correct&&q.choices.length>=2);}
-function statsFor(list=state.questions){let attempted=0,correct=0;const wrong={};for(const q of list){const p=state.progress[q.id];if(!p)continue;attempted++;if(p.correct)correct++;else wrong[q.topic]=(wrong[q.topic]||0)+1;}return{attempted,correct,accuracy:attempted?Math.round(correct/attempted*100):0,wrong};}
-function setLoading(msg){$('trainerStatus').textContent=msg;}
-function renderStats(){const s=statsFor(state.questions);$('statAttempted').textContent=s.attempted;
- $('statCorrect').textContent=s.correct;$('statAccuracy').textContent=s.attempted?s.accuracy+'%':'—';$('statRemaining').textContent=Math.max(0,state.questions.length-s.attempted);
- const weak=Object.entries(s.wrong).sort((a,b)=>b[1]-a[1]).slice(0,3);$('weakAreas').innerHTML=weak.length?weak.map(([k,v])=>`<span class="trainer-chip">${escapeHtml(k)} · ${v}错</span>`).join(''):'<span class="trainer-muted">暂无错题记录。完成几题后这里会显示薄弱环节。</span>';
- const ps=statsFor(state.filtered);$('filterSummary').textContent=`当前筛选 ${state.filtered.length} 题 · 已答 ${ps.attempted} · 正确 ${ps.correct}`;
-}
+function entry(q){const p=state.progress[q.id];return p&&typeof p==='object'?p:null;}
+function statsFor(list=state.questions){let attempted=0,firstCorrect=0,mastered=0,repaired=0;const unresolved={};for(const q of list){const p=entry(q);if(!p)continue;attempted++;if(p.firstCorrect)firstCorrect++;if(p.mastered){mastered++;if(!p.firstCorrect)repaired++;}else unresolved[q.topic]=(unresolved[q.topic]||0)+1;}return{attempted,firstCorrect,firstAccuracy:attempted?Math.round(firstCorrect/attempted*100):0,mastered,repaired,mastery:list.length?Math.round(mastered/list.length*100):0,unresolved};}
 function escapeHtml(s){return String(s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));}
+function setLoading(msg){$('trainerStatus').textContent=msg;}
+function renderPackProgress(){const target=$('packProgress');if(!target)return;target.innerHTML=PACKS.map((p,i)=>{const list=state.questions.filter(q=>q.packIndex===i);const s=statsFor(list);return `<div class="trainer-pack-row"><div><b>${escapeHtml(p.range)}</b><span>${escapeHtml(p.name)}</span></div><div class="trainer-pack-meter"><i style="width:${s.mastery}%"></i></div><strong>${s.mastered}/${list.length}</strong></div>`;}).join('');}
+function renderRecommendations(unresolved){const box=$('recommendations');if(!box)return;const ranked=Object.entries(unresolved).sort((a,b)=>b[1]-a[1]);if(!ranked.length){box.innerHTML='<span class="trainer-muted">暂无未修复错题。继续训练后，这里会按薄弱环节推荐对应教材。</span>';return;}const [topic,count]=ranked[0];const links=RECOMMENDATIONS[topic]||RECOMMENDATIONS.Mixed;box.innerHTML=`<div class="trainer-rec-head"><b>优先补：${escapeHtml(topic)}</b><span>${count} 道未修复</span></div>`+links.map(([href,label])=>`<a href="${href}">${escapeHtml(label)} →</a>`).join('');}
+function renderStats(){const s=statsFor(state.questions);const m=meta();$('statAttempted').textContent=s.attempted;$('statCorrect').textContent=s.mastered;$('statAccuracy').textContent=s.attempted?s.firstAccuracy+'%':'—';$('statRemaining').textContent=Math.max(0,state.questions.length-s.mastered);if($('statStreak'))$('statStreak').textContent=m.currentStreak||0;if($('statBestStreak'))$('statBestStreak').textContent=m.bestStreak||0;if($('statRepaired'))$('statRepaired').textContent=s.repaired;
+ const weak=Object.entries(s.unresolved).sort((a,b)=>b[1]-a[1]).slice(0,3);$('weakAreas').innerHTML=weak.length?weak.map(([k,v])=>`<span class="trainer-chip">${escapeHtml(k)} · ${v}未修复</span>`).join(''):'<span class="trainer-muted">暂无未修复错题。</span>';
+ const ps=statsFor(state.filtered);$('filterSummary').textContent=`当前 ${state.filtered.length} 题 · 已答 ${ps.attempted} · 已掌握 ${ps.mastered}`;renderPackProgress();renderRecommendations(s.unresolved);
+}
 function buildFilter(){const sel=$('packFilter');sel.innerHTML='<option value="all">全部96题</option>'+PACKS.map((p,i)=>`<option value="${i}">${p.range} · ${p.name}</option>`).join('');sel.value=state.pack;}
-function applyFilter(resetIndex=true){let list=[...state.questions];if(state.pack!=='all')list=list.filter(q=>String(q.packIndex)===state.pack);if(state.mode==='wrong')list=list.filter(q=>state.progress[q.id]&&!state.progress[q.id].correct);if(state.mode==='unanswered')list=list.filter(q=>!state.progress[q.id]);state.filtered=list;if(resetIndex)state.index=0;if(state.index>=list.length)state.index=Math.max(0,list.length-1);renderStats();renderQuestion();}
-function renderQuestion(){const box=$('questionBox');if(!state.filtered.length){box.innerHTML='<div class="trainer-empty"><h3>当前筛选没有题目</h3><p>如果你选择了“错题重练”，说明当前没有错题；可以切回全部题目或未答题。</p></div>';updateNav();return;}
- const q=state.filtered[state.index];const p=state.progress[q.id];$('questionMeta').textContent=`${q.range} · ${q.packName} · ${q.topic}`;$('questionCounter').textContent=`${state.index+1} / ${state.filtered.length}`;
- box.innerHTML=`<div class="trainer-label">${escapeHtml(q.label)}</div><h2>${escapeHtml(q.question)}</h2><div class="trainer-choices">${q.choices.map(c=>`<button class="trainer-choice${p&&p.selected===c.letter?' selected':''}${p?(c.letter===q.correct?' correct':(p.selected===c.letter&&!p.correct?' wrong':'')):''}" data-letter="${c.letter}" ${p?'disabled':''}><b>${c.letter}</b><span>${escapeHtml(c.text)}</span></button>`).join('')}</div><div id="answerFeedback" class="trainer-feedback${p?' show':''}">${p?feedbackHtml(q,p):''}</div>`;
- if(!p)box.querySelectorAll('.trainer-choice').forEach(btn=>btn.addEventListener('click',()=>answer(q,btn.dataset.letter)));
+function applyFilter(resetIndex=true){let list=[...state.questions];if(state.pack!=='all')list=list.filter(q=>String(q.packIndex)===state.pack);if(state.mode==='wrong')list=list.filter(q=>{const p=entry(q);return p&&!p.mastered;});if(state.mode==='unanswered')list=list.filter(q=>!entry(q));if(state.mode==='mastered')list=list.filter(q=>entry(q)?.mastered);state.filtered=list;if(resetIndex)state.index=0;if(state.index>=list.length)state.index=Math.max(0,list.length-1);renderStats();renderQuestion();}
+function canAnswerAgain(p){return !p||!p.mastered;}
+function renderQuestion(){const box=$('questionBox');if(!state.filtered.length){box.innerHTML='<div class="trainer-empty"><h3>当前筛选没有题目</h3><p>如果你选择了“未修复错题”，说明目前没有待修复题；可以切回全部题目或未答题。</p></div>';updateNav();return;}
+ const q=state.filtered[state.index];const p=entry(q);$('questionMeta').textContent=`${q.range} · ${q.packName} · ${q.topic}`;$('questionCounter').textContent=`${state.index+1} / ${state.filtered.length}`;
+ const locked=p?.mastered;const last=p?.lastSelected||'';box.innerHTML=`<div class="trainer-label">${escapeHtml(q.label)}</div><h2>${escapeHtml(q.question)}</h2>${p&&!p.mastered?'<div class="trainer-retry-note">这题首次答错，当前处于待修复状态。再次答对后会记为“已修复”。</div>':''}<div class="trainer-choices">${q.choices.map(c=>`<button class="trainer-choice${locked&&c.letter===q.correct?' correct':''}${!locked&&p&&last===c.letter&&!p.lastCorrect?' wrong':''}" data-letter="${c.letter}" ${locked?'disabled':''}><b>${c.letter}</b><span>${escapeHtml(c.text)}</span></button>`).join('')}</div><div id="answerFeedback" class="trainer-feedback${p?' show':''}">${p?feedbackHtml(q,p):''}</div>`;
+ if(canAnswerAgain(p))box.querySelectorAll('.trainer-choice').forEach(btn=>btn.addEventListener('click',()=>answer(q,btn.dataset.letter)));
  updateNav();
 }
-function feedbackHtml(q,p){const verdict=p.correct?'<strong class="ok">回答正确。</strong>':'<strong class="bad">回答错误。</strong> 正确答案：<b>'+q.correct+'</b>。';return `${verdict}<div class="trainer-explanation">${q.explanation}</div><div class="trainer-source"><a href="${q.packUrl}">查看原专题题包与上下文</a></div>`;}
-function answer(q,letter){if(state.progress[q.id])return;state.progress[q.id]={selected:letter,correct:letter===q.correct,topic:q.topic,pack:q.packName,answeredAt:new Date().toISOString()};saveProgress();renderStats();renderQuestion();}
+function feedbackHtml(q,p){if(p.mastered&&p.firstCorrect)return `<strong class="ok">首次回答正确。</strong><div class="trainer-explanation">${q.explanation}</div><div class="trainer-source"><a href="${q.packUrl}">查看原专题题包与上下文</a></div>`;if(p.mastered)return `<strong class="ok">错题已修复。</strong> 本题共作答 ${p.attempts} 次。<div class="trainer-explanation">${q.explanation}</div><div class="trainer-source"><a href="${q.packUrl}">查看原专题题包与上下文</a></div>`;return `<strong class="bad">本次回答错误。</strong> 先重新判断；本题仍保留在“未修复错题”。<div class="trainer-explanation">${q.explanation}</div><div class="trainer-source"><a href="${q.packUrl}">查看原专题题包与上下文</a></div>`;}
+function answer(q,letter){let p=entry(q);if(p?.mastered)return;const correct=letter===q.correct;const first=!p;if(first){const m=meta();m.firstAttempts++;if(correct){m.firstCorrect++;m.currentStreak++;m.bestStreak=Math.max(m.bestStreak,m.currentStreak);}else m.currentStreak=0;p={attempts:0,firstSelected:letter,firstCorrect:correct,lastSelected:'',lastCorrect:false,mastered:false,wrongCount:0,answeredAt:now(),masteredAt:null,topic:q.topic,pack:q.packName};}
+ p.attempts=(p.attempts||0)+1;p.lastSelected=letter;p.lastCorrect=correct;p.topic=q.topic;p.pack=q.packName;p.lastAnsweredAt=now();if(!correct)p.wrongCount=(p.wrongCount||0)+1;if(correct){p.mastered=true;p.masteredAt=now();}state.progress[q.id]=p;saveProgress();renderStats();renderQuestion();}
 function updateNav(){$('prevQuestion').disabled=state.index<=0;$('nextQuestion').disabled=!state.filtered.length||state.index>=state.filtered.length-1;}
-function nextUnanswered(){if(!state.filtered.length)return;let idx=state.filtered.findIndex((q,i)=>i>state.index&&!state.progress[q.id]);if(idx<0)idx=state.filtered.findIndex(q=>!state.progress[q.id]);if(idx>=0){state.index=idx;renderQuestion();}}
-function resetProgress(){if(!confirm('只清除这个浏览器里的T5训练记录。确定重置吗？'))return;state.progress={};saveProgress();applyFilter();}
+function nextUnanswered(){if(!state.filtered.length)return;let idx=state.filtered.findIndex((q,i)=>i>state.index&&!entry(q));if(idx<0)idx=state.filtered.findIndex(q=>!entry(q));if(idx>=0){state.index=idx;renderQuestion();}}
+function nextUnresolved(){if(!state.filtered.length)return;let idx=state.filtered.findIndex((q,i)=>i>state.index&&entry(q)&&!entry(q).mastered);if(idx<0)idx=state.filtered.findIndex(q=>entry(q)&&!entry(q).mastered);if(idx>=0){state.index=idx;renderQuestion();}}
+function resetProgress(){if(!confirm('只清除这个浏览器里的T5训练记录。确定重置吗？'))return;state.progress={[META_KEY]:baseMeta()};localStorage.removeItem(LEGACY_KEY);saveProgress();applyFilter();}
 async function init(){try{setLoading('正在读取7个公开题包…');const groups=await Promise.all(PACKS.map(loadPack));state.questions=groups.flat();state.loaded=true;setLoading(`已载入 ${state.questions.length} 题。答题记录只保存在当前浏览器。`);buildFilter();applyFilter();
- $('packFilter').addEventListener('change',e=>{state.pack=e.target.value;applyFilter();});$('modeFilter').addEventListener('change',e=>{state.mode=e.target.value;applyFilter();});$('prevQuestion').addEventListener('click',()=>{if(state.index>0){state.index--;renderQuestion();}});$('nextQuestion').addEventListener('click',()=>{if(state.index<state.filtered.length-1){state.index++;renderQuestion();}});$('nextUnanswered').addEventListener('click',nextUnanswered);$('resetProgress').addEventListener('click',resetProgress);
+ $('packFilter').addEventListener('change',e=>{state.pack=e.target.value;applyFilter();});$('modeFilter').addEventListener('change',e=>{state.mode=e.target.value;applyFilter();});$('prevQuestion').addEventListener('click',()=>{if(state.index>0){state.index--;renderQuestion();}});$('nextQuestion').addEventListener('click',()=>{if(state.index<state.filtered.length-1){state.index++;renderQuestion();}});$('nextUnanswered').addEventListener('click',nextUnanswered);if($('nextUnresolved'))$('nextUnresolved').addEventListener('click',nextUnresolved);$('resetProgress').addEventListener('click',resetProgress);
  }catch(e){setLoading('训练器加载失败：'+e.message);$('questionBox').innerHTML='<div class="trainer-empty"><p>可以先使用原始题库页面继续训练。</p><a class="btn" href="/market-lab/practice/">打开原始题库</a></div>';}}
 init();
 })();

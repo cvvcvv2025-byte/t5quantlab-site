@@ -54,6 +54,8 @@ jobs:
         run: node scripts/training-review-contract-check.mjs
       - name: Check free source inspector contract
         run: node scripts/source-inspector-contract-check.mjs
+      - name: Check customer-facing copy boundary
+        run: node scripts/customer-copy-contract-check.mjs
       - name: Check SEO and case visual contract
         run: node scripts/seo-contract-check.mjs
       - name: Check internal content links

@@ -37,7 +37,7 @@ function configState(env) {
   const accountSecret = Boolean(env.ACCOUNT_AUTH_SECRET);
   const resend = Boolean(env.RESEND_API_KEY && env.AUTH_EMAIL_FROM);
   const paypal = Boolean(env.PAYPAL_CLIENT_ID && env.PAYPAL_CLIENT_SECRET && env.PAYPAL_WEBHOOK_ID);
-  const auditSalt = Boolean(env.AUDIT_HASH_SALT);
+  const auditSalt = String(env.AUDIT_HASH_SALT || "").trim().length >= 16;
   const paypalEnvironment = String(env.PAYPAL_ENVIRONMENT || "sandbox").toLowerCase() === "live" ? "live" : "sandbox";
   const paymentTestMode = String(env.ENABLE_PAYMENT_TEST_MODE || "").toLowerCase() === "true";
   const accountReady = d1 && accountSecret && resend;
@@ -260,7 +260,7 @@ async function adminHealth(request, env) {
   if (!env.PAYPAL_CLIENT_ID) missingSecrets.push("PAYPAL_CLIENT_ID");
   if (!env.PAYPAL_CLIENT_SECRET) missingSecrets.push("PAYPAL_CLIENT_SECRET");
   if (!env.PAYPAL_WEBHOOK_ID) missingSecrets.push("PAYPAL_WEBHOOK_ID");
-  if (!env.AUDIT_HASH_SALT) missingSecrets.push("AUDIT_HASH_SALT");
+  if (String(env.AUDIT_HASH_SALT || "").trim().length < 16) missingSecrets.push("AUDIT_HASH_SALT");
 
   const coreHealthy = state.assets && checks.d1_query.ok && checks.r2_access.ok && state.paid_builder_ready && missingCoreTables.length === 0;
   const marketingHealthy = state.marketing_ready && missingMarketingTables.length === 0;

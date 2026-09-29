@@ -41,6 +41,8 @@ jobs:
         run: node scripts/marketing-contract-check.mjs
       - name: Check runtime contract
         run: node scripts/runtime-contract-check.mjs
+      - name: Check deployment contract
+        run: node scripts/deployment-contract-check.mjs
       - name: Check practice trainer contract
         run: node scripts/practice-contract-check.mjs
       - name: Check multi-method content contract

@@ -1,4 +1,4 @@
-import app from "./commercial-worker.js";
+import app from "./audit-guard-worker.js";
 
 function json(data, status = 200) {
   return Response.json(data, {

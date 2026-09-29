@@ -1,5 +1,23 @@
-README.md
-wrangler.jsonc
-_headers
+# Backend / deployment source must never be published as static assets
 src/**
+scripts/**
+docs/**
+.github/**
 .git*
+
+# CI-installed dependencies and package metadata are not website assets
+node_modules/**
+package.json
+package-lock.json
+npm-shrinkwrap.json
+
+# Infrastructure / operator-only files
+wrangler.jsonc
+builder-schema.sql
+PAYMENT_SETUP.md
+README.md
+_headers
+
+# Local/editor noise
+.DS_Store
+*.log

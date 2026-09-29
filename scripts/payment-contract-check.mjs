@@ -5,10 +5,21 @@ function need(file, text, label) {
   if (!src.includes(text)) throw new Error(`${label}: missing ${JSON.stringify(text)} in ${file}`);
 }
 
+function forbid(file, re, label) {
+  const src = fs.readFileSync(file, 'utf8');
+  if (re.test(src)) throw new Error(`${label}: forbidden ${re} in ${file}`);
+}
+
 need('wrangler.jsonc', '"main": "src/runtime-worker.js"', 'worker entrypoint');
 need('src/runtime-worker.js', 'import app from "./marketing-worker.js";', 'runtime guard must preserve marketing/payment stack');
 need('src/marketing-worker.js', 'import app from "./account-worker.js";', 'marketing wrapper must preserve account stack');
-need('src/account-worker.js', 'import app from "./final-worker.js";', 'account wrapper must preserve commercial/payment stack');
+need('src/account-worker.js', 'import app from "./final-worker.js";', 'account wrapper must preserve final payment stack');
+need('src/final-worker.js', 'import app from "./audit-guard-worker.js";', 'final worker must route through paid audit guard');
+need('src/audit-guard-worker.js', 'import app from "./commercial-worker.js";', 'audit guard must preserve commercial stack');
+need('src/audit-guard-worker.js', 'AUDIT_CONFIG_NOT_READY', 'paid audit guard must fail closed with explicit error');
+need('src/audit-guard-worker.js', 'String(env.AUDIT_HASH_SALT || "").trim().length >= 16', 'audit salt must meet minimum secret length');
+for(const route of ['/api/builder/upload','/api/builder/analyze','/api/builder/modify','/api/builder/download']) need('src/audit-guard-worker.js', route, `audit guard must protect ${route}`);
+forbid('src/audit-guard-worker.js',/core\.fetch|OPENAI_API_KEY|USER_CODE_BUCKET\.put/,'audit guard must remain a side-effect-free preflight layer');
 
 need('src/gated-worker.js', 'analyzeCredits: 1,', 'legacy base grant analysis credit');
 need('src/gated-worker.js', 'modifyCredits: 1,', 'legacy base grant modify credit');
@@ -38,6 +49,7 @@ need('src/runtime-worker.js', 'CHECKOUT_NOT_READY', 'checkout must fail closed')
 need('src/runtime-worker.js', 'FULFILLMENT_NOT_READY_BEFORE_CAPTURE', 'PayPal capture must fail closed when fulfillment config disappears');
 need('src/runtime-worker.js', 'guardedPayPalCreate', 'PayPal create must recheck runtime readiness');
 need('src/runtime-worker.js', 'guardedPayPalCapture', 'PayPal capture must recheck fulfillment readiness');
+need('src/runtime-worker.js', 'String(env.AUDIT_HASH_SALT || "").trim().length >= 16', 'runtime paid readiness must match audit guard secret strength');
 
 need('checkout/index.html', 'terms_accepted:true', 'checkout terms acceptance');
 need('checkout/index.html', '/refund-policy/', 'refund policy link');
@@ -50,4 +62,4 @@ need('builder-schema.sql', 'CREATE TABLE IF NOT EXISTS service_events', 'fulfill
 need('builder-schema.sql', 'CREATE TABLE IF NOT EXISTS payment_disputes', 'dispute ledger');
 need('builder-schema.sql', 'user_id TEXT', 'orders must be account-bindable');
 
-console.log('Payment contract checks passed: $14.90 / 30d / 3 analyses / 2 modifications, atomic retry-safe entitlement, account/product binding, dispute handling and fail-closed payment gates are protected.');
+console.log('Payment contract checks passed: $14.90 / 30d / 3 analyses / 2 modifications, atomic retry-safe entitlement, fail-closed audit boundary, account/product binding, dispute handling and payment gates are protected.');

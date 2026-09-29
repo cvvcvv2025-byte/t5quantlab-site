@@ -24,6 +24,7 @@ jobs:
           node --check src/worker.js
           node --check src/gated-worker.js
           node --check src/commercial-worker.js
+          node --check src/audit-guard-worker.js
           node --check src/final-worker.js
           node --check src/account-worker.js
           node --check src/marketing-worker.js

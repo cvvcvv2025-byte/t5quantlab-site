@@ -420,46 +420,58 @@ async function completePaidOrder(env, { orderId, provider, providerTradeId, paid
   const product = PRODUCT_CATALOG[order.product_code];
   if (!product) throw new Error("PRODUCT_NOT_FOUND");
 
+  let existingEvent = null;
   if (eventId) {
-    const isNew = await recordPaymentEvent(env, {
-      provider,
-      eventId,
-      eventType: "payment_completed",
-      orderId,
-      providerTradeId
-    });
-    if (!isNew) {
-      const existing = await env.BUILDER_DB.prepare("SELECT status, grant_id FROM orders WHERE order_id = ?").bind(orderId).first();
-      return { orderId, grantId: existing?.grant_id || null, duplicate: true };
+    existingEvent = await env.BUILDER_DB.prepare(`SELECT provider, order_id, provider_trade_id
+      FROM payment_events WHERE event_key = ?`).bind(`${provider}:${eventId}`).first();
+    if (existingEvent) {
+      if (String(existingEvent.provider || "") !== provider
+        || (existingEvent.order_id && String(existingEvent.order_id) !== orderId)
+        || (existingEvent.provider_trade_id && String(existingEvent.provider_trade_id) !== providerTradeId)) {
+        throw new Error("PAYMENT_EVENT_CONFLICT");
+      }
     }
   }
 
-  const grantId = order.grant_id || randomId("GRANT");
+  // Deterministic for a given order so concurrent capture/webhook fulfillment attempts
+  // cannot point the order at different random grant IDs.
+  const grantId = order.grant_id || `GRANT-${orderId}`;
   const created = nowIso();
   const expiresAt = new Date(Date.now() + product.expiresDays * 86400000).toISOString();
+  const statements = [];
 
-  try {
-    await env.BUILDER_DB.batch([
-      env.BUILDER_DB.prepare(`INSERT INTO builder_access_grants
-        (grant_id, token_hash, label, plan, status, analyze_remaining, modify_remaining, expires_at, created_at, updated_at)
-        VALUES (?, ?, ?, ?, 'active', ?, ?, ?, ?, ?)
-        ON CONFLICT(token_hash) DO NOTHING`)
-        .bind(grantId, order.builder_token_hash, `Order ${orderId}`, order.product_code,
-          product.analyzeCredits, product.modifyCredits, expiresAt, created, created),
-      env.BUILDER_DB.prepare(`UPDATE orders SET status = 'granted', payment_provider = ?, provider_trade_id = ?,
-        grant_id = ?, paid_at = COALESCE(paid_at, ?), granted_at = COALESCE(granted_at, ?), updated_at = ?
-        WHERE order_id = ? AND status IN ('pending','paid','granted')`)
-        .bind(provider, providerTradeId, grantId, created, created, created, orderId)
-    ]);
-  } catch (error) {
-    const refreshed = await env.BUILDER_DB.prepare("SELECT status, grant_id FROM orders WHERE order_id = ?").bind(orderId).first();
-    if (refreshed?.status === "granted" && refreshed?.grant_id) {
-      return { orderId, grantId: refreshed.grant_id, duplicate: true };
-    }
-    throw error;
+  if (eventId) {
+    statements.push(env.BUILDER_DB.prepare(`INSERT INTO payment_events
+      (event_key, provider, event_type, order_id, provider_trade_id, created_at)
+      VALUES (?, ?, 'payment_completed', ?, ?, ?) ON CONFLICT(event_key) DO NOTHING`)
+      .bind(`${provider}:${eventId}`, provider, orderId, providerTradeId, created));
   }
 
-  return { orderId, grantId, duplicate: false };
+  statements.push(
+    env.BUILDER_DB.prepare(`INSERT INTO builder_access_grants
+      (grant_id, token_hash, label, plan, status, analyze_remaining, modify_remaining, expires_at, created_at, updated_at)
+      VALUES (?, ?, ?, ?, 'active', ?, ?, ?, ?, ?)
+      ON CONFLICT DO NOTHING`)
+      .bind(grantId, order.builder_token_hash, `Order ${orderId}`, order.product_code,
+        product.analyzeCredits, product.modifyCredits, expiresAt, created, created),
+    env.BUILDER_DB.prepare(`UPDATE orders SET status = 'granted', payment_provider = ?, provider_trade_id = ?,
+      grant_id = ?, paid_at = COALESCE(paid_at, ?), granted_at = COALESCE(granted_at, ?), updated_at = ?
+      WHERE order_id = ? AND status IN ('pending','paid','granted')`)
+      .bind(provider, providerTradeId, grantId, created, created, created, orderId)
+  );
+
+  // D1 batch is transactional: payment event de-duplication, grant creation, and
+  // order fulfillment either commit together or roll back together.
+  await env.BUILDER_DB.batch(statements);
+
+  const fulfilled = await env.BUILDER_DB.prepare(`SELECT o.status, o.grant_id, g.grant_id AS live_grant
+    FROM orders o LEFT JOIN builder_access_grants g ON g.grant_id = o.grant_id
+    WHERE o.order_id = ?`).bind(orderId).first();
+  if (fulfilled?.status !== "granted" || !fulfilled?.grant_id || !fulfilled?.live_grant) {
+    throw new Error("PAYMENT_FULFILLMENT_INCOMPLETE");
+  }
+
+  return { orderId, grantId: fulfilled.grant_id, duplicate: Boolean(existingEvent) };
 }
 
 async function revokePaidOrder(env, { orderId, provider, eventId = null, providerTradeId = null }) {

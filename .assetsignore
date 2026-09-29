@@ -4,6 +4,7 @@ scripts/**
 docs/**
 .github/**
 .git*
+.wrangler/**
 
 # CI-installed dependencies and package metadata are not website assets
 node_modules/**
@@ -17,6 +18,8 @@ builder-schema.sql
 PAYMENT_SETUP.md
 README.md
 _headers
+*.sql
+*.md
 
 # Local/editor noise
 .DS_Store

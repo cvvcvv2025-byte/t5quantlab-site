@@ -4,7 +4,9 @@ const errors=[];
 const need=(file,text,label)=>{const src=fs.readFileSync(file,'utf8');if(!src.includes(text))errors.push(`${label}: missing ${JSON.stringify(text)} in ${file}`)};
 const forbid=(file,re,label)=>{const src=fs.readFileSync(file,'utf8');if(re.test(src))errors.push(`${label}: forbidden pattern ${re} in ${file}`)};
 
-need('wrangler.jsonc','"main": "src/marketing-worker.js"','marketing worker entrypoint');
+need('wrangler.jsonc','"main": "src/runtime-worker.js"','runtime worker entrypoint');
+need('src/runtime-worker.js','import app from "./marketing-worker.js";','runtime guard must preserve marketing worker');
+need('src/runtime-worker.js','if (typeof app.scheduled === "function") return app.scheduled(controller, env, ctx);','runtime must forward scheduled handler');
 need('wrangler.jsonc','"crons": ["*/15 * * * *"]','15-minute marketing scheduler');
 need('src/marketing-worker.js','import app from "./account-worker.js";','marketing worker must preserve account/payment stack');
 need('src/marketing-worker.js','marketing_consent=1','campaign recipients must be explicit opt-ins');
@@ -28,4 +30,4 @@ need('admin/campaigns/index.html','只会发给发送时仍保持营销订阅的
 forbid('src/marketing-worker.js',/WHERE\s+u\.status='active'(?![\s\S]{0,120}marketing_consent=1)/i,'recipient query must not omit marketing consent');
 
 if(errors.length){console.error('Marketing contract check failed:');for(const e of errors)console.error('- '+e);process.exit(1)}
-console.log('Marketing contract OK: scheduled sends are admin-only, opt-in only, idempotent, retry-bounded and unsubscribe-enabled.');
+console.log('Marketing contract OK: runtime forwards cron; scheduled sends remain admin-only, opt-in only, idempotent, retry-bounded and unsubscribe-enabled.');

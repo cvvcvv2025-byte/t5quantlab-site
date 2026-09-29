@@ -222,17 +222,23 @@ async function applyPassEntitlement(env, orderId) {
   const order = await env.BUILDER_DB.prepare(`SELECT grant_id FROM orders WHERE order_id = ?`).bind(orderId).first();
   if (!order?.grant_id) return;
   const now = nowIso();
-  const mark = await env.BUILDER_DB.prepare(`INSERT INTO entitlement_adjustments (grant_id, adjustment_code, created_at)
-    VALUES (?, 'builder-pass-3a-2m-v1', ?) ON CONFLICT(grant_id) DO NOTHING`)
-    .bind(order.grant_id, now).run();
-  if (Number(mark?.meta?.changes || 0) !== 1) return;
-  await env.BUILDER_DB.prepare(`UPDATE builder_access_grants
-    SET plan = 't5_builder_pass_30d',
-        analyze_remaining = analyze_remaining + ?,
-        modify_remaining = modify_remaining + ?,
-        updated_at = ?
-    WHERE grant_id = ?`)
-    .bind(PASS_ANALYZE_CREDITS - 1, PASS_MODIFY_CREDITS - 1, now, order.grant_id).run();
+
+  // D1 batch() is transactional. The marker and 3+2 normalization therefore either
+  // commit together or roll back together. The plan predicate also makes webhook/
+  // capture retries idempotent and repairs a legacy partial state where the marker
+  // exists but the old 1+1 seed grant was never normalized.
+  await env.BUILDER_DB.batch([
+    env.BUILDER_DB.prepare(`INSERT INTO entitlement_adjustments (grant_id, adjustment_code, created_at)
+      VALUES (?, 'builder-pass-3a-2m-v1', ?) ON CONFLICT(grant_id) DO NOTHING`)
+      .bind(order.grant_id, now),
+    env.BUILDER_DB.prepare(`UPDATE builder_access_grants
+      SET plan = 't5_builder_pass_30d',
+          analyze_remaining = analyze_remaining + ?,
+          modify_remaining = modify_remaining + ?,
+          updated_at = ?
+      WHERE grant_id = ? AND plan <> 't5_builder_pass_30d'`)
+      .bind(PASS_ANALYZE_CREDITS - 1, PASS_MODIFY_CREDITS - 1, now, order.grant_id)
+  ]);
 }
 
 async function orderFromPayPalCapture(env, captureId) {

@@ -17,7 +17,7 @@
 <body>
 <header class="topbar"><div class="container nav"><a class="brand" href="/"><span class="mark">T5</span><span>T5 Quant Lab</span></a><nav class="navlinks" id="navlinks"><a href="/research/">EA研究</a><a href="/library/books/">书籍</a><a href="/market-lab/practice/">模拟题</a><a href="/market-lab/training/">多周期训练</a><a href="/tools/indicators/">指标</a><a href="/tools/ea/">EA</a><a class="active" href="/tools/strategy-builder/">策略构建</a></nav><button class="menu" id="menu">☰</button></div></header>
 <main>
-<section class="page-hero"><div class="container"><div class="breadcrumbs"><a href="/">T5 Quant Lab</a> / <a href="/tools/">Tools</a> / Strategy Builder</div><div class="eyebrow">LOCAL INSPECTION · AI DEEP ANALYSIS · VERSIONED SOURCE EDIT</div><h1>先免费体检源码，再决定是否需要 AI 深度处理。</h1><p>选择 MT4、MT5 或 TradingView 源码后，免费体检全部在你的浏览器本地完成，不上传文件、不调用 OpenAI。需要进一步重建交易逻辑、冻结修改范围和生成完整修改版时，再解锁 AI。</p></div></section>
+<section class="page-hero"><div class="container"><div class="breadcrumbs"><a href="/">T5 Quant Lab</a> / <a href="/tools/">Tools</a> / Strategy Builder</div><div class="eyebrow">LOCAL INSPECTION · AI DEEP ANALYSIS · VERSIONED SOURCE EDIT</div><h1>先免费体检源码，再决定是否需要 AI 深度处理。</h1><p>选择 MT4、MT5 或 TradingView 源码后，先在当前设备完成免费体检，查看结构、风险和修改影响。需要进一步重建交易逻辑、确认修改边界并生成完整修改版时，再解锁 AI 深度处理。</p></div></section>
 <section class="section"><div class="container">
 <div id="accessLine" class="accessline"><span>正在检查 AI 使用权限…</span><a class="btn hidden" id="buyAccess" href="/checkout/">购买源码处理权限</a></div>
 <div class="tabs"><button class="tabbtn active" data-tab="ideaPane">从想法开始</button><button class="tabbtn" data-tab="sourcePane">源码体检 / 修改</button></div>
@@ -38,11 +38,11 @@
 
 <div id="sourcePane" class="pane">
 <h2 style="margin-top:0">源码体检 / 修改</h2>
-<div class="field"><label>源码文件</label><div class="dropzone"><b>选择 .mq4 / .mq5 / .pine / .txt</b><div class="subtle">最大 512 KB。选择文件后先在浏览器本地免费体检；此阶段不会上传源码，也不会调用 OpenAI。</div><input id="sourceFile" type="file" accept=".mq4,.mq5,.pine,.txt,text/plain"><div id="fileMeta" class="filemeta">尚未选择文件</div></div></div>
+<div class="field"><label>源码文件</label><div class="dropzone"><b>选择 .mq4 / .mq5 / .pine / .txt</b><div class="subtle">最大 512 KB。选择文件后先在当前设备完成免费体检；此阶段源码不会上传。</div><input id="sourceFile" type="file" accept=".mq4,.mq5,.pine,.txt,text/plain"><div id="fileMeta" class="filemeta">尚未选择文件</div></div></div>
 
 <div id="localInspection" class="localbox hidden">
 <h3>免费本地源码体检</h3>
-<div class="privacyline">🔒 本次体检仅在当前浏览器执行，源码未上传到 T5 Quant Lab，也未调用任何 AI API。</div>
+<div class="privacyline">🔒 免费体检在当前设备完成，源码不会上传到 T5 Quant Lab。</div>
 <div id="inspectionContent" class="inspection-empty">选择源码后自动生成体检结果。</div>
 <div id="inspectionConversion" class="conversion hidden"><b>下一步：AI 深度分析</b><p>免费体检只能识别静态结构与可疑模块。AI 深度分析会进一步重建 Entry / Exit / Risk / 状态机，定位具体函数和变量，并冻结本次修改范围。</p><div class="mini-actions"><a class="btn primary" id="inspectionPay" href="/checkout/">解锁 AI 深度分析</a><button class="btn primary hidden" type="button" id="inspectionUsePaid">使用现有 AI 权限</button></div></div>
 </div>
@@ -61,7 +61,7 @@
 </div>
 
 <div class="previewbox">
-<small style="color:var(--mint);font-weight:800;letter-spacing:.12em">SPEC PREVIEW</small><h2 id="previewTitle">需求摘要</h2><p style="color:var(--muted)">每次只确认当前版本的规则和修改范围，版本变化保留清单，方便后续复核。</p><pre id="spec">尚未生成需求摘要。</pre><div class="mini-actions"><button class="btn" type="button" id="copySpec">复制摘要</button><button class="btn" type="button" id="downloadSpec">下载 TXT</button></div><div class="rule"><b>免费源码体检</b><p style="color:var(--muted)">浏览器本地静态扫描，用于识别代码结构、主要模块与修改复杂度，不等同于 AI 对交易逻辑的完整理解。</p></div><div class="rule"><b>AI 深度分析</b><p style="color:var(--muted)">付费后才私有上传源码，重建策略逻辑、定位调用链、冻结修改范围，再生成完整修改版。</p></div>
+<small style="color:var(--mint);font-weight:800;letter-spacing:.12em">SPEC PREVIEW</small><h2 id="previewTitle">需求摘要</h2><p style="color:var(--muted)">每次只确认当前版本的规则和修改范围，版本变化保留清单，方便后续复核。</p><pre id="spec">尚未生成需求摘要。</pre><div class="mini-actions"><button class="btn" type="button" id="copySpec">复制摘要</button><button class="btn" type="button" id="downloadSpec">下载 TXT</button></div><div class="rule"><b>免费源码体检</b><p style="color:var(--muted)">浏览器本地静态扫描，用于识别代码结构、主要模块与修改复杂度，不等同于 AI 对交易逻辑的完整理解。</p></div><div class="rule"><b>AI 深度分析</b><p style="color:var(--muted)">解锁后安全上传源码，重建策略逻辑、定位调用链、确认修改边界，再生成完整修改版。</p></div>
 </div>
 </div>
 </div></section>

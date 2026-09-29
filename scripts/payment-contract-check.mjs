@@ -68,8 +68,11 @@ need('src/runtime-worker.js', 'String(env.AUDIT_HASH_SALT || "").trim().length >
 need('checkout/index.html', 'terms_accepted:true', 'checkout terms acceptance');
 need('checkout/index.html', '/refund-policy/', 'refund policy link');
 need('checkout/index.html', '/api/auth/me', 'checkout account guard');
-need('checkout/index.html', 'PAYPAL_NOT_LIVE', 'checkout must explain sandbox lock');
-need('checkout/index.html', 'PAID_SERVICE_NOT_READY', 'checkout must explain service readiness lock');
+need('src/runtime-worker.js', 'PAYPAL_NOT_LIVE', 'runtime must preserve the sandbox safety lock');
+need('src/runtime-worker.js', 'PAID_SERVICE_NOT_READY', 'runtime must preserve the paid-service readiness lock');
+for (const internalCode of ['PAYPAL_NOT_LIVE', 'PAID_SERVICE_NOT_READY', 'PAYPAL_NOT_CONFIGURED']) {
+  if (fs.readFileSync('checkout/index.html', 'utf8').includes(internalCode)) throw new Error(`checkout must not expose internal provider state ${internalCode}`);
+}
 need('checkout/index.html', "return Boolean(p?.prices?.USD)&&Boolean(pp.enabled)", 'create order button must require enabled PayPal provider');
 need('refund-policy/index.html', 'refund-v1-2026-09-28', 'published terms version');
 need('builder-schema.sql', 'CREATE TABLE IF NOT EXISTS service_events', 'fulfillment ledger');

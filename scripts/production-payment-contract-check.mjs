@@ -22,7 +22,10 @@ for(const route of ['/api/orders/status','/api/orders/cancel','/api/orders/refun
 }
 need(!account.includes('p === "/api/payment/paypal/webhook" && request.method'), 'PayPal webhook must not be forced through browser account ownership');
 need(account.includes('normalizeEmail(order.customer_email) === user.email'),'legacy order claim must require verified account email match');
-need(checkout.includes('未付款不会获得AI权限')&&checkout.includes('不会因为创建订单而写入Builder访问cookie'),'checkout must disclose no pre-payment Builder access');
+need(checkout.includes('创建订单不会扣款')&&checkout.includes('只有完成PayPal付款后才会生效'),'checkout must explain when payment takes effect in customer language');
+need(checkout.includes("PAYPAL_CREATE_FAILED:'PayPal 暂时无法受理本次付款")&&checkout.includes('customerError(e'),'checkout must replace provider diagnostics with customer-safe payment messages');
+need(!checkout.includes('PAYEE_ACCOUNT_RESTRICTED'),'checkout must not expose PayPal merchant diagnostics');
+need(!checkout.includes('showMessage(e.message')&&!checkout.includes("textContent=e.message"),'checkout must not render raw backend errors to customers');
 
 if(errors.length){console.error('Production payment contract failed:');for(const e of errors)console.error('- '+e);process.exit(1)}
 console.log('Production payment contract OK: pending orders issue no Builder cookie and browser order/payment actions are account-bound.');

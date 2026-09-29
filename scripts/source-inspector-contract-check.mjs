@@ -30,8 +30,8 @@ noNetwork(js,'free inspector');
 need(!/openai/i.test(js),'free inspector asset must not reference OpenAI');
 need(/source-inspector\.js/.test(page),'inspection page must load source-inspector.js');
 need(/source-inspector-handoff\.js/.test(page),'inspection page must load local handoff helper');
-need(/0 API/.test(page),'inspection page must disclose zero API behavior');
-need(/不上传源码/.test(page)||/不会上传服务器/.test(page),'inspection page must disclose source is not uploaded');
+need(/免费体检在当前设备完成/.test(page),'inspection page must explain local processing in customer language');
+need(/源码不上传/.test(page)||/不会上传服务器/.test(page),'inspection page must disclose source is not uploaded');
 need(!/<form\b[^>]*\baction\s*=/i.test(page),'inspection page must not contain posting form actions');
 
 need(/sessionStorage/.test(handoff),'inspection handoff must remain browser-session local');
@@ -56,4 +56,4 @@ if(errors.length){
  for(const e of errors)console.error('- '+e);
  process.exit(1);
 }
-console.log('Source inspector zero-API and local-handoff contract checks passed.');
+console.log('Source inspector local-processing and local-handoff contract checks passed.');

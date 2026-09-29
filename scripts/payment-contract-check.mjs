@@ -31,6 +31,12 @@ need('src/gated-worker.js', 'ON CONFLICT DO NOTHING', 'concurrent deterministic 
 need('src/gated-worker.js', 'await env.BUILDER_DB.batch(statements);', 'payment event, grant and order update must commit in one transaction');
 need('src/gated-worker.js', 'PAYMENT_FULFILLMENT_INCOMPLETE', 'payment fulfillment must verify a live grant before reporting success');
 forbid('src/gated-worker.js',/const grantId = order\.grant_id \|\| randomId\("GRANT"\)/,'random grant id is unsafe under concurrent capture/webhook fulfillment');
+need('src/gated-worker.js', 'function paypalSafeDiagnostics(error) {', 'PayPal failures must expose a sanitized diagnostic projection');
+need('src/gated-worker.js', 'console.error("paypal_create_failed", JSON.stringify(diagnostics));', 'PayPal create diagnostics must be available in provider logs');
+for (const field of ['issue: diagnostics.issue','description: diagnostics.description','debug_id: diagnostics.debug_id']) {
+  need('src/gated-worker.js', field, `PayPal safe diagnostic response missing ${field}`);
+}
+forbid('src/gated-worker.js',/paypal\s*:\s*(?:error\?\.|error\.|diagnostics\.)?paypal/,'raw PayPal error payload must never be returned to clients');
 
 need('src/commercial-worker.js', 'const PASS_ANALYZE_CREDITS = 3;', 'analysis credits');
 need('src/commercial-worker.js', 'const PASS_MODIFY_CREDITS = 2;', 'modify credits');

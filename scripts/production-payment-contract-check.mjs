@@ -1,4 +1,5 @@
 import fs from 'node:fs';
+// Production gate: this contract is part of the normal Syntax Check and must stay green before deploy.
 const errors=[];
 const read=p=>fs.existsSync(p)?fs.readFileSync(p,'utf8'):'';
 const need=(c,m)=>{if(!c)errors.push(m)};

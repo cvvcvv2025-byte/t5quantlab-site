@@ -19,7 +19,7 @@ jobs:
           node -e "const fs=require('fs'),z=require('zlib');fs.writeFileSync('/tmp/customer-copy-update.js',z.gunzipSync(Buffer.from(process.env.UPDATE_B64,'base64')))"
           git switch -c customer-copy-audit
           node /tmp/customer-copy-update.js
-          rm .github/workflows/apply-copy-update.yml
+          git checkout HEAD -- .github/workflows/syntax-check.yml .github/workflows/apply-copy-update.yml
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
           git add -A

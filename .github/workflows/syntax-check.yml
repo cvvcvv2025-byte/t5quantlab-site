@@ -35,6 +35,8 @@ jobs:
         run: node scripts/check-inline-js.mjs
       - name: Check payment contract
         run: node scripts/payment-contract-check.mjs
+      - name: Check production payment ownership contract
+        run: node scripts/production-payment-contract-check.mjs
       - name: Check account contract
         run: node scripts/account-contract-check.mjs
       - name: Check marketing contract

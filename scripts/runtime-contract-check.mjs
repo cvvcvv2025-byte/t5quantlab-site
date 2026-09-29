@@ -24,6 +24,11 @@ need(runtime,'ACCOUNT_PRECHECK_FAILED','account precheck errors must fail closed
 need(runtime,'ACTIVE_ACCESS_REMAINS','backend duplicate purchase guard');
 need(runtime,'accountSummaryPrecheck','duplicate purchase guard must consult account summary');
 need(runtime,'grantStillUsable','duplicate purchase guard must validate active usable grant');
+need(runtime,'/api/payment/paypal/create','PayPal create must be guarded after order creation');
+need(runtime,'guardedPayPalCreate','PayPal redirect initiation must recheck checkout readiness');
+need(runtime,'/api/payment/paypal/capture','PayPal capture must be guarded before charging');
+need(runtime,'FULFILLMENT_NOT_READY_BEFORE_CAPTURE','capture must fail closed when fulfillment config disappears');
+need(runtime,'guardedPayPalCapture','capture must recheck paid Builder readiness');
 need(runtime,'checkoutReady = paidBuilderReady && (paypalEnvironment === "live" || paymentTestMode)','sandbox checkout must require explicit test mode');
 need(runtime,'free_source_inspector_ready: assets','free inspector readiness must depend on deployed assets');
 need(runtime,'production_ready: productionReady','admin health must distinguish production payment readiness');
@@ -57,4 +62,4 @@ need(adminHealth,'Checkout入口','admin health must show order creation readine
 forbid(adminHealth,/localStorage\.setItem\([^)]*admin|document\.cookie/i,'admin health must not persist admin key outside sessionStorage');
 
 if(errors.length){console.error('Runtime contract failed:');for(const e of errors)console.error('- '+e);process.exit(1)}
-console.log('Runtime contract OK: fail-closed checkout, duplicate-purchase block, production/marketing health, private admin surface and cron forwarding protected.');
+console.log('Runtime contract OK: fail-closed order/create/capture, duplicate-purchase block, production/marketing health, private admin surface and cron forwarding protected.');

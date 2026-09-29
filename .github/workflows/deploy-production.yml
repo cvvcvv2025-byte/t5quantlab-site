@@ -8,20 +8,26 @@ on:
         required: true
         default: true
         type: boolean
+  workflow_run:
+    workflows: ["Syntax Check"]
+    types: [completed]
 
 permissions:
   contents: read
 
 concurrency:
   group: t5-production-deploy
-  cancel-in-progress: false
+  cancel-in-progress: true
 
 jobs:
   preflight:
+    if: ${{ github.event_name == 'workflow_dispatch' || github.event.workflow_run.conclusion == 'success' }}
     runs-on: ubuntu-latest
     steps:
-      - name: Checkout
+      - name: Checkout tested revision
         uses: actions/checkout@v6
+        with:
+          ref: ${{ github.event.workflow_run.head_sha || github.sha }}
       - name: Setup Node
         uses: actions/setup-node@v4
         with:
@@ -30,21 +36,26 @@ jobs:
         run: |
           node --check src/runtime-worker.js
           node scripts/payment-contract-check.mjs
+          node scripts/production-payment-contract-check.mjs
           node scripts/account-contract-check.mjs
           node scripts/marketing-contract-check.mjs
           node scripts/runtime-contract-check.mjs
+          node scripts/deployment-contract-check.mjs
           node scripts/source-inspector-contract-check.mjs
           node scripts/check-internal-links.mjs
 
   deploy:
     needs: preflight
+    if: ${{ needs.preflight.result == 'success' }}
     runs-on: ubuntu-latest
     environment: production
     steps:
-      - name: Checkout
+      - name: Checkout tested revision
         uses: actions/checkout@v6
+        with:
+          ref: ${{ github.event.workflow_run.head_sha || github.sha }}
       - name: Apply remote D1 schema
-        if: ${{ inputs.apply_schema }}
+        if: ${{ github.event_name == 'workflow_run' || inputs.apply_schema }}
         uses: cloudflare/wrangler-action@v4
         with:
           apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
@@ -56,3 +67,34 @@ jobs:
           apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
           accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
           command: deploy
+      - name: Wait for production health
+        shell: bash
+        run: |
+          set -euo pipefail
+          health=''
+          for i in $(seq 1 12); do
+            if health=$(curl -fsS --max-time 15 https://t5quantlab.com/api/health); then
+              break
+            fi
+            echo "Health endpoint not ready yet ($i/12)"
+            sleep 5
+          done
+          test -n "$health"
+          echo "$health" | tee /tmp/t5-health.json
+      - name: Verify public production smoke state
+        run: |
+          node - <<'NODE'
+          const fs=require('fs');
+          const h=JSON.parse(fs.readFileSync('/tmp/t5-health.json','utf8'));
+          console.log('Production health:', JSON.stringify(h,null,2));
+          const required=['ok','public_site_ready','free_source_inspector_ready'];
+          const failed=required.filter(k=>h[k]!==true);
+          if(failed.length){
+            console.error('Public production smoke failed:', failed.join(', '));
+            process.exit(1);
+          }
+          if(!h.account_ready) console.warn('WARNING: account_ready=false');
+          if(!h.paid_builder_ready) console.warn('WARNING: paid_builder_ready=false');
+          if(!h.checkout_ready) console.warn('WARNING: checkout_ready=false');
+          if(h.payment_environment!=='live') console.warn('WARNING: payment_environment is not live');
+          NODE

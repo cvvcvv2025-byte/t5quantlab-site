@@ -1,13 +1,7 @@
 name: Production Hardening
 
 on:
-  push:
-    branches: [main]
-    paths:
-      - 'scripts/harden-production-payment-phase11.mjs'
-      - 'scripts/production-payment-contract-check.mjs'
-      - 'scripts/update-production-runbook-phase12.mjs'
-      - '.github/workflows/production-hardening.yml'
+  workflow_dispatch:
 
 permissions:
   contents: write

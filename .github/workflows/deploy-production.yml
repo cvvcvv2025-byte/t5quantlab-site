@@ -1,0 +1,58 @@
+name: Deploy Production
+
+on:
+  workflow_dispatch:
+    inputs:
+      apply_schema:
+        description: 'Apply builder-schema.sql to remote D1 before deploy'
+        required: true
+        default: true
+        type: boolean
+
+permissions:
+  contents: read
+
+concurrency:
+  group: t5-production-deploy
+  cancel-in-progress: false
+
+jobs:
+  preflight:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Validate production entrypoint
+        run: |
+          node --check src/runtime-worker.js
+          node scripts/payment-contract-check.mjs
+          node scripts/account-contract-check.mjs
+          node scripts/marketing-contract-check.mjs
+          node scripts/runtime-contract-check.mjs
+          node scripts/source-inspector-contract-check.mjs
+          node scripts/check-internal-links.mjs
+
+  deploy:
+    needs: preflight
+    runs-on: ubuntu-latest
+    environment: production
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+      - name: Apply remote D1 schema
+        if: ${{ inputs.apply_schema }}
+        uses: cloudflare/wrangler-action@v4
+        with:
+          apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          command: d1 execute t5quantlab-builder --remote --file=./builder-schema.sql --yes
+      - name: Deploy Worker and static assets
+        uses: cloudflare/wrangler-action@v4
+        with:
+          apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          command: deploy

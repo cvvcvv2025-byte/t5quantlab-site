@@ -27,6 +27,7 @@ jobs:
           node --check src/final-worker.js
           node --check src/account-worker.js
           node --check src/marketing-worker.js
+          node --check src/runtime-worker.js
       - name: Check external JavaScript assets
         run: |
           find assets -type f -name '*.js' -print0 | xargs -0 -n1 node --check
@@ -38,6 +39,8 @@ jobs:
         run: node scripts/account-contract-check.mjs
       - name: Check marketing contract
         run: node scripts/marketing-contract-check.mjs
+      - name: Check runtime contract
+        run: node scripts/runtime-contract-check.mjs
       - name: Check practice trainer contract
         run: node scripts/practice-contract-check.mjs
       - name: Check multi-method content contract

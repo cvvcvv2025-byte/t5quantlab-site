@@ -244,3 +244,20 @@ A green GitHub `Syntax Check` proves repository-level contracts and syntax are c
 - a real PayPal capture has completed.
 
 Those are production checks and must be confirmed after deployment with `/admin/health/` plus the manual end-to-end launch test above.
+
+
+## 12. Automatic production deploy and live smoke
+
+The normal release path is now an **automatic production deploy** after the GitHub `Syntax Check` workflow completes successfully on `main`. The deployment workflow checks out the **exact tested commit SHA** from that successful workflow run; it must not silently deploy an untested newer revision.
+
+The manual `workflow_dispatch` entry remains available for controlled recovery or operator-initiated deployment.
+
+After Wrangler deploy completes, GitHub Actions polls:
+
+```text
+https://t5quantlab.com/api/health
+```
+
+The release fails if the public site or free source inspector is not ready. The same smoke output also prints `account_ready`, `paid_builder_ready`, `checkout_ready`, and `payment_environment` so incomplete commercial configuration is visible in the deployment log rather than hidden.
+
+A successful public smoke check does **not** replace the private `/admin/health/?deep=1` provider verification or the manual real-payment end-to-end test before opening live checkout.

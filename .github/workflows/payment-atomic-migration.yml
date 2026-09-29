@@ -1,0 +1,39 @@
+name: Payment Atomic Migration
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'scripts/fix-payment-event-atomic.mjs'
+      - '.github/workflows/payment-atomic-migration.yml'
+
+permissions:
+  contents: write
+
+jobs:
+  migrate:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Apply atomic payment fulfillment patch
+        run: node scripts/fix-payment-event-atomic.mjs
+      - name: Verify patched Worker syntax
+        run: node --check src/gated-worker.js
+      - name: Verify payment contract
+        run: node scripts/payment-contract-check.mjs
+      - name: Commit patched payment core
+        run: |
+          if git diff --quiet -- src/gated-worker.js; then
+            echo "No gated-worker change produced."
+            exit 0
+          fi
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add src/gated-worker.js
+          git commit -m "fix: make payment event and grant fulfillment atomic"
+          git push

@@ -114,6 +114,25 @@ jobs:
           done
           test -n "$health"
           echo "$health" | tee /tmp/t5-health.json
+      - name: Verify sensitive files are not public
+        shell: bash
+        run: |
+          set -euo pipefail
+          paths=(
+            '/src/runtime-worker.js'
+            '/builder-schema.sql'
+            '/wrangler.jsonc'
+            '/scripts/deployment-contract-check.mjs'
+            '/PAYMENT_SETUP.md'
+          )
+          for path in "${paths[@]}"; do
+            code=$(curl -sS -o /dev/null -w '%{http_code}' --max-time 15 "https://t5quantlab.com${path}")
+            if [ "$code" != '404' ]; then
+              echo "::error title=Internal file exposed::${path} returned HTTP ${code}; expected 404"
+              exit 1
+            fi
+          done
+          echo 'Sensitive static asset probes all returned 404.'
       - name: Verify public production smoke state
         run: |
           node - <<'NODE'

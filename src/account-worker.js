@@ -310,7 +310,7 @@ async function accountSummary(request, env) {
     const grantsTable = await env.BUILDER_DB.prepare("SELECT name FROM sqlite_master WHERE type='table' AND name='builder_access_grants'").first();
     if (grantsTable?.name) {
       grant = await env.BUILDER_DB.prepare(`SELECT g.grant_id, g.plan, g.status, g.analyze_remaining, g.modify_remaining, g.expires_at, o.order_id, o.granted_at
-        FROM orders o JOIN builder_access_grants g ON g.grant_id = o.grant_id WHERE o.user_id = ? AND o.status = 'granted' AND g.status = 'active' AND (g.expires_at IS NULL OR g.expires_at > ?) ORDER BY o.granted_at DESC LIMIT 1`).bind(user.user_id, nowIso()).first();
+        FROM orders o JOIN builder_access_grants g ON g.grant_id = o.grant_id WHERE o.user_id = ? AND o.product_code = 'code_workshop_single' AND o.status = 'granted' AND g.status = 'active' AND (g.expires_at IS NULL OR g.expires_at > ?) ORDER BY o.granted_at DESC LIMIT 1`).bind(user.user_id, nowIso()).first();
     }
   }
   return json({ ok: true, user: { user_id: user.user_id, email: user.email, marketing_consent: Number(user.marketing_consent || 0) === 1, created_at: user.created_at, last_login_at: user.last_login_at }, builder: grant || null, orders });
@@ -409,7 +409,7 @@ async function activeGrantForUser(env, userId) {
   await ensureOrderUserColumn(env);
   const grantsTable = await env.BUILDER_DB.prepare("SELECT name FROM sqlite_master WHERE type='table' AND name='builder_access_grants'").first();
   if (!grantsTable?.name) return null;
-  return env.BUILDER_DB.prepare(`SELECT g.grant_id, g.token_hash, g.plan, g.status, g.analyze_remaining, g.modify_remaining, g.expires_at, o.order_id FROM orders o JOIN builder_access_grants g ON g.grant_id = o.grant_id WHERE o.user_id = ? AND o.status = 'granted' AND g.status = 'active' AND (g.expires_at IS NULL OR g.expires_at > ?) ORDER BY o.granted_at DESC LIMIT 1`).bind(userId, nowIso()).first();
+  return env.BUILDER_DB.prepare(`SELECT g.grant_id, g.token_hash, g.plan, g.status, g.analyze_remaining, g.modify_remaining, g.expires_at, o.order_id FROM orders o JOIN builder_access_grants g ON g.grant_id = o.grant_id WHERE o.user_id = ? AND o.product_code = 'code_workshop_single' AND o.status = 'granted' AND g.status = 'active' AND (g.expires_at IS NULL OR g.expires_at > ?) ORDER BY o.granted_at DESC LIMIT 1`).bind(userId, nowIso()).first();
 }
 
 async function bridgeBuilderAccess(request, env, ctx) {

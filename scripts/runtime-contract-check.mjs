@@ -13,12 +13,22 @@ const adminHealth=read('admin/health/index.html');
 
 need(wrangler,'"main": "src/runtime-worker.js"','wrangler must use runtime guard');
 need(runtime,'import app from "./marketing-worker.js";','runtime must preserve marketing stack');
+need(runtime,'runtime-guard-v2','runtime version must reflect fail-closed checkout guard');
 need(runtime,'/api/health','public health endpoint');
 need(runtime,'/api/admin/runtime-health','admin runtime health endpoint');
+need(runtime,'/api/payments/catalog','payment catalog must be guarded by full-service readiness');
+need(runtime,'guardedCatalog','runtime must gate checkout provider visibility');
 need(runtime,'/api/orders/create','order guard route');
+need(runtime,'CHECKOUT_NOT_READY','orders must fail closed until full checkout stack is ready');
+need(runtime,'ACCOUNT_PRECHECK_FAILED','account precheck errors must fail closed before order creation');
 need(runtime,'ACTIVE_ACCESS_REMAINS','backend duplicate purchase guard');
-need(runtime,'accountSummary(request, env, ctx)','duplicate purchase guard must consult account summary');
+need(runtime,'accountSummaryPrecheck','duplicate purchase guard must consult account summary');
 need(runtime,'grantStillUsable','duplicate purchase guard must validate active usable grant');
+need(runtime,'checkoutReady = paidBuilderReady && (paypalEnvironment === "live" || paymentTestMode)','sandbox checkout must require explicit test mode');
+need(runtime,'free_source_inspector_ready: assets','free inspector readiness must depend on deployed assets');
+need(runtime,'production_ready: productionReady','admin health must distinguish production payment readiness');
+need(runtime,'marketing_healthy: marketingHealthy','admin health must distinguish marketing readiness');
+need(runtime,'expectedMarketingTables','marketing tables must be checked separately');
 need(runtime,'OPENAI_API_KEY','runtime must report OpenAI readiness');
 need(runtime,'PAYPAL_CLIENT_ID','runtime must report PayPal readiness');
 need(runtime,'RESEND_API_KEY','runtime must report email readiness');
@@ -26,7 +36,6 @@ need(runtime,'ACCOUNT_AUTH_SECRET','runtime must report account-secret readiness
 need(runtime,'AUDIT_HASH_SALT','runtime must report audit-salt readiness');
 need(runtime,'SELECT 1 AS ok','admin health must actually query D1');
 need(runtime,'USER_CODE_BUCKET.list({ limit: 1 })','admin health must actually touch R2');
-need(runtime,'expectedTables','admin health must check critical tables');
 need(runtime,'missing_secrets','admin health must report missing secret names only');
 need(runtime,'if (typeof app.scheduled === "function") return app.scheduled(controller, env, ctx);','runtime must forward scheduled jobs');
 need(marketing,'async scheduled(controller,env,ctx)','marketing cron must remain implemented');
@@ -42,7 +51,10 @@ need(adminHealth,'sessionStorage','admin health must not persist key in localSto
 need(adminHealth,'X-Builder-Access-Key','admin health must authenticate with admin key header');
 need(adminHealth,'/api/admin/runtime-health','admin health page must call protected runtime endpoint');
 need(adminHealth,'不会显示任何Secret值','admin health page must disclose secret-value privacy boundary');
+need(adminHealth,'生产收款就绪','admin health must show production checkout separately');
+need(adminHealth,'营销邮件','admin health must show marketing separately');
+need(adminHealth,'Checkout入口','admin health must show order creation readiness');
 forbid(adminHealth,/localStorage\.setItem\([^)]*admin|document\.cookie/i,'admin health must not persist admin key outside sessionStorage');
 
 if(errors.length){console.error('Runtime contract failed:');for(const e of errors)console.error('- '+e);process.exit(1)}
-console.log('Runtime contract OK: production guard, duplicate-purchase block, private health checks, admin surface and cron forwarding protected.');
+console.log('Runtime contract OK: fail-closed checkout, duplicate-purchase block, production/marketing health, private admin surface and cron forwarding protected.');

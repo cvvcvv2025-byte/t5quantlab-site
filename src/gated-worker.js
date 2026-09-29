@@ -573,6 +573,20 @@ async function paypalJson(env, path, { method = "GET", body = null, requestId = 
   return data;
 }
 
+function paypalSafeDiagnostics(error) {
+  const payload = error?.paypal && typeof error.paypal === "object" ? error.paypal : {};
+  const detail = Array.isArray(payload.details)
+    ? payload.details.find(item => item && typeof item === "object") || {}
+    : {};
+  const clean = (value, max) => String(value || "").replace(/[\r\n\t]+/g, " ").trim().slice(0, max);
+  return {
+    issue: clean(detail.issue || payload.name, 120) || null,
+    description: clean(detail.description, 400) || null,
+    debug_id: clean(payload.debug_id, 120) || null,
+    http_status: Number.isInteger(error?.status) ? error.status : null
+  };
+}
+
 async function handlePayPalCreate(request, env) {
   if (!paypalConfigured(env)) return paymentAdapterNotConfigured("PayPal");
   await ensureAccessDb(env);
@@ -638,7 +652,19 @@ async function handlePayPalCreate(request, env) {
       .bind(pp.id, orderId, approvalUrl, now, now).run();
     return json({ ok: true, order_id: orderId, paypal_order_id: pp.id, approval_url: approvalUrl });
   } catch (error) {
-    return json({ ok: false, error: `PayPal下单失败：${error.message || error}` }, 502);
+    const diagnostics = paypalSafeDiagnostics(error);
+    console.error("paypal_create_failed", JSON.stringify(diagnostics));
+    const reason = diagnostics.issue
+      ? `${diagnostics.issue}${diagnostics.description ? ` · ${diagnostics.description}` : ""}`
+      : String(error?.message || error || "PAYPAL_CREATE_FAILED").slice(0, 400);
+    return json({
+      ok: false,
+      error: `PayPal下单失败：${reason}`,
+      code: "PAYPAL_CREATE_FAILED",
+      issue: diagnostics.issue,
+      description: diagnostics.description,
+      debug_id: diagnostics.debug_id
+    }, 502);
   }
 }
 

@@ -24,6 +24,14 @@ forbid('src/audit-guard-worker.js',/core\.fetch|OPENAI_API_KEY|USER_CODE_BUCKET\
 need('src/gated-worker.js', 'analyzeCredits: 1,', 'legacy base grant analysis credit');
 need('src/gated-worker.js', 'modifyCredits: 1,', 'legacy base grant modify credit');
 need('src/gated-worker.js', 'expiresDays: 30', 'base grant expiry');
+need('src/gated-worker.js', 'const grantId = order.grant_id || `GRANT-${orderId}`;', 'payment fulfillment must use deterministic per-order grant id');
+need('src/gated-worker.js', 'PAYMENT_EVENT_CONFLICT', 'duplicate provider events must be checked for ownership conflicts');
+need('src/gated-worker.js', "VALUES (?, ?, 'payment_completed', ?, ?, ?) ON CONFLICT(event_key) DO NOTHING", 'payment completion event must be part of atomic fulfillment statements');
+need('src/gated-worker.js', 'ON CONFLICT DO NOTHING', 'concurrent deterministic grant insert must be idempotent');
+need('src/gated-worker.js', 'await env.BUILDER_DB.batch(statements);', 'payment event, grant and order update must commit in one transaction');
+need('src/gated-worker.js', 'PAYMENT_FULFILLMENT_INCOMPLETE', 'payment fulfillment must verify a live grant before reporting success');
+forbid('src/gated-worker.js',/const grantId = order\.grant_id \|\| randomId\("GRANT"\)/,'random grant id is unsafe under concurrent capture/webhook fulfillment');
+
 need('src/commercial-worker.js', 'const PASS_ANALYZE_CREDITS = 3;', 'analysis credits');
 need('src/commercial-worker.js', 'const PASS_MODIFY_CREDITS = 2;', 'modify credits');
 need('src/commercial-worker.js', 'const PASS_EXPIRES_DAYS = 30;', 'commercial expiry');
@@ -62,4 +70,4 @@ need('builder-schema.sql', 'CREATE TABLE IF NOT EXISTS service_events', 'fulfill
 need('builder-schema.sql', 'CREATE TABLE IF NOT EXISTS payment_disputes', 'dispute ledger');
 need('builder-schema.sql', 'user_id TEXT', 'orders must be account-bindable');
 
-console.log('Payment contract checks passed: $14.90 / 30d / 3 analyses / 2 modifications, atomic retry-safe entitlement, fail-closed audit boundary, account/product binding, dispute handling and payment gates are protected.');
+console.log('Payment contract checks passed: $14.90 / 30d / 3 analyses / 2 modifications, atomic payment/grant fulfillment, atomic retry-safe entitlement, fail-closed audit boundary, account/product binding, dispute handling and payment gates are protected.');

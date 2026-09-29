@@ -12,6 +12,9 @@ need(deploy,'workflow_dispatch:','production deploy must retain manual recovery 
 need(deploy,'workflow_run:','production deploy must support automatic post-CI deployment');
 need(deploy,'workflows: ["Syntax Check"]','automatic production deploy must follow Syntax Check');
 need(deploy,"github.event.workflow_run.conclusion == 'success'",'automatic deploy must require green Syntax Check');
+need(deploy,"github.event.workflow_run.event == 'push'",'automatic production deploy must reject PR-triggered Syntax Check runs');
+need(deploy,"github.event.workflow_run.head_branch == 'main'",'automatic production deploy must be restricted to main branch');
+need(deploy,'cancel-in-progress: false','an in-flight production deploy/schema operation must not be cancelled by a newer release');
 need(deploy,'ref: ${{ github.event.workflow_run.head_sha || github.sha }}','deploy must checkout the exact tested SHA');
 need(deploy,'environment: production','production deploy must use GitHub production environment');
 need(deploy,'cloudflare/wrangler-action@v4','deployment must use supported Wrangler action');
@@ -52,4 +55,4 @@ need(runbook,'automatic production deploy','runbook must document automatic post
 need(runbook,'exact tested commit SHA','runbook must document tested-SHA deployment');
 
 if(errors.length){console.error('Deployment contract failed:');for(const e of errors)console.error('- '+e);process.exit(1)}
-console.log('Deployment contract OK: green-CI automatic tested-SHA deploy, exact allowlisted Cloudflare secret handoff, remote D1 schema and live public smoke checks are protected.');
+console.log('Deployment contract OK: successful main-push-only tested-SHA deploy, exact allowlisted Cloudflare secret handoff, non-cancelled production release, remote D1 schema and live public smoke checks are protected.');

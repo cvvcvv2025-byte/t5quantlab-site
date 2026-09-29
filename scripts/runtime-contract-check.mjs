@@ -12,6 +12,8 @@ const adminHub=read('admin/index.html');
 const adminHealth=read('admin/health/index.html');
 
 need(wrangler,'"main": "src/runtime-worker.js"','wrangler must use runtime guard');
+need(wrangler,'"PAYPAL_ENVIRONMENT": "live"','production deploy must pin PayPal to live mode');
+need(wrangler,'"T5_BUILDER_PASS_PRICE_USD_MINOR": "1490"','production Builder price must be explicit and version-controlled');
 need(runtime,'import app from "./marketing-worker.js";','runtime must preserve marketing stack');
 need(runtime,'runtime-guard-v4','runtime version must include dual-model external deep checks');
 need(runtime,'/api/health','public health endpoint');
@@ -90,4 +92,4 @@ need(adminHealth,'Checkout入口','admin health must show order creation readine
 forbid(adminHealth,/localStorage\.setItem\([^)]*admin|document\.cookie/i,'admin health must not persist admin key outside sessionStorage');
 
 if(errors.length){console.error('Runtime contract failed:');for(const e of errors)console.error('- '+e);process.exit(1)}
-console.log('Runtime contract OK: fail-closed payment/audit readiness, dual OpenAI model/provider deep verification, production/marketing health, private admin surface and cron forwarding protected.');
+console.log('Runtime contract OK: fail-closed payment/audit readiness, live PayPal mode, explicit Builder price, dual OpenAI model/provider deep verification, production/marketing health, private admin surface and cron forwarding protected.');

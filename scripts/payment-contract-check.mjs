@@ -17,7 +17,9 @@ need('src/commercial-worker.js', 'const PASS_ANALYZE_CREDITS = 3;', 'analysis cr
 need('src/commercial-worker.js', 'const PASS_MODIFY_CREDITS = 2;', 'modify credits');
 need('src/commercial-worker.js', 'const PASS_EXPIRES_DAYS = 30;', 'commercial expiry');
 need('src/commercial-worker.js', 'const DEFAULT_USD_PRICE_MINOR = 1490;', 'USD launch price');
-need('src/commercial-worker.js', "VALUES (?, 'builder-pass-3a-2m-v1', ?) ON CONFLICT(grant_id) DO NOTHING", '3+2 entitlement adjustment must be idempotent');
+need('src/commercial-worker.js', "VALUES (?, 'builder-pass-3a-2m-v1', ?) ON CONFLICT(grant_id) DO NOTHING", '3+2 entitlement adjustment marker must be idempotent');
+need('src/commercial-worker.js', 'await env.BUILDER_DB.batch([', 'entitlement normalization must use transactional D1 batch');
+need('src/commercial-worker.js', "WHERE grant_id = ? AND plan <> 't5_builder_pass_30d'", 'entitlement retries must not double-credit an already normalized grant');
 need('src/commercial-worker.js', 'PASS_ANALYZE_CREDITS - 1, PASS_MODIFY_CREDITS - 1', 'legacy base 1+1 must adjust exactly to commercial 3+2');
 need('src/commercial-worker.js', "SET plan = 't5_builder_pass_30d'", 'grant must be normalized to Builder Pass plan');
 need('src/commercial-worker.js', 'refund-v1-2026-09-28', 'terms version');
@@ -28,6 +30,7 @@ need('src/final-worker.js', 'status = ?, updated_at = ?', 'grant dispute state u
 need('src/account-worker.js', 'p === "/api/orders/create"', 'account-bound order interception');
 need('src/account-worker.js', 'outHeaders.delete("Set-Cookie")', 'pending Builder cookie stripping');
 need('src/account-worker.js', 'body.email = user.email;', 'order email must follow logged-in account');
+need('src/account-worker.js', "o.product_code = 'code_workshop_single'", 'Builder entitlement must be scoped to the purchased Builder product');
 
 need('src/runtime-worker.js', 'ACTIVE_ACCESS_REMAINS', 'server-side duplicate purchase guard');
 need('src/runtime-worker.js', 'ACCOUNT_PRECHECK_FAILED', 'account precheck must fail closed');
@@ -47,4 +50,4 @@ need('builder-schema.sql', 'CREATE TABLE IF NOT EXISTS service_events', 'fulfill
 need('builder-schema.sql', 'CREATE TABLE IF NOT EXISTS payment_disputes', 'dispute ledger');
 need('builder-schema.sql', 'user_id TEXT', 'orders must be account-bindable');
 
-console.log('Payment contract checks passed: $14.90 / 30d / 3 analyses / 2 modifications, account binding, dispute handling and fail-closed payment gates are protected.');
+console.log('Payment contract checks passed: $14.90 / 30d / 3 analyses / 2 modifications, atomic retry-safe entitlement, account/product binding, dispute handling and fail-closed payment gates are protected.');

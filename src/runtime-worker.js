@@ -68,7 +68,7 @@ async function publicHealth(env) {
   return json({
     ok: true,
     service: "t5quantlab",
-    runtime: "runtime-guard-v3",
+    runtime: "runtime-guard-v4",
     public_site_ready: state.assets,
     free_source_inspector_ready: state.free_source_inspector_ready,
     account_ready: state.account_ready,
@@ -101,25 +101,35 @@ function senderDomain(value) {
   return at > 0 ? email.slice(at + 1).trim().toLowerCase() : "";
 }
 
+async function checkOpenAIModel(env, model) {
+  if (!env.OPENAI_API_KEY) return { ok: false, detail: "not configured" };
+  try {
+    const r = await fetchWithTimeout(`https://api.openai.com/v1/models/${encodeURIComponent(model)}`, {
+      headers: { "Authorization": `Bearer ${env.OPENAI_API_KEY}` }
+    });
+    return { ok: r.ok, http_status: r.status, detail: r.ok ? `${model} accessible` : `OpenAI HTTP ${r.status}` };
+  } catch (error) {
+    return { ok: false, detail: `OpenAI check failed: ${String(error?.name || error).slice(0, 80)}` };
+  }
+}
+
 async function externalDeepChecks(request, env) {
   const result = {
     requested: true,
     openai_model: { ok: false, detail: "not configured" },
+    openai_modify_model: { ok: false, detail: "not configured" },
     paypal_oauth: { ok: false, detail: "not configured" },
     paypal_webhook: { ok: false, detail: "not configured", missing_events: [] },
     resend_domains: { ok: false, detail: "not configured", domains: [] }
   };
 
-  const model = String(env.OPENAI_ANALYZE_MODEL || "gpt-5.6-terra");
+  const analyzeModel = String(env.OPENAI_ANALYZE_MODEL || "gpt-5.6-terra");
+  const modifyModel = String(env.OPENAI_MODIFY_MODEL || "gpt-5.6-sol");
   if (env.OPENAI_API_KEY) {
-    try {
-      const r = await fetchWithTimeout(`https://api.openai.com/v1/models/${encodeURIComponent(model)}`, {
-        headers: { "Authorization": `Bearer ${env.OPENAI_API_KEY}` }
-      });
-      result.openai_model = { ok: r.ok, http_status: r.status, detail: r.ok ? `${model} accessible` : `OpenAI HTTP ${r.status}` };
-    } catch (error) {
-      result.openai_model = { ok: false, detail: `OpenAI check failed: ${String(error?.name || error).slice(0, 80)}` };
-    }
+    result.openai_model = await checkOpenAIModel(env, analyzeModel);
+    result.openai_modify_model = analyzeModel === modifyModel
+      ? { ...result.openai_model }
+      : await checkOpenAIModel(env, modifyModel);
   }
 
   let paypalToken = "";
@@ -200,7 +210,7 @@ async function externalDeepChecks(request, env) {
     }
   }
 
-  result.all_ok = result.openai_model.ok && result.paypal_oauth.ok && result.paypal_webhook.ok && result.resend_domains.ok;
+  result.all_ok = result.openai_model.ok && result.openai_modify_model.ok && result.paypal_oauth.ok && result.paypal_webhook.ok && result.resend_domains.ok;
   return result;
 }
 
@@ -246,6 +256,7 @@ async function adminHealth(request, env) {
   if (!env.OPENAI_API_KEY) missingSecrets.push("OPENAI_API_KEY");
   if (!env.ACCOUNT_AUTH_SECRET) missingSecrets.push("ACCOUNT_AUTH_SECRET");
   if (!env.RESEND_API_KEY) missingSecrets.push("RESEND_API_KEY");
+  if (!env.AUTH_EMAIL_FROM) missingSecrets.push("AUTH_EMAIL_FROM");
   if (!env.PAYPAL_CLIENT_ID) missingSecrets.push("PAYPAL_CLIENT_ID");
   if (!env.PAYPAL_CLIENT_SECRET) missingSecrets.push("PAYPAL_CLIENT_SECRET");
   if (!env.PAYPAL_WEBHOOK_ID) missingSecrets.push("PAYPAL_WEBHOOK_ID");
@@ -263,7 +274,7 @@ async function adminHealth(request, env) {
     production_ready: productionReady,
     production_verified: productionVerified,
     marketing_healthy: marketingHealthy,
-    runtime: "runtime-guard-v3",
+    runtime: "runtime-guard-v4",
     configuration: state,
     checks,
     external,
@@ -277,7 +288,7 @@ async function adminHealth(request, env) {
     missing_secrets: missingSecrets,
     models: {
       analyze: String(env.OPENAI_ANALYZE_MODEL || "gpt-5.6-terra"),
-      modify: String(env.OPENAI_MODIFY_MODEL || "gpt-5.6-terra")
+      modify: String(env.OPENAI_MODIFY_MODEL || "gpt-5.6-sol")
     },
     email_from: String(env.AUTH_EMAIL_FROM || ""),
     marketing_email_from: String(env.MARKETING_EMAIL_FROM || env.AUTH_EMAIL_FROM || "")

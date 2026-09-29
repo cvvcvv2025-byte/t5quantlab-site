@@ -474,33 +474,52 @@ async function completePaidOrder(env, { orderId, provider, providerTradeId, paid
   return { orderId, grantId: fulfilled.grant_id, duplicate: Boolean(existingEvent) };
 }
 
-async function revokePaidOrder(env, { orderId, provider, eventId = null, providerTradeId = null }) {
+async function revokePaidOrder(env, { orderId, provider, eventId = null, providerTradeId = null, eventType = "payment_refunded" }) {
   await ensureAccessDb(env);
   const order = await env.BUILDER_DB.prepare("SELECT order_id, status, grant_id FROM orders WHERE order_id = ?").bind(orderId).first();
   if (!order) throw new Error("ORDER_NOT_FOUND");
 
+  let existingEvent = null;
   if (eventId) {
-    const isNew = await recordPaymentEvent(env, {
-      provider,
-      eventId,
-      eventType: "payment_refunded",
-      orderId,
-      providerTradeId
-    });
-    if (!isNew) return { orderId, duplicate: true };
+    existingEvent = await env.BUILDER_DB.prepare(`SELECT provider, event_type, order_id, provider_trade_id
+      FROM payment_events WHERE event_key = ?`).bind(`${provider}:${eventId}`).first();
+    if (existingEvent) {
+      if (String(existingEvent.provider || "") !== provider
+        || String(existingEvent.event_type || "") !== eventType
+        || (existingEvent.order_id && String(existingEvent.order_id) !== orderId)
+        || (existingEvent.provider_trade_id && providerTradeId && String(existingEvent.provider_trade_id) !== providerTradeId)) {
+        throw new Error("PAYMENT_EVENT_CONFLICT");
+      }
+    }
   }
 
   const updated = nowIso();
-  const statements = [
+  const statements = [];
+  if (eventId) {
+    statements.push(env.BUILDER_DB.prepare(`INSERT INTO payment_events
+      (event_key, provider, event_type, order_id, provider_trade_id, created_at)
+      VALUES (?, ?, ?, ?, ?, ?) ON CONFLICT(event_key) DO NOTHING`)
+      .bind(`${provider}:${eventId}`, provider, eventType, orderId, providerTradeId, updated));
+  }
+  statements.push(
     env.BUILDER_DB.prepare("UPDATE orders SET status = 'refunded', updated_at = ? WHERE order_id = ?")
       .bind(updated, orderId)
-  ];
+  );
   if (order.grant_id) {
     statements.push(env.BUILDER_DB.prepare("UPDATE builder_access_grants SET status = 'revoked', updated_at = ? WHERE grant_id = ?")
       .bind(updated, order.grant_id));
   }
+
+  // The provider event ledger and local access revocation must commit together.
   await env.BUILDER_DB.batch(statements);
-  return { orderId, duplicate: false };
+
+  const revoked = await env.BUILDER_DB.prepare(`SELECT o.status AS order_status, o.grant_id, g.status AS grant_status
+    FROM orders o LEFT JOIN builder_access_grants g ON g.grant_id = o.grant_id
+    WHERE o.order_id = ?`).bind(orderId).first();
+  if (revoked?.order_status !== "refunded" || (revoked?.grant_id && revoked?.grant_status !== "revoked")) {
+    throw new Error("PAYMENT_REVOCATION_INCOMPLETE");
+  }
+  return { orderId, duplicate: Boolean(existingEvent) };
 }
 
 function paypalBase(env) {
@@ -795,7 +814,8 @@ async function handlePayPalWebhook(request, env) {
           orderId: local.orderId,
           provider: "paypal",
           providerTradeId: String(resource.id || ""),
-          eventId: eventId || `reversal:${resource.id}`
+          eventId: eventId || `reversal:${resource.id}`,
+          eventType: "payment_reversed"
         });
       }
       return json({ ok: true });

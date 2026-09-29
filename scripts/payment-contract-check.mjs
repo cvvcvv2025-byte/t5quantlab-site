@@ -5,7 +5,8 @@ function need(file, text, label) {
   if (!src.includes(text)) throw new Error(`${label}: missing ${JSON.stringify(text)} in ${file}`);
 }
 
-need('wrangler.jsonc', '"main": "src/marketing-worker.js"', 'worker entrypoint');
+need('wrangler.jsonc', '"main": "src/runtime-worker.js"', 'worker entrypoint');
+need('src/runtime-worker.js', 'import app from "./marketing-worker.js";', 'runtime guard must preserve marketing/payment stack');
 need('src/marketing-worker.js', 'import app from "./account-worker.js";', 'marketing wrapper must preserve account stack');
 need('src/account-worker.js', 'import app from "./final-worker.js";', 'account wrapper must preserve commercial/payment stack');
 need('src/commercial-worker.js', 'const PASS_ANALYZE_CREDITS = 3;', 'analysis credits');
@@ -19,6 +20,8 @@ need('src/final-worker.js', 'status = ?, updated_at = ?', 'grant dispute state u
 need('src/account-worker.js', 'p === "/api/orders/create"', 'account-bound order interception');
 need('src/account-worker.js', 'outHeaders.delete("Set-Cookie")', 'pending Builder cookie stripping');
 need('src/account-worker.js', 'body.email = user.email;', 'order email must follow logged-in account');
+need('src/runtime-worker.js', 'ACTIVE_ACCESS_REMAINS', 'server-side duplicate purchase guard');
+need('src/runtime-worker.js', 'grantStillUsable', 'duplicate guard must validate usable grant');
 need('checkout/index.html', 'terms_accepted:true', 'checkout terms acceptance');
 need('checkout/index.html', '/refund-policy/', 'refund policy link');
 need('checkout/index.html', '/api/auth/me', 'checkout account guard');

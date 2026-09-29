@@ -22,6 +22,7 @@ need('src/account-worker.js','marketing_consent INTEGER NOT NULL DEFAULT 0','mar
 need('src/account-worker.js','outHeaders.delete("Set-Cookie")','pending Builder cookie must be stripped for account orders');
 need('src/account-worker.js','X-Builder-Access-Token','account-to-grant bridge');
 need('src/account-worker.js','o.user_id = ?','grant must be scoped to logged-in user');
+need('src/account-worker.js',"o.product_code = 'code_workshop_single'",'Builder grant must be scoped to Builder product');
 forbid('src/account-worker.js',/password_hash|password_digest|CREATE TABLE[^;]*password/is,'password-based auth is not allowed in email-only MVP');
 
 need('builder-schema.sql','CREATE TABLE IF NOT EXISTS users','users table');
@@ -51,4 +52,4 @@ need('admin/accounts/index.html','sessionStorage','admin key must not be persist
 need('unsubscribe/index.html','/api/marketing/unsubscribe','unsubscribe page');
 
 if(errors.length){console.error('Account contract check failed:');for(const e of errors)console.error('- '+e);process.exit(1)}
-console.log('Account contract OK: runtime -> marketing -> account stack, email-only auth, opt-in marketing, user-bound orders and local-only training summary protected.');
+console.log('Account contract OK: runtime -> marketing -> account stack, email-only auth, opt-in marketing, account/product-bound Builder access and local-only training summary protected.');

@@ -34,6 +34,8 @@ need(runtime,'free_source_inspector_ready: assets','free inspector readiness mus
 need(runtime,'production_ready: productionReady','admin health must distinguish production payment readiness');
 need(runtime,'marketing_healthy: marketingHealthy','admin health must distinguish marketing readiness');
 need(runtime,'expectedMarketingTables','marketing tables must be checked separately');
+need(runtime,'const auditSalt = String(env.AUDIT_HASH_SALT || "").trim().length >= 16;','paid runtime readiness must require a nontrivial audit salt');
+need(runtime,'if (String(env.AUDIT_HASH_SALT || "").trim().length < 16) missingSecrets.push("AUDIT_HASH_SALT");','admin health must flag missing or weak audit salt');
 
 need(runtime,'externalDeepChecks','admin must support non-billable provider deep checks');
 need(runtime,'new URL(request.url).searchParams.get("deep") === "1"','deep checks must be explicit opt-in');
@@ -88,4 +90,4 @@ need(adminHealth,'Checkout入口','admin health must show order creation readine
 forbid(adminHealth,/localStorage\.setItem\([^)]*admin|document\.cookie/i,'admin health must not persist admin key outside sessionStorage');
 
 if(errors.length){console.error('Runtime contract failed:');for(const e of errors)console.error('- '+e);process.exit(1)}
-console.log('Runtime contract OK: fail-closed payment, dual OpenAI model/provider deep verification, production/marketing health, private admin surface and cron forwarding protected.');
+console.log('Runtime contract OK: fail-closed payment/audit readiness, dual OpenAI model/provider deep verification, production/marketing health, private admin surface and cron forwarding protected.');

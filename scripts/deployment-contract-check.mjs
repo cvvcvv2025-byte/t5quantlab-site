@@ -31,6 +31,11 @@ need(deploy,'node scripts/payment-contract-check.mjs','deployment preflight must
 need(deploy,'node scripts/production-payment-contract-check.mjs','deployment preflight must validate production payment ownership');
 need(deploy,'node scripts/deployment-contract-check.mjs','deployment preflight must validate deployment contract');
 need(deploy,'https://t5quantlab.com/api/health','deployment must run live public health smoke check');
+need(deploy,'Verify sensitive files are not public','deployment must probe sensitive paths after release');
+for (const path of ['/src/runtime-worker.js','/builder-schema.sql','/wrangler.jsonc','/scripts/deployment-contract-check.mjs','/PAYMENT_SETUP.md']) {
+  need(deploy,path,`deployment must verify ${path} is not public`);
+}
+need(deploy,'expected 404','sensitive-file smoke check must fail closed');
 need(deploy,'public_site_ready','post-deploy smoke must require public site readiness');
 need(deploy,'free_source_inspector_ready','post-deploy smoke must require free inspector readiness');
 need(deploy,"WARNING: checkout_ready=false",'post-deploy smoke must surface paid checkout readiness without hiding it');
@@ -46,7 +51,7 @@ for(const line of accountIdLines) if(line!=='accountId: ${{ env.CLOUDFLARE_ACCOU
 
 need(wrangler,'"main": "src/runtime-worker.js"','Wrangler production entrypoint');
 need(wrangler,'"directory": "."','Wrangler static asset root');
-for(const token of ['node_modules/**','src/**','scripts/**','docs/**','.github/**','builder-schema.sql','wrangler.jsonc','PAYMENT_SETUP.md','package.json','package-lock.json']) {
+for(const token of ['node_modules/**','src/**','scripts/**','docs/**','.github/**','.wrangler/**','builder-schema.sql','wrangler.jsonc','PAYMENT_SETUP.md','package.json','package-lock.json','*.sql','*.md']) {
   need(assetIgnore,token,`static asset boundary missing ${token}`);
 }
 
@@ -61,4 +66,4 @@ need(runbook,'automatic production deploy','runbook must document automatic post
 need(runbook,'exact tested commit SHA','runbook must document tested-SHA deployment');
 
 if(errors.length){console.error('Deployment contract failed:');for(const e of errors)console.error('- '+e);process.exit(1)}
-console.log('Deployment contract OK: successful main-push-only tested-SHA deploy, exact allowlisted Cloudflare secret handoff, non-cancelled production release, hardened static asset boundary, remote D1 schema and live public smoke checks are protected.');
+console.log('Deployment contract OK: successful main-push-only tested-SHA deploy, exact allowlisted Cloudflare secret handoff, non-cancelled production release, hardened static asset boundary with live 404 probes, remote D1 schema and live public smoke checks are protected.');

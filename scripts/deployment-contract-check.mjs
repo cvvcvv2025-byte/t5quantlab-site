@@ -16,8 +16,13 @@ need(deploy,"github.event.workflow_run.conclusion == 'success'",'automatic deplo
 need(deploy,'ref: ${{ github.event.workflow_run.head_sha || github.sha }}','deploy must checkout the exact tested SHA');
 need(deploy,'environment: production','production deploy must use GitHub production environment');
 need(deploy,'cloudflare/wrangler-action@v4','deployment must use supported Wrangler action');
-need(deploy,'secrets.CLOUDFLARE_API_TOKEN','deployment must read Cloudflare API token from GitHub secrets');
-need(deploy,'secrets.CLOUDFLARE_ACCOUNT_ID','deployment must read Cloudflare account ID from GitHub secrets');
+need(deploy,'CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}','deployment env token must originate from GitHub secret');
+need(deploy,'CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}','deployment env account id must originate from GitHub secret');
+need(deploy,'Verify GitHub production deployment secrets','deployment must fail early when Cloudflare credentials are missing');
+need(deploy,'[ -n "${CLOUDFLARE_API_TOKEN:-}" ]','deployment must validate API token presence without printing it');
+need(deploy,'[ -n "${CLOUDFLARE_ACCOUNT_ID:-}" ]','deployment must validate account id presence without printing it');
+need(deploy,'apiToken: ${{ env.CLOUDFLARE_API_TOKEN }}','Wrangler must receive only the validated token env');
+need(deploy,'accountId: ${{ env.CLOUDFLARE_ACCOUNT_ID }}','Wrangler must receive only the validated account env');
 need(deploy,'d1 execute t5quantlab-builder --remote --file=./builder-schema.sql --yes','deployment must support remote D1 schema application');
 need(deploy,'command: deploy','deployment must run Wrangler deploy');
 need(deploy,'node scripts/runtime-contract-check.mjs','deployment preflight must validate runtime contract');
@@ -28,8 +33,9 @@ need(deploy,'https://t5quantlab.com/api/health','deployment must run live public
 need(deploy,'public_site_ready','post-deploy smoke must require public site readiness');
 need(deploy,'free_source_inspector_ready','post-deploy smoke must require free inspector readiness');
 need(deploy,"WARNING: checkout_ready=false",'post-deploy smoke must surface paid checkout readiness without hiding it');
-forbid(deploy,/apiToken:\s*(?!\$\{\{\s*secrets\.CLOUDFLARE_API_TOKEN\s*\}\})\S+/,'Cloudflare API token must never be hardcoded');
-forbid(deploy,/accountId:\s*(?!\$\{\{\s*secrets\.CLOUDFLARE_ACCOUNT_ID\s*\}\})\S+/,'Cloudflare account ID must be read from GitHub secrets');
+need(deploy,'GITHUB_STEP_SUMMARY','deployment must publish an operator-readable release summary');
+forbid(deploy,/apiToken:\s*(?!\$\{\{\s*env\.CLOUDFLARE_API_TOKEN\s*\}\})[^\n]+/,'Cloudflare API token must never be hardcoded or sourced outside validated env');
+forbid(deploy,/accountId:\s*(?!\$\{\{\s*env\.CLOUDFLARE_ACCOUNT_ID\s*\}\})[^\n]+/,'Cloudflare account ID must never be hardcoded or sourced outside validated env');
 
 need(wrangler,'"main": "src/runtime-worker.js"','Wrangler production entrypoint');
 for(const token of ['OPENAI_API_KEY','ACCOUNT_AUTH_SECRET','RESEND_API_KEY','PAYPAL_CLIENT_ID','PAYPAL_CLIENT_SECRET','PAYPAL_WEBHOOK_ID','AUDIT_HASH_SALT','BUILDER_ACCESS_KEY','PAYPAL_ENVIRONMENT=live'])need(runbook,token,`runbook missing ${token}`);
@@ -43,4 +49,4 @@ need(runbook,'automatic production deploy','runbook must document automatic post
 need(runbook,'exact tested commit SHA','runbook must document tested-SHA deployment');
 
 if(errors.length){console.error('Deployment contract failed:');for(const e of errors)console.error('- '+e);process.exit(1)}
-console.log('Deployment contract OK: green-CI automatic tested-SHA deploy, Cloudflare secrets, remote D1 schema and live public smoke checks are protected.');
+console.log('Deployment contract OK: green-CI automatic tested-SHA deploy, validated Cloudflare secret handoff, remote D1 schema and live public smoke checks are protected.');

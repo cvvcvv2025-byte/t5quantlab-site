@@ -7,6 +7,7 @@ const need=(src,text,label)=>{if(!src.includes(text))errors.push(`${label}: miss
 const deploy=read('.github/workflows/deploy-production.yml');
 const runbook=read('docs/PRODUCTION_RUNBOOK.md');
 const wrangler=read('wrangler.jsonc');
+const assetIgnore=read('.assetsignore');
 
 need(deploy,'workflow_dispatch:','production deploy must retain manual recovery trigger');
 need(deploy,'workflow_run:','production deploy must support automatic post-CI deployment');
@@ -44,6 +45,11 @@ for(const line of apiTokenLines) if(line!=='apiToken: ${{ env.CLOUDFLARE_API_TOK
 for(const line of accountIdLines) if(line!=='accountId: ${{ env.CLOUDFLARE_ACCOUNT_ID }}') errors.push(`Cloudflare account ID line is not allowlisted: ${line}`);
 
 need(wrangler,'"main": "src/runtime-worker.js"','Wrangler production entrypoint');
+need(wrangler,'"directory": "."','Wrangler static asset root');
+for(const token of ['node_modules/**','src/**','scripts/**','docs/**','.github/**','builder-schema.sql','wrangler.jsonc','PAYMENT_SETUP.md','package.json','package-lock.json']) {
+  need(assetIgnore,token,`static asset boundary missing ${token}`);
+}
+
 for(const token of ['OPENAI_API_KEY','ACCOUNT_AUTH_SECRET','RESEND_API_KEY','PAYPAL_CLIENT_ID','PAYPAL_CLIENT_SECRET','PAYPAL_WEBHOOK_ID','AUDIT_HASH_SALT','BUILDER_ACCESS_KEY','PAYPAL_ENVIRONMENT=live'])need(runbook,token,`runbook missing ${token}`);
 need(runbook,'ENABLE_PAYMENT_TEST_MODE','runbook must explain sandbox test-mode boundary');
 need(runbook,'https://t5quantlab.com/api/health','runbook must include public health check');
@@ -55,4 +61,4 @@ need(runbook,'automatic production deploy','runbook must document automatic post
 need(runbook,'exact tested commit SHA','runbook must document tested-SHA deployment');
 
 if(errors.length){console.error('Deployment contract failed:');for(const e of errors)console.error('- '+e);process.exit(1)}
-console.log('Deployment contract OK: successful main-push-only tested-SHA deploy, exact allowlisted Cloudflare secret handoff, non-cancelled production release, remote D1 schema and live public smoke checks are protected.');
+console.log('Deployment contract OK: successful main-push-only tested-SHA deploy, exact allowlisted Cloudflare secret handoff, non-cancelled production release, hardened static asset boundary, remote D1 schema and live public smoke checks are protected.');

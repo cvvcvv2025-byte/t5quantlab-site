@@ -1,0 +1,42 @@
+name: Production Hardening
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'scripts/harden-production-payment-phase11.mjs'
+      - 'scripts/production-payment-contract-check.mjs'
+      - '.github/workflows/production-hardening.yml'
+
+permissions:
+  contents: write
+
+jobs:
+  harden:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Apply production payment hardening
+        run: node scripts/harden-production-payment-phase11.mjs
+      - name: Verify production payment contract
+        run: node scripts/production-payment-contract-check.mjs
+      - name: Syntax check hardened workers
+        run: |
+          node --check src/gated-worker.js
+          node --check src/account-worker.js
+      - name: Commit hardened production payment path
+        run: |
+          if git diff --quiet; then
+            echo "No production hardening changes needed."
+            exit 0
+          fi
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add src/gated-worker.js src/account-worker.js
+          git commit -m "fix: bind payment actions to account and remove pending access cookie"
+          git push

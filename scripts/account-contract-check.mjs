@@ -4,7 +4,8 @@ const errors=[];
 const need=(file,text,label)=>{const src=fs.readFileSync(file,'utf8');if(!src.includes(text))errors.push(`${label}: missing ${JSON.stringify(text)} in ${file}`)};
 const forbid=(file,re,label)=>{const src=fs.readFileSync(file,'utf8');if(re.test(src))errors.push(`${label}: forbidden pattern ${re} in ${file}`)};
 
-need('wrangler.jsonc','"main": "src/marketing-worker.js"','top-level worker entrypoint');
+need('wrangler.jsonc','"main": "src/runtime-worker.js"','top-level worker entrypoint');
+need('src/runtime-worker.js','import app from "./marketing-worker.js";','runtime guard must preserve marketing worker');
 need('src/marketing-worker.js','import app from "./account-worker.js";','marketing wrapper must preserve account worker');
 need('src/account-worker.js','import app from "./final-worker.js";','account worker must preserve payment stack');
 need('src/account-worker.js','/api/auth/request-code','request-code endpoint');
@@ -50,4 +51,4 @@ need('admin/accounts/index.html','sessionStorage','admin key must not be persist
 need('unsubscribe/index.html','/api/marketing/unsubscribe','unsubscribe page');
 
 if(errors.length){console.error('Account contract check failed:');for(const e of errors)console.error('- '+e);process.exit(1)}
-console.log('Account contract OK: email-only auth, opt-in marketing, user-bound orders and local-only training summary protected.');
+console.log('Account contract OK: runtime -> marketing -> account stack, email-only auth, opt-in marketing, user-bound orders and local-only training summary protected.');

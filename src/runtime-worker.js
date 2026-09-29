@@ -195,15 +195,17 @@ async function guardedCatalog(request, env, ctx) {
   return json(data, response.status);
 }
 
+function checkoutNotReady() {
+  return json({
+    ok: false,
+    error: "付费源码处理当前尚未完成全部运行配置，因此暂不创建或发起付款。",
+    code: "CHECKOUT_NOT_READY"
+  }, 503);
+}
+
 async function guardedCreateOrder(request, env, ctx) {
   const state = configState(env);
-  if (!state.checkout_ready) {
-    return json({
-      ok: false,
-      error: "付费源码处理当前尚未完成全部运行配置，因此暂不创建付款订单。",
-      code: "CHECKOUT_NOT_READY"
-    }, 503);
-  }
+  if (!state.checkout_ready) return checkoutNotReady();
 
   const precheck = await accountSummaryPrecheck(request, env, ctx);
   if (precheck.status === 401) return app.fetch(request, env, ctx);
@@ -230,6 +232,22 @@ async function guardedCreateOrder(request, env, ctx) {
   return app.fetch(request, env, ctx);
 }
 
+async function guardedPayPalCreate(request, env, ctx) {
+  if (!configState(env).checkout_ready) return checkoutNotReady();
+  return app.fetch(request, env, ctx);
+}
+
+async function guardedPayPalCapture(request, env, ctx) {
+  if (!configState(env).paid_builder_ready) {
+    return json({
+      ok: false,
+      error: "付款确认前检测到数字服务履约环境未就绪。本次不会执行 PayPal Capture，请稍后重试。",
+      code: "FULFILLMENT_NOT_READY_BEFORE_CAPTURE"
+    }, 503);
+  }
+  return app.fetch(request, env, ctx);
+}
+
 export default {
   async fetch(request, env, ctx) {
     const url = new URL(request.url);
@@ -237,6 +255,8 @@ export default {
     if (url.pathname === "/api/admin/runtime-health" && request.method === "GET") return adminHealth(request, env);
     if (url.pathname === "/api/payments/catalog" && request.method === "GET") return guardedCatalog(request, env, ctx);
     if (url.pathname === "/api/orders/create" && request.method === "POST") return guardedCreateOrder(request, env, ctx);
+    if (url.pathname === "/api/payment/paypal/create" && request.method === "POST") return guardedPayPalCreate(request, env, ctx);
+    if (url.pathname === "/api/payment/paypal/capture" && request.method === "POST") return guardedPayPalCapture(request, env, ctx);
     return app.fetch(request, env, ctx);
   },
   async scheduled(controller, env, ctx) {

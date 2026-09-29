@@ -361,7 +361,7 @@ async function handleCreateOrder(request, env) {
       currency,
       status: "pending"
     }
-  }, 200, { "Set-Cookie": builderCookie(builderAccessToken, product.expiresDays * 86400) });
+  }, 200);
 }
 
 async function getAuthorizedOrder(request, env, orderId) {

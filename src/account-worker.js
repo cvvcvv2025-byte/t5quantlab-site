@@ -372,6 +372,38 @@ async function bindOrderToAccount(request, env, ctx) {
   return new Response(response.body, { status: response.status, statusText: response.statusText, headers: outHeaders });
 }
 
+async function forwardOwnedOrderAction(request, env, ctx) {
+  const user = await resolveSession(request, env);
+  if (!user) return json({ ok: false, error: "请先登录", code: "ACCOUNT_REQUIRED" }, 401);
+  await ensureAccountDb(env);
+  if (!(await ensureOrderUserColumn(env))) return json({ ok: false, error: "订单系统尚未初始化", code: "ORDER_SYSTEM_NOT_READY" }, 503);
+
+  let orderId = new URL(request.url).searchParams.get("order_id") || "";
+  if (!orderId && request.method !== "GET") {
+    try {
+      const body = await request.clone().json();
+      orderId = String(body?.order_id || "").trim();
+    } catch {}
+  }
+  if (!orderId) return json({ ok: false, error: "缺少订单号", code: "ORDER_ID_REQUIRED" }, 400);
+
+  let order = await env.BUILDER_DB.prepare("SELECT order_id, user_id, customer_email FROM orders WHERE order_id = ?").bind(orderId).first();
+  if (!order) return json({ ok: false, error: "订单不存在", code: "ORDER_NOT_FOUND" }, 404);
+
+  // Compatibility for legacy account-era orders created before user_id was populated:
+  // only the same verified T5 email may claim an unowned order, and only once.
+  if (!order.user_id && normalizeEmail(order.customer_email) === user.email) {
+    await env.BUILDER_DB.prepare("UPDATE orders SET user_id = ?, updated_at = ? WHERE order_id = ? AND user_id IS NULL")
+      .bind(user.user_id, nowIso(), orderId).run();
+    order = await env.BUILDER_DB.prepare("SELECT order_id, user_id, customer_email FROM orders WHERE order_id = ?").bind(orderId).first();
+  }
+
+  if (order.user_id !== user.user_id) {
+    return json({ ok: false, error: "该订单不属于当前 T5 账户", code: "ORDER_ACCOUNT_MISMATCH" }, 403);
+  }
+  return app.fetch(request, env, ctx);
+}
+
 async function activeGrantForUser(env, userId) {
   if (!(await ordersTableExists(env))) return null;
   await ensureOrderUserColumn(env);
@@ -410,6 +442,11 @@ export default {
       if (p === "/api/admin/accounts" && request.method === "GET") return adminAccounts(request, env);
       if (p === "/api/marketing/unsubscribe" && request.method === "POST") return unsubscribe(request, env);
       if (p === "/api/orders/create" && request.method === "POST") return bindOrderToAccount(request, env, ctx);
+      if (p === "/api/orders/status" && request.method === "GET") return forwardOwnedOrderAction(request, env, ctx);
+      if (p === "/api/orders/cancel" && request.method === "POST") return forwardOwnedOrderAction(request, env, ctx);
+      if (p === "/api/orders/refund-eligibility" && request.method === "GET") return forwardOwnedOrderAction(request, env, ctx);
+      if (p === "/api/payment/paypal/create" && request.method === "POST") return forwardOwnedOrderAction(request, env, ctx);
+      if (p === "/api/payment/paypal/capture" && request.method === "POST") return forwardOwnedOrderAction(request, env, ctx);
       if (p.startsWith("/api/builder/")) return bridgeBuilderAccess(request, env, ctx);
       return app.fetch(request, env, ctx);
     } catch (error) {

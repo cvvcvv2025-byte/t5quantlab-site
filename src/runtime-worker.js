@@ -68,7 +68,7 @@ async function publicHealth(env) {
   return json({
     ok: true,
     service: "t5quantlab",
-    runtime: "runtime-guard-v2",
+    runtime: "runtime-guard-v3",
     public_site_ready: state.assets,
     free_source_inspector_ready: state.free_source_inspector_ready,
     account_ready: state.account_ready,
@@ -76,6 +76,132 @@ async function publicHealth(env) {
     checkout_ready: state.checkout_ready,
     payment_environment: state.paypal_environment
   });
+}
+
+async function fetchWithTimeout(url, options = {}, timeoutMs = 8000) {
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(), timeoutMs);
+  try {
+    return await fetch(url, { ...options, signal: controller.signal });
+  } finally {
+    clearTimeout(timer);
+  }
+}
+
+function paypalBase(env) {
+  return String(env.PAYPAL_ENVIRONMENT || "sandbox").toLowerCase() === "live"
+    ? "https://api-m.paypal.com"
+    : "https://api-m.sandbox.paypal.com";
+}
+
+function senderDomain(value) {
+  const raw = String(value || "").trim();
+  const email = raw.match(/<([^>]+)>/)?.[1] || raw;
+  const at = email.lastIndexOf("@");
+  return at > 0 ? email.slice(at + 1).trim().toLowerCase() : "";
+}
+
+async function externalDeepChecks(request, env) {
+  const result = {
+    requested: true,
+    openai_model: { ok: false, detail: "not configured" },
+    paypal_oauth: { ok: false, detail: "not configured" },
+    paypal_webhook: { ok: false, detail: "not configured", missing_events: [] },
+    resend_domains: { ok: false, detail: "not configured", domains: [] }
+  };
+
+  const model = String(env.OPENAI_ANALYZE_MODEL || "gpt-5.6-terra");
+  if (env.OPENAI_API_KEY) {
+    try {
+      const r = await fetchWithTimeout(`https://api.openai.com/v1/models/${encodeURIComponent(model)}`, {
+        headers: { "Authorization": `Bearer ${env.OPENAI_API_KEY}` }
+      });
+      result.openai_model = { ok: r.ok, http_status: r.status, detail: r.ok ? `${model} accessible` : `OpenAI HTTP ${r.status}` };
+    } catch (error) {
+      result.openai_model = { ok: false, detail: `OpenAI check failed: ${String(error?.name || error).slice(0, 80)}` };
+    }
+  }
+
+  let paypalToken = "";
+  if (env.PAYPAL_CLIENT_ID && env.PAYPAL_CLIENT_SECRET) {
+    try {
+      const auth = btoa(`${env.PAYPAL_CLIENT_ID}:${env.PAYPAL_CLIENT_SECRET}`);
+      const r = await fetchWithTimeout(`${paypalBase(env)}/v1/oauth2/token`, {
+        method: "POST",
+        headers: { "Authorization": `Basic ${auth}`, "Content-Type": "application/x-www-form-urlencoded" },
+        body: "grant_type=client_credentials"
+      });
+      let d = {};
+      try { d = await r.json(); } catch {}
+      paypalToken = r.ok ? String(d.access_token || "") : "";
+      result.paypal_oauth = { ok: r.ok && Boolean(paypalToken), http_status: r.status, detail: r.ok && paypalToken ? "OAuth credentials accepted" : `PayPal OAuth HTTP ${r.status}` };
+    } catch (error) {
+      result.paypal_oauth = { ok: false, detail: `PayPal OAuth failed: ${String(error?.name || error).slice(0, 80)}` };
+    }
+  }
+
+  if (paypalToken && env.PAYPAL_WEBHOOK_ID) {
+    try {
+      const r = await fetchWithTimeout(`${paypalBase(env)}/v1/notifications/webhooks/${encodeURIComponent(env.PAYPAL_WEBHOOK_ID)}`, {
+        headers: { "Authorization": `Bearer ${paypalToken}`, "Accept": "application/json" }
+      });
+      let d = {};
+      try { d = await r.json(); } catch {}
+      const expectedUrl = `${new URL(request.url).origin}/api/payment/paypal/webhook`;
+      const actualUrl = String(d.url || "").replace(/\/$/, "");
+      const urlMatch = actualUrl === expectedUrl.replace(/\/$/, "");
+      const names = (d.event_types || []).map(x => String(x?.name || ""));
+      const wildcard = names.includes("*");
+      const required = [
+        "PAYMENT.CAPTURE.COMPLETED",
+        "PAYMENT.CAPTURE.REFUNDED",
+        "PAYMENT.CAPTURE.REVERSED",
+        "CUSTOMER.DISPUTE.CREATED",
+        "CUSTOMER.DISPUTE.UPDATED",
+        "CUSTOMER.DISPUTE.RESOLVED"
+      ];
+      const missing = wildcard ? [] : required.filter(name => !names.includes(name));
+      const ok = r.ok && urlMatch && missing.length === 0;
+      result.paypal_webhook = {
+        ok,
+        http_status: r.status,
+        detail: !r.ok ? `PayPal webhook HTTP ${r.status}` : !urlMatch ? "Webhook URL mismatch" : missing.length ? "Required webhook events missing" : "Webhook URL and required events verified",
+        url_match: urlMatch,
+        missing_events: missing
+      };
+    } catch (error) {
+      result.paypal_webhook = { ok: false, detail: `PayPal webhook check failed: ${String(error?.name || error).slice(0, 80)}`, missing_events: [] };
+    }
+  }
+
+  if (env.RESEND_API_KEY) {
+    try {
+      const r = await fetchWithTimeout("https://api.resend.com/domains?limit=100", {
+        headers: { "Authorization": `Bearer ${env.RESEND_API_KEY}`, "Accept": "application/json" }
+      });
+      let d = {};
+      try { d = await r.json(); } catch {}
+      const expected = [...new Set([senderDomain(env.AUTH_EMAIL_FROM), senderDomain(env.MARKETING_EMAIL_FROM || env.AUTH_EMAIL_FROM)].filter(Boolean))];
+      const listed = Array.isArray(d.data) ? d.data : [];
+      const domains = expected.map(name => {
+        const found = listed.find(x => String(x?.name || "").toLowerCase() === name);
+        const status = String(found?.status || "missing").toLowerCase();
+        const sending = String(found?.capabilities?.sending || "").toLowerCase();
+        return { domain: name, status, sending: sending || "unknown", ok: status === "verified" && sending !== "disabled" };
+      });
+      result.resend_domains = {
+        ok: r.ok && expected.length > 0 && domains.every(x => x.ok),
+        http_status: r.status,
+        detail: !r.ok ? `Resend HTTP ${r.status}` : expected.length === 0 ? "Sender domain could not be parsed" : domains.every(x => x.ok) ? "Sender domain(s) verified" : "One or more sender domains are not verified for sending",
+        domains
+      };
+    } catch (error) {
+      result.resend_domains = { ok: false, detail: `Resend domain check failed: ${String(error?.name || error).slice(0, 80)}`, domains: [] };
+    }
+  }
+
+  result.all_ok = result.openai_model.ok && result.paypal_oauth.ok && result.paypal_webhook.ok && result.resend_domains.ok;
+  return result;
 }
 
 async function adminHealth(request, env) {
@@ -128,14 +254,19 @@ async function adminHealth(request, env) {
   const coreHealthy = state.assets && checks.d1_query.ok && checks.r2_access.ok && state.paid_builder_ready && missingCoreTables.length === 0;
   const marketingHealthy = state.marketing_ready && missingMarketingTables.length === 0;
   const productionReady = coreHealthy && state.paypal_environment === "live" && !state.payment_test_mode;
+  const deepRequested = new URL(request.url).searchParams.get("deep") === "1";
+  const external = deepRequested ? await externalDeepChecks(request, env) : null;
+  const productionVerified = deepRequested ? Boolean(productionReady && external?.all_ok) : null;
   return json({
     ok: true,
     healthy: coreHealthy,
     production_ready: productionReady,
+    production_verified: productionVerified,
     marketing_healthy: marketingHealthy,
-    runtime: "runtime-guard-v2",
+    runtime: "runtime-guard-v3",
     configuration: state,
     checks,
+    external,
     database: {
       table_count: tables.length,
       expected_tables: expectedCoreTables,

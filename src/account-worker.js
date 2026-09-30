@@ -4,6 +4,15 @@ const SESSION_COOKIE = "t5_session";
 const SESSION_DAYS = 30;
 const CODE_TTL_MINUTES = 10;
 const MAX_CODE_ATTEMPTS = 6;
+const INDICATOR_ARTIFACT = {
+  code: "mtf_structure_panel_mt4",
+  version: "0.1.1",
+  filename: "T5_MTF_Structure_Panel_v0_1_1_MT4_Customer_Pack.zip",
+  r2Key: "member-artifacts/mtf-structure-panel/0.1.1/T5_MTF_Structure_Panel_v0_1_1_MT4_Customer_Pack.zip",
+  sha256: "97897c8925f964b140e314c96b6d6a5365d129e3abee31193a0d4d9e488de345",
+  maxBytes: 1024 * 1024
+};
+const INDICATOR_ACCESS_PRODUCTS = ["indicator_membership", "premium_membership", INDICATOR_ARTIFACT.code];
 
 function json(data, status = 200, extraHeaders = {}) {
   const headers = new Headers({
@@ -34,6 +43,11 @@ function randomCode() {
 
 async function sha256Hex(value) {
   const digest = await crypto.subtle.digest("SHA-256", new TextEncoder().encode(String(value || "")));
+  return Array.from(new Uint8Array(digest), b => b.toString(16).padStart(2, "0")).join("");
+}
+
+async function sha256BytesHex(value) {
+  const digest = await crypto.subtle.digest("SHA-256", value);
   return Array.from(new Uint8Array(digest), b => b.toString(16).padStart(2, "0")).join("");
 }
 
@@ -122,6 +136,31 @@ async function ensureAccountDb(env) {
       user_agent TEXT
     )`),
     env.BUILDER_DB.prepare(`CREATE INDEX IF NOT EXISTS idx_auth_sessions_user ON auth_sessions(user_id)`),
+    env.BUILDER_DB.prepare(`CREATE TABLE IF NOT EXISTS product_entitlements (
+      entitlement_id TEXT PRIMARY KEY,
+      user_id TEXT NOT NULL,
+      product_code TEXT NOT NULL,
+      status TEXT NOT NULL DEFAULT 'active',
+      starts_at TEXT NOT NULL,
+      expires_at TEXT,
+      source TEXT NOT NULL,
+      source_order_id TEXT,
+      created_at TEXT NOT NULL,
+      updated_at TEXT NOT NULL,
+      UNIQUE(user_id, product_code)
+    )`),
+    env.BUILDER_DB.prepare(`CREATE INDEX IF NOT EXISTS idx_product_entitlements_user_status ON product_entitlements(user_id, status, expires_at)`),
+    env.BUILDER_DB.prepare(`CREATE TABLE IF NOT EXISTS member_download_events (
+      event_id TEXT PRIMARY KEY,
+      user_id TEXT NOT NULL,
+      entitlement_id TEXT NOT NULL,
+      artifact_code TEXT NOT NULL,
+      artifact_version TEXT NOT NULL,
+      ip_hash TEXT,
+      user_agent TEXT,
+      created_at TEXT NOT NULL
+    )`),
+    env.BUILDER_DB.prepare(`CREATE INDEX IF NOT EXISTS idx_member_download_events_user ON member_download_events(user_id, created_at)`),
     env.BUILDER_DB.prepare(`CREATE TABLE IF NOT EXISTS marketing_consent_events (
       event_id TEXT PRIMARY KEY,
       user_id TEXT NOT NULL,
@@ -313,13 +352,121 @@ async function accountSummary(request, env) {
         FROM orders o JOIN builder_access_grants g ON g.grant_id = o.grant_id WHERE o.user_id = ? AND o.product_code = 'code_workshop_single' AND o.status = 'granted' AND g.status = 'active' AND (g.expires_at IS NULL OR g.expires_at > ?) ORDER BY o.granted_at DESC LIMIT 1`).bind(user.user_id, nowIso()).first();
     }
   }
-  return json({ ok: true, user: { user_id: user.user_id, email: user.email, marketing_consent: Number(user.marketing_consent || 0) === 1, created_at: user.created_at, last_login_at: user.last_login_at }, builder: grant || null, orders });
+  const entitlementResult = await env.BUILDER_DB.prepare(`SELECT product_code, status, starts_at, expires_at, source
+    FROM product_entitlements WHERE user_id = ? AND status = 'active' AND starts_at <= ? AND (expires_at IS NULL OR expires_at > ?)
+    ORDER BY created_at DESC`).bind(user.user_id, nowIso(), nowIso()).all();
+  return json({ ok: true, user: { user_id: user.user_id, email: user.email, marketing_consent: Number(user.marketing_consent || 0) === 1, created_at: user.created_at, last_login_at: user.last_login_at }, builder: grant || null, entitlements: entitlementResult?.results || [], orders });
+}
+
+async function isAdmin(request, env) {
+  const supplied = request.headers.get("X-Builder-Access-Key") || "";
+  return Boolean(env.BUILDER_ACCESS_KEY) && constantTimeEqual(env.BUILDER_ACCESS_KEY, supplied);
+}
+
+async function activeIndicatorEntitlement(env, userId) {
+  const placeholders = INDICATOR_ACCESS_PRODUCTS.map(() => "?").join(",");
+  return env.BUILDER_DB.prepare(`SELECT entitlement_id, product_code, expires_at
+    FROM product_entitlements
+    WHERE user_id = ? AND product_code IN (${placeholders}) AND status = 'active'
+      AND starts_at <= ? AND (expires_at IS NULL OR expires_at > ?)
+    ORDER BY expires_at DESC LIMIT 1`)
+    .bind(userId, ...INDICATOR_ACCESS_PRODUCTS, nowIso(), nowIso()).first();
+}
+
+async function indicatorAccess(request, env) {
+  const user = await resolveSession(request, env);
+  if (!user) return json({ ok: false, error: "请先登录 T5 账户", code: "ACCOUNT_REQUIRED" }, 401);
+  await ensureAccountDb(env);
+  const entitlement = await activeIndicatorEntitlement(env, user.user_id);
+  return json({
+    ok: true,
+    artifact: { code: INDICATOR_ARTIFACT.code, version: INDICATOR_ARTIFACT.version, filename: INDICATOR_ARTIFACT.filename },
+    entitled: Boolean(entitlement),
+    entitlement: entitlement || null
+  });
+}
+
+async function downloadIndicator(request, env) {
+  const user = await resolveSession(request, env);
+  if (!user) return json({ ok: false, error: "请先登录后下载", code: "ACCOUNT_REQUIRED" }, 401);
+  await ensureAccountDb(env);
+  const entitlement = await activeIndicatorEntitlement(env, user.user_id);
+  if (!entitlement) return json({ ok: false, error: "当前账户没有有效的指标会员权限", code: "INDICATOR_ENTITLEMENT_REQUIRED" }, 403);
+  if (!env.USER_CODE_BUCKET) return json({ ok: false, error: "下载存储尚未就绪", code: "ARTIFACT_STORAGE_NOT_READY" }, 503);
+  const object = await env.USER_CODE_BUCKET.get(INDICATOR_ARTIFACT.r2Key);
+  if (!object) return json({ ok: false, error: "安装包尚未上传，请稍后再试", code: "ARTIFACT_NOT_READY" }, 503);
+  if (object.customMetadata?.sha256 !== INDICATOR_ARTIFACT.sha256 || object.customMetadata?.version !== INDICATOR_ARTIFACT.version) {
+    return json({ ok: false, error: "安装包校验信息不一致，下载已暂停", code: "ARTIFACT_METADATA_MISMATCH" }, 503);
+  }
+  await env.BUILDER_DB.prepare(`INSERT INTO member_download_events
+    (event_id, user_id, entitlement_id, artifact_code, artifact_version, ip_hash, user_agent, created_at)
+    VALUES (?, ?, ?, ?, ?, ?, ?, ?)`)
+    .bind(randomId("DL"), user.user_id, entitlement.entitlement_id, INDICATOR_ARTIFACT.code, INDICATOR_ARTIFACT.version,
+      await ipHash(request, env), (request.headers.get("User-Agent") || "").slice(0, 500), nowIso()).run();
+  const headers = new Headers({
+    "Content-Type": "application/zip",
+    "Content-Disposition": `attachment; filename="${INDICATOR_ARTIFACT.filename}"`,
+    "Cache-Control": "private, no-store, max-age=0",
+    "X-Content-Type-Options": "nosniff",
+    "X-T5-Artifact-Version": INDICATOR_ARTIFACT.version,
+    "X-T5-Artifact-SHA256": INDICATOR_ARTIFACT.sha256
+  });
+  if (object.size != null) headers.set("Content-Length", String(object.size));
+  return new Response(object.body, { status: 200, headers });
+}
+
+async function adminUploadIndicator(request, env) {
+  if (!(await isAdmin(request, env))) return json({ ok: false, error: "Unauthorized", code: "ADMIN_REQUIRED" }, 403);
+  if (!env.USER_CODE_BUCKET) return json({ ok: false, error: "R2 storage is not configured", code: "ARTIFACT_STORAGE_NOT_READY" }, 503);
+  const length = Number(request.headers.get("Content-Length") || 0);
+  if (length > INDICATOR_ARTIFACT.maxBytes) return json({ ok: false, error: "文件过大", code: "ARTIFACT_TOO_LARGE" }, 413);
+  const bytes = await request.arrayBuffer();
+  if (!bytes.byteLength || bytes.byteLength > INDICATOR_ARTIFACT.maxBytes) return json({ ok: false, error: "文件为空或过大", code: "INVALID_ARTIFACT_SIZE" }, 400);
+  const actualHash = await sha256BytesHex(bytes);
+  if (!(await constantTimeEqual(actualHash, INDICATOR_ARTIFACT.sha256))) {
+    return json({ ok: false, error: "文件校验失败，拒绝上传", code: "ARTIFACT_HASH_MISMATCH" }, 400);
+  }
+  await env.USER_CODE_BUCKET.put(INDICATOR_ARTIFACT.r2Key, bytes, {
+    httpMetadata: { contentType: "application/zip" },
+    customMetadata: { version: INDICATOR_ARTIFACT.version, sha256: INDICATOR_ARTIFACT.sha256 }
+  });
+  return json({ ok: true, artifact: { filename: INDICATOR_ARTIFACT.filename, version: INDICATOR_ARTIFACT.version, sha256: INDICATOR_ARTIFACT.sha256, size: bytes.byteLength } });
+}
+
+async function adminEntitlement(request, env) {
+  if (!(await isAdmin(request, env))) return json({ ok: false, error: "Unauthorized", code: "ADMIN_REQUIRED" }, 403);
+  await ensureAccountDb(env);
+  let body = {}; try { body = await request.json(); } catch {}
+  const email = normalizeEmail(body.email);
+  const action = String(body.action || "grant");
+  const productCode = String(body.product_code || "indicator_membership");
+  if (!email) return json({ ok: false, error: "请输入有效邮箱", code: "INVALID_EMAIL" }, 400);
+  if (!["grant", "revoke"].includes(action)) return json({ ok: false, error: "无效操作", code: "INVALID_ACTION" }, 400);
+  if (!INDICATOR_ACCESS_PRODUCTS.includes(productCode)) return json({ ok: false, error: "无效产品权限", code: "INVALID_PRODUCT_CODE" }, 400);
+  const user = await env.BUILDER_DB.prepare("SELECT user_id, email FROM users WHERE email = ? AND status = 'active'").bind(email).first();
+  if (!user) return json({ ok: false, error: "该邮箱尚未注册 T5 账户", code: "USER_NOT_FOUND" }, 404);
+  const now = nowIso();
+  if (action === "revoke") {
+    await env.BUILDER_DB.prepare("UPDATE product_entitlements SET status = 'revoked', updated_at = ? WHERE user_id = ? AND product_code = ?")
+      .bind(now, user.user_id, productCode).run();
+    return json({ ok: true, action, email: user.email, product_code: productCode });
+  }
+  const expiryMs = body.expires_at ? Date.parse(String(body.expires_at)) : NaN;
+  if (body.expires_at && !Number.isFinite(expiryMs)) return json({ ok: false, error: "到期时间格式无效", code: "INVALID_EXPIRY" }, 400);
+  const expiresAt = body.expires_at ? new Date(expiryMs).toISOString() : null;
+  if (expiresAt && Date.parse(expiresAt) <= Date.now()) return json({ ok: false, error: "到期时间必须晚于当前时间", code: "INVALID_EXPIRY" }, 400);
+  await env.BUILDER_DB.prepare(`INSERT INTO product_entitlements
+    (entitlement_id, user_id, product_code, status, starts_at, expires_at, source, created_at, updated_at)
+    VALUES (?, ?, ?, 'active', ?, ?, 'admin', ?, ?)
+    ON CONFLICT(user_id, product_code) DO UPDATE SET status = 'active', starts_at = excluded.starts_at,
+      expires_at = excluded.expires_at, source = 'admin', updated_at = excluded.updated_at`)
+    .bind(randomId("ENT"), user.user_id, productCode, now, expiresAt, now, now).run();
+  return json({ ok: true, action, email: user.email, product_code: productCode, expires_at: expiresAt });
 }
 
 async function adminAccounts(request, env) {
   try {
-    const supplied = request.headers.get("X-Builder-Access-Key") || "";
-    if (!env.BUILDER_ACCESS_KEY || !(await constantTimeEqual(env.BUILDER_ACCESS_KEY, supplied))) return json({ ok: false, error: "Unauthorized" }, 403);
+    if (!(await isAdmin(request, env))) return json({ ok: false, error: "Unauthorized" }, 403);
     await ensureAccountDb(env);
     const hasOrders = await ordersTableExists(env);
     if (hasOrders) await ensureOrderUserColumn(env);
@@ -440,6 +587,10 @@ export default {
       if (p === "/api/account/summary" && request.method === "GET") return accountSummary(request, env);
       if (p === "/api/account/marketing" && request.method === "POST") return updateMarketing(request, env);
       if (p === "/api/admin/accounts" && request.method === "GET") return adminAccounts(request, env);
+      if (p === "/api/admin/member-entitlements" && request.method === "POST") return adminEntitlement(request, env);
+      if (p === "/api/admin/indicator-artifacts/upload" && request.method === "PUT") return adminUploadIndicator(request, env);
+      if (p === "/api/member/indicators/mtf-structure-panel/access" && request.method === "GET") return indicatorAccess(request, env);
+      if (p === "/api/member/indicators/mtf-structure-panel/download" && request.method === "GET") return downloadIndicator(request, env);
       if (p === "/api/marketing/unsubscribe" && request.method === "POST") return unsubscribe(request, env);
       if (p === "/api/orders/create" && request.method === "POST") return bindOrderToAccount(request, env, ctx);
       if (p === "/api/orders/status" && request.method === "GET") return forwardOwnedOrderAction(request, env, ctx);

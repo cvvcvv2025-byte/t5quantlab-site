@@ -42,6 +42,7 @@ jobs:
           node scripts/runtime-contract-check.mjs
           node scripts/deployment-contract-check.mjs
           node scripts/source-inspector-contract-check.mjs
+          node scripts/membership-contract-check.mjs
           node scripts/check-internal-links.mjs
 
   deploy:

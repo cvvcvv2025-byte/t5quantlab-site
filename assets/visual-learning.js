@@ -1,0 +1,30 @@
+(()=>{
+  const path=location.pathname;
+  const root=document.querySelector('article.article, .article, main .container');
+  if(!root||root.querySelector('.learning-visual'))return;
+  const title=(document.querySelector('h1')?.textContent||document.title).trim();
+  const defs=`<defs><marker id="lv-arrow" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse"><path d="M0 0 L10 5 L0 10z" fill="#6c8ca8"/></marker></defs>`;
+  const grid=`<g>${[70,130,190,250].map(y=>`<line class="lv-grid" x1="28" y1="${y}" x2="772" y2="${y}"/>`).join('')}</g>`;
+  const box=(x,y,w,label,sub,kind='')=>`<rect class="lv-box${kind?'-'+kind:''}" x="${x}" y="${y}" width="${w}" height="82" rx="14"/><text class="lv-text" x="${x+16}" y="${y+32}">${label}</text><text class="lv-small" x="${x+16}" y="${y+57}">${sub}</text>`;
+  const arrow=(x1,y1,x2,y2)=>`<line class="lv-arrow" x1="${x1}" y1="${y1}" x2="${x2}" y2="${y2}"/>`;
+  const flow=(labels)=>{const xs=[40,230,420,610],w=150;return `${defs}${labels.map((v,i)=>box(xs[i],112,w,v[0],v[1],v[2]||'')).join('')}${labels.slice(0,-1).map((_,i)=>arrow(xs[i]+w,153,xs[i+1]-8,153)).join('')}`};
+  const chart=(mode)=>`${defs}${grid}<line class="lv-level" x1="50" y1="160" x2="750" y2="160"/><text class="lv-small" x="55" y="148">关键位 / 基准线</text><polyline class="lv-line" points="55,245 130,210 200,230 275,165 340,188 410,112 480,138 545,88"/><polyline class="${mode==='failure'?'lv-line-warn':'lv-line'}" points="545,88 600,145 650,${mode==='failure'?235:165} 710,${mode==='failure'?255:105} 755,${mode==='failure'?230:78}"/><rect class="${mode==='failure'?'lv-zone-warn':'lv-zone'}" x="570" y="145" width="110" height="38"/><text class="${mode==='failure'?'lv-warn':'lv-good'}" x="585" y="210">${mode==='failure'?'收回区间＝失败':'回踩守住＝确认'}</text>`;
+  const profile=()=>`${defs}${grid}<polyline class="lv-line" points="45,245 115,215 185,230 255,175 330,190 405,120 475,145"/>${[[65,80],[92,145],[119,205],[146,245],[173,188],[200,62],[227,38],[254,165]].map(([y,w],i)=>`<rect x="520" y="${y}" width="${w}" height="18" rx="3" fill="${i===3?'#f2ca72':'#3d7696'}" opacity="${i===3?'.95':'.72'}"/>`).join('')}<text class="lv-good" x="655" y="161">POC</text><text class="lv-small" x="585" y="250">LVN</text><text class="lv-small" x="660" y="110">HVN</text>`;
+  const indicator=()=>`${defs}${grid}<polyline class="lv-line" points="35,205 90,190 145,215 200,150 255,175 310,105 365,125 420,82 475,118 530,95 585,145 640,128 700,190 765,160"/><path d="M35 225 C120 215 170 190 245 178 S380 105 470 112 S620 135 765 152" fill="none" stroke="#f2ca72" stroke-width="3"/><line class="lv-level" x1="35" y1="105" x2="765" y2="105"/><line class="lv-level" x1="35" y1="225" x2="765" y2="225"/><text class="lv-small" x="45" y="95">高阈值</text><text class="lv-small" x="45" y="245">低阈值</text><text class="lv-good" x="590" y="112">指标必须服从环境与位置</text>`;
+  const risk=()=>`${defs}${box(50,55,210,'Entry','风险起点 / 不是结论')}${box(295,55,210,'Initial SL','先冻结 1R','bad')}${box(540,55,210,'T1 / Runner','兑现与延伸','good')}${arrow(260,96,287,96)}${arrow(505,96,532,96)}<rect class="lv-zone-warn" x="50" y="190" width="210" height="46"/><rect class="lv-zone" x="260" y="190" width="420" height="46"/><text class="lv-warn" x="105" y="219">最大亏损 ≈ -1R</text><text class="lv-good" x="390" y="219">保护后风险只能收紧</text><text class="lv-small" x="50" y="272">错误：盈利后又放宽止损 · 正确：BE / T1 / Runner 分开记录</text>`;
+  const state=()=>`${defs}${flow([['Observe','只记录条件'],['Authorize','证据达标'],['Manage','成交后管理','good'],['Exit / Audit','退出并留痕']])}<text class="lv-warn" x="205" y="245">每个 tick 重置状态，会造成重复入场、重复减仓和历史失真</text>`;
+  const install=()=>`${defs}${flow([['下载','核对文件与版本'],['放入目录','Indicator / EA'],['编译刷新','先看错误日志'],['小额验证','确认加载与权限','good']])}<text class="lv-warn" x="205" y="245">“编译通过”只代表语法可用，不代表策略可实盘</text>`;
+  let spec;
+  if(/volume-profile|market-profile|volume-indicators/.test(path+title.toLowerCase()))spec=['成交分布怎么读','长柱表示接受集中，凹口表示快速通过；它不直接代表买卖方向。',profile(),'先把 Profile 的样本范围固定，再比较 POC、HVN、LVN 与当前结构的位置关系。'];
+  else if(/risk|position-management|mfe-mae|management|止损|仓位|风险/i.test(path+title))spec=['风险不是一个止损点，而是一条不可逆的管理路径','先定义 1R，再决定 T1、保本和 Runner；保护后不得重新放宽风险。',risk(),'把每一次移动、减仓和退出都记录下来，才能区分入场问题与管理问题。'];
+  else if(/install|安装|migration|迁移|source-code|audit-guide|release-checklist/i.test(path+title))spec=['从“文件到手”到“可以验证”的完整路径','安装、编译、加载、权限和小额验证缺一不可。',install(),'遇到问题先定位失败发生在哪一步，不要反复重装或直接投入真实资金。'];
+  else if(/indicator|rsi|macd|bollinger|stochastic|adx|dmi|ichimoku|average|均线|指标/i.test(path+title))spec=['指标先解决职责，再讨论参数','趋势、动量、波动和成交量指标回答的问题不同，不能把一个阈值当作完整策略。',indicator(),'图线只是压缩后的市场信息；必须结合环境、位置、确认与失效条件。'];
+  else if(/state|ea|backtest|repaint|parity|verification|回测|状态机|审计/i.test(path+title))spec=['程序策略必须保存状态，而不是每个 tick 从零猜测','观察、授权、管理与退出需要明确边界，并且所有变化可复现。',state(),'如果历史结果无法用当时可见的数据和已保存状态重放，就不能视为可靠证据。'];
+  else if(/acceptance|rejection|break|retest|sweep|reclaim|liquidity|range|support|resistance|pattern|structure|neckline|pivot|fibonacci|price-action|classic|流动性|结构|突破|形态|支撑|阻力/i.test(path+title)){const fail=/failure|failed|rejection|假突破|失败/i.test(path+title);spec=[fail?'失败不是“没涨”，而是突破假设被撤销':'结构确认要看突破后的接受与第一次回踩',fail?'价格越过关键位后快速收回，说明外侧尚未形成稳定接受。':'先突破并停留在外侧，再看第一次回踩是否守住。',chart(fail),fail?'影线刺破本身不重要，收回、跟随和后续结构才决定失败是否成立。':'不要把第一次刺破当成完成；确认必须包含收盘、跟随与失效位置。'];}
+  else spec=['把文字判断变成可检查的四步证据链','每一步都有输入、判断和失效条件，避免凭感觉跳步。',flow([['Context','环境与周期'],['Location','关键位置'],['Reaction','真实反应'],['Execution','确认后行动','good']]),'先完成左侧条件，才进入右侧；任一环节缺失都应降低信号等级。'];
+  const candidates=[...root.querySelectorAll('p')];
+  const anchor=candidates.find(p=>!p.closest('.diagram,.summary-box,.card,.toc'))||root.querySelector('h2');
+  if(!anchor)return;
+  const figure=document.createElement('figure');figure.className='learning-visual';figure.innerHTML=`<div class="learning-visual__head"><b>${spec[0]}</b><span>${spec[1]}</span></div><div class="learning-visual__body"><svg viewBox="0 0 800 300" role="img" aria-label="${spec[0]}">${spec[2]}</svg></div><figcaption>${spec[3]}</figcaption>`;
+  anchor.insertAdjacentElement('afterend',figure);
+})();

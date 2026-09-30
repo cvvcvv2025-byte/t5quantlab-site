@@ -6,7 +6,16 @@ if(/^\/(library|research|verification|tools\/guides|tools\/source-code-audit-gui
   visualCss.rel='stylesheet';
   visualCss.href='/assets/visual-learning.css';
   document.head.appendChild(visualCss);
-  if(location.pathname!=='/library/glossary/'){
+  if(location.pathname==='/library/glossary/'){
+    const glossaryCss=document.createElement('link');
+    glossaryCss.rel='stylesheet';
+    glossaryCss.href='/assets/glossary-complete.css';
+    document.head.appendChild(glossaryCss);
+    const glossaryScript=document.createElement('script');
+    glossaryScript.src='/assets/glossary-complete.js';
+    glossaryScript.defer=true;
+    document.head.appendChild(glossaryScript);
+  }else{
     const visualScript=document.createElement('script');
     visualScript.src='/assets/visual-learning.js';
     visualScript.defer=true;

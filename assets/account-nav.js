@@ -2,6 +2,14 @@
   const nav=document.getElementById('navlinks')||document.querySelector('.navlinks');
   if(!nav||nav.querySelector('[data-t5-account-nav]'))return;
 
+  const membership=document.createElement('a');
+  membership.href='/membership/';
+  membership.textContent='会员计划';
+  membership.setAttribute('data-t5-membership-nav','1');
+  membership.setAttribute('aria-label','查看 T5 会员价格与权益');
+  if(location.pathname.startsWith('/membership/'))membership.classList.add('active');
+  nav.appendChild(membership);
+
   const start=document.createElement('a');
   start.href='/start/';
   start.textContent='Start Here';

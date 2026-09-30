@@ -1,5 +1,19 @@
 const menu=document.getElementById('menu');const nav=document.getElementById('navlinks');if(menu&&nav){menu.addEventListener('click',()=>nav.classList.toggle('open'));nav.querySelectorAll('a').forEach(a=>a.addEventListener('click',()=>nav.classList.remove('open')));}
 
+/* Load the shared teaching-visual layer only on educational pages. */
+if(/^\/(library|research|verification|tools\/guides|tools\/source-code-audit-guide|market-lab)\//.test(location.pathname)){
+  const visualCss=document.createElement('link');
+  visualCss.rel='stylesheet';
+  visualCss.href='/assets/visual-learning.css';
+  document.head.appendChild(visualCss);
+  if(location.pathname!=='/library/glossary/'){
+    const visualScript=document.createElement('script');
+    visualScript.src='/assets/visual-learning.js';
+    visualScript.defer=true;
+    document.head.appendChild(visualScript);
+  }
+}
+
 const grid=`<g opacity='.65'><line class='dg-grid' x1='40' y1='80' x2='760' y2='80'/><line class='dg-grid' x1='40' y1='160' x2='760' y2='160'/><line class='dg-grid' x1='40' y1='240' x2='760' y2='240'/><line class='dg-grid' x1='40' y1='320' x2='760' y2='320'/></g>`;
 const diagrams={
 '/library/market-structure-bos-choch/':{title:'图解｜BOS 与 CHOCH 不是同一种破位',sub:'先看原控制结构，再看被破坏的是哪一个有效摆点。',cap:'左侧是上升结构延续：HL 后突破前高属于 BOS。右侧先跌破最近有效 HL，只能先视为 CHOCH；后续还要观察是否形成 LH / LL。',svg:`<svg viewBox='0 0 800 360' role='img' aria-label='BOS 与 CHOCH 结构示意图'>${grid}<polyline class='dg-line2' points='70,270 170,185 255,235 350,120 430,185'/><circle class='dg-dot' cx='170' cy='185' r='7'/><circle class='dg-dot' cx='255' cy='235' r='7'/><circle class='dg-dot' cx='350' cy='120' r='7'/><text class='dg-small' x='146' y='165'>HH</text><text class='dg-small' x='238' y='260'>HL</text><text class='dg-small' x='335' y='100'>HH</text><line class='dg-warn' x1='350' y1='120' x2='500' y2='120'/><polyline class='dg-line' points='430,185 505,105 565,225 635,165 720,275'/><text class='dg-accent' x='445' y='92'>BOS ↑</text><text class='dg-warntext' x='545' y='250'>CHOCH ↓</text><line class='dg-warn' x1='225' y1='235' x2='735' y2='235'/><text class='dg-small' x='610' y='225'>原有效 HL</text><text class='dg-small' x='640' y='302'>后续需确认 LH / LL</text></svg>`},

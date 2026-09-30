@@ -58,6 +58,8 @@ jobs:
         run: node scripts/customer-copy-contract-check.mjs
       - name: Check indicator candidate release boundary
         run: node scripts/indicator-release-contract-check.mjs
+      - name: Check protected indicator download boundary
+        run: node scripts/indicator-download-contract-check.mjs
       - name: Check SEO and case visual contract
         run: node scripts/seo-contract-check.mjs
       - name: Check internal content links

@@ -13,6 +13,9 @@ need('src/account-worker.js','/api/auth/verify-code','verify-code endpoint');
 need('src/account-worker.js','/api/auth/me','session endpoint');
 need('src/account-worker.js','/api/account/summary','account dashboard endpoint');
 need('src/account-worker.js','/api/account/marketing','marketing preference endpoint');
+need('src/account-worker.js','/api/member/indicators/mtf-structure-panel/download','protected indicator download endpoint');
+need('src/account-worker.js','product_entitlements','product entitlement storage');
+need('src/account-worker.js','INDICATOR_ENTITLEMENT_REQUIRED','indicator download must fail closed without entitlement');
 need('src/account-worker.js','/api/admin/accounts','protected account admin endpoint');
 need('src/account-worker.js','/api/marketing/unsubscribe','unsubscribe endpoint');
 need('src/account-worker.js','RESEND_API_KEY','Resend configuration');
@@ -29,6 +32,8 @@ need('builder-schema.sql','CREATE TABLE IF NOT EXISTS users','users table');
 need('builder-schema.sql','CREATE TABLE IF NOT EXISTS auth_challenges','auth challenge table');
 need('builder-schema.sql','CREATE TABLE IF NOT EXISTS auth_sessions','auth session table');
 need('builder-schema.sql','CREATE TABLE IF NOT EXISTS marketing_consent_events','consent ledger');
+need('builder-schema.sql','CREATE TABLE IF NOT EXISTS product_entitlements','product entitlement table');
+need('builder-schema.sql','CREATE TABLE IF NOT EXISTS member_download_events','member download audit table');
 need('builder-schema.sql','user_id TEXT','orders must support user ownership');
 
 need('account/login/index.html','type="email"','email-only login form');

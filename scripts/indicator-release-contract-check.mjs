@@ -7,8 +7,8 @@ const required = [
   'Candidate R1',
   '0 errors，0 warnings',
   'XAUUSD M5白底图表成功加载',
-  '交付包已封存',
-  '暂不提供公开直链',
+  '会员下载：',
+  '安装包不使用公开直链',
   'v0.1.1 / NO TRADING',
   '编译后的MT4 `.ex4`',
 ];

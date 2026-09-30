@@ -100,6 +100,37 @@ CREATE TABLE IF NOT EXISTS auth_sessions (
 );
 CREATE INDEX IF NOT EXISTS idx_auth_sessions_user ON auth_sessions(user_id);
 
+-- Product-specific access. Membership orders and manual grants write here;
+-- download routes must check the logged-in user against an active row.
+CREATE TABLE IF NOT EXISTS product_entitlements (
+  entitlement_id TEXT PRIMARY KEY,
+  user_id TEXT NOT NULL,
+  product_code TEXT NOT NULL,
+  status TEXT NOT NULL DEFAULT 'active',
+  starts_at TEXT NOT NULL,
+  expires_at TEXT,
+  source TEXT NOT NULL,
+  source_order_id TEXT,
+  created_at TEXT NOT NULL,
+  updated_at TEXT NOT NULL,
+  UNIQUE(user_id, product_code)
+);
+CREATE INDEX IF NOT EXISTS idx_product_entitlements_user_status
+  ON product_entitlements(user_id, status, expires_at);
+
+CREATE TABLE IF NOT EXISTS member_download_events (
+  event_id TEXT PRIMARY KEY,
+  user_id TEXT NOT NULL,
+  entitlement_id TEXT NOT NULL,
+  artifact_code TEXT NOT NULL,
+  artifact_version TEXT NOT NULL,
+  ip_hash TEXT,
+  user_agent TEXT,
+  created_at TEXT NOT NULL
+);
+CREATE INDEX IF NOT EXISTS idx_member_download_events_user
+  ON member_download_events(user_id, created_at);
+
 -- Immutable consent ledger. Marketing email is opt-in and independent from account/service email.
 CREATE TABLE IF NOT EXISTS marketing_consent_events (
   event_id TEXT PRIMARY KEY,

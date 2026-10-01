@@ -12,8 +12,8 @@ for (const html of [membership, account]) {
   need(html.includes('不自动续费'), 'Membership plans must disclose no auto-renewal');
 }
 
-need(membership.includes('支付验证后开放'), 'Indicator purchase must remain closed pending payment verification');
-need(membership.includes('EA审计完成后开放'), 'Automation purchase must remain closed pending EA audit');
+need((membership.match(/<span class="plan-state wait">即将开放<\/span>/g) || []).length >= 2, 'Indicator and automation purchases must remain visibly closed');
+need(!membership.includes('href="/checkout/?plan=indicator') && !membership.includes('href="/checkout/?plan=automation'), 'Closed membership plans must not expose checkout links');
 need(membership.includes('.ex4 / .ex5'), 'Membership page must disclose downloadable MT4/MT5 file formats');
 need(accountNav.includes("membership.href='/membership/'"), 'Global account navigation must expose the membership page');
 need(membership.includes('$14.90') && membership.includes('3次 AI 深度源码分析') && membership.includes('2次完整源码修改'), 'Builder Pass must remain a separate $14.90 service with 3+2 credits');

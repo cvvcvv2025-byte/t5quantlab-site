@@ -78,6 +78,10 @@ if (fs.existsSync(indicatorPack)) {
 }
 if (!trainer.includes("topic:'Indicators'")) errors.push('trainer must classify the indicator pack separately');
 if (!trainer.includes("visual:q.querySelector('.question-visual')")) errors.push('trainer must preserve per-question indicator snapshots');
+if (!trainer.includes('function showCompletion()')) errors.push('trainer must render an explicit end-of-round result screen');
+if (!trainer.includes('查看本轮成绩')) errors.push('last question must expose a visible result action instead of a dead next button');
+if (!trainer.includes('首次正确率不会因重做而被洗白')) errors.push('completion screen must preserve first-attempt scoring semantics');
+if (!trainer.includes('复盘本轮错题')) errors.push('completion screen must link unresolved answers back to review mode');
 if (!transfer.includes('/assets/indicator-practice.css')) errors.push('progress helper must preserve indicator snapshot styles');
 if (!transfer.includes('/assets/practice-visuals.js')) errors.push('progress helper must keep beginner visual layer');
 if (!transfer.includes('/assets/practice-visuals-advanced.js')) errors.push('progress helper must keep advanced visual layer');

@@ -1,5 +1,28 @@
 const menu=document.getElementById('menu');const nav=document.getElementById('navlinks');if(menu&&nav){menu.addEventListener('click',()=>nav.classList.toggle('open'));nav.querySelectorAll('a').forEach(a=>a.addEventListener('click',()=>nav.classList.remove('open')));}
 
+/* Make the Classic TA core questions genuine lesson links. */
+(function wireClassicCoreLinks(){
+  if(location.pathname!=='/library/classic-technical-analysis/')return;
+  const destinations=[
+    ['#trend-foundation','TREND：查看趋势与摆点教材'],
+    ['/library/classic-technical-analysis/support-resistance/','LEVEL：打开支撑阻力教材'],
+    ['/library/classic-technical-analysis/chart-patterns/','PATTERN：打开图表形态教材'],
+    ['/library/classic-technical-analysis/breakout-failure/','BREAK：打开突破与失败突破教材']
+  ];
+  document.querySelectorAll('.indicator-console .indicator-metric').forEach((metric,index)=>{
+    const destination=destinations[index];
+    if(!destination)return;
+    const link=document.createElement('a');
+    link.className='indicator-metric indicator-metric-link';
+    link.href=destination[0];
+    link.setAttribute('aria-label',destination[1]);
+    link.innerHTML=metric.innerHTML;
+    metric.replaceWith(link);
+  });
+  const trendCard=[...document.querySelectorAll('#map .indicator-card')].find(card=>card.querySelector('small')?.textContent.includes('DOW THEORY'));
+  if(trendCard)trendCard.id='trend-foundation';
+})();
+
 /* Load the shared teaching-visual layer only on educational pages. */
 if(/^\/(library|research|verification|tools\/guides|tools\/source-code-audit-guide|market-lab)\//.test(location.pathname)){
   const visualCss=document.createElement('link');

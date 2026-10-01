@@ -6,3 +6,11 @@
 @media(prefers-reduced-motion:no-preference){.learning-visual{animation:lv-in .35s ease both}@keyframes lv-in{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:none}}}
 
 body:has(.glossary-concept) .grid3>.card{align-self:start}
+
+.indicator-metric-link{color:inherit;text-decoration:none;border-radius:10px;margin-inline:-8px;padding-inline:8px;cursor:pointer;transition:background .18s ease,box-shadow .18s ease,transform .18s ease}
+.indicator-metric-link b{text-decoration:underline;text-decoration-thickness:1px;text-underline-offset:4px}
+.indicator-metric-link b:after{content:"查看教材";display:block;margin-top:5px;color:#7890a7;font-size:11px;font-weight:650;letter-spacing:0;text-decoration:none}
+.indicator-metric-link:hover{background:#0d2237;box-shadow:0 0 0 1px #315777 inset}
+.indicator-metric-link:focus-visible{outline:2px solid var(--mint);outline-offset:2px;background:#0d2237}
+.indicator-metric-link:active{transform:translateY(1px)}
+#trend-foundation{scroll-margin-top:92px}

@@ -12,7 +12,7 @@ for (const html of [membership, account]) {
   need(html.includes('不自动续费'), 'Membership plans must disclose no auto-renewal');
 }
 
-need((membership.match(/<span class="plan-state wait">即将开放<\/span>/g) || []).length >= 2, 'Indicator and automation purchases must remain visibly closed');
+need((membership.match(/<span class="plan-state wait">暂不可购买<\/span>/g) || []).length >= 2, 'Indicator and automation purchases must remain visibly closed');
 need(!membership.includes('href="/checkout/?plan=indicator') && !membership.includes('href="/checkout/?plan=automation'), 'Closed membership plans must not expose checkout links');
 need(membership.includes('.ex4 / .ex5'), 'Membership page must disclose downloadable MT4/MT5 file formats');
 need(accountNav.includes("membership.href='/membership/'"), 'Global account navigation must expose the membership page');

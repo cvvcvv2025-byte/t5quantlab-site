@@ -82,6 +82,7 @@ if (!trainer.includes('function showCompletion()')) errors.push('trainer must re
 if (!trainer.includes('查看本轮成绩')) errors.push('last question must expose a visible result action instead of a dead next button');
 if (!trainer.includes('首次正确率不会因重做而被洗白')) errors.push('completion screen must preserve first-attempt scoring semantics');
 if (!trainer.includes('复盘本轮错题')) errors.push('completion screen must link unresolved answers back to review mode');
+if (!trainer.includes('const finishedPack=')) errors.push('reopening a fully attempted pack must return directly to its result screen');
 if (!transfer.includes('/assets/indicator-practice.css')) errors.push('progress helper must preserve indicator snapshot styles');
 if (!transfer.includes('/assets/practice-visuals.js')) errors.push('progress helper must keep beginner visual layer');
 if (!transfer.includes('/assets/practice-visuals-advanced.js')) errors.push('progress helper must keep advanced visual layer');

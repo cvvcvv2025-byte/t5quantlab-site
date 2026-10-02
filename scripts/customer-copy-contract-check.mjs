@@ -62,14 +62,26 @@ const forbidden = [
   /首发版本/,
   /PayPal首发/,
   /首批指标会员工具/,
+  /Research Hub 仍在持续建设/,
+  /当前研究状态/,
+  /Primary Candidate/i,
+];
+
+const forbiddenMarkup = [
+  /<span\s+class=["']tag live["']>New<\/span>/i,
+  /<span\s+class=["']tag wait["']>Pending<\/span>/i,
 ];
 
 walk('.');
 const errors = [];
 for (const file of files) {
-  const text = visibleText(fs.readFileSync(file, 'utf8'));
+  const html = fs.readFileSync(file, 'utf8');
+  const text = visibleText(html);
   for (const pattern of forbidden) {
     if (pattern.test(text)) errors.push(`${file}: ${pattern}`);
+  }
+  for (const pattern of forbiddenMarkup) {
+    if (pattern.test(html)) errors.push(`${file}: ${pattern}`);
   }
 }
 

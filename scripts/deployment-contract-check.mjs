@@ -31,6 +31,7 @@ need(deploy,'node scripts/payment-contract-check.mjs','deployment preflight must
 need(deploy,'node scripts/production-payment-contract-check.mjs','deployment preflight must validate production payment ownership');
 need(deploy,'node scripts/deployment-contract-check.mjs','deployment preflight must validate deployment contract');
 need(deploy,'node scripts/customer-copy-contract-check.mjs','deployment preflight must validate customer-facing copy');
+need(deploy,'node scripts/start-route-contract-check.mjs','deployment preflight must validate the Start route next-step flow');
 need(deploy,'https://t5quantlab.com/api/health','deployment must run live public health smoke check');
 need(deploy,'Verify sensitive files are not public','deployment must probe sensitive paths after release');
 for (const path of ['/src/runtime-worker.js','/builder-schema.sql','/wrangler.jsonc','/scripts/deployment-contract-check.mjs','/PAYMENT_SETUP.md']) {

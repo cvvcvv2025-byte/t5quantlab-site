@@ -44,6 +44,7 @@ jobs:
           node scripts/source-inspector-contract-check.mjs
           node scripts/membership-contract-check.mjs
           node scripts/customer-copy-contract-check.mjs
+          node scripts/start-route-contract-check.mjs
           node scripts/indicator-release-contract-check.mjs
           node scripts/indicator-download-contract-check.mjs
           node scripts/check-internal-links.mjs

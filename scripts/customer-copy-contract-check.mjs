@@ -70,6 +70,9 @@ const forbidden = [
 const forbiddenMarkup = [
   /<span\s+class=["']tag live["']>New<\/span>/i,
   /<span\s+class=["']tag wait["']>Pending<\/span>/i,
+  /<h3>Build<\/h3>/i,
+  /<h3>Audit<\/h3>/i,
+  /<h3>Release<\/h3>/i,
 ];
 
 walk('.');

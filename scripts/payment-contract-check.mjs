@@ -35,6 +35,7 @@ need('src/gated-worker.js', 'function paypalSafeDiagnostics(error) {', 'PayPal f
 need('src/gated-worker.js', 'console.error("paypal_create_failed", JSON.stringify(diagnostics));', 'PayPal create diagnostics must be available in provider logs');
 need('src/gated-worker.js', '[unit?.custom_id, unit?.invoice_id, unit?.reference_id]', 'PayPal capture must accept the documented purchase-unit reference_id while cross-checking every returned order reference');
 need('src/gated-worker.js', 'handlePayPalCapture(request, ready.sandboxEnv, { adminAuthorized: true })', 'Sandbox admin capture must recover an approved order without relying on tab-local order tokens');
+need('admin/paypal-sandbox/index.html', "orderId=q.get('order_id')||stored?.order_id||''", 'Sandbox callback order id must override stale tab-local test state');
 for (const field of ['issue: diagnostics.issue','description: diagnostics.description','debug_id: diagnostics.debug_id']) {
   need('src/gated-worker.js', field, `PayPal safe diagnostic response missing ${field}`);
 }

@@ -126,7 +126,11 @@ function coreEnv(env) {
 }
 
 function paypalConfigured(env) {
-  return Boolean(env.PAYPAL_CLIENT_ID && env.PAYPAL_CLIENT_SECRET && env.PAYPAL_WEBHOOK_ID);
+  return Boolean(
+    String(env.PAYPAL_CLIENT_ID || "").trim()
+    && String(env.PAYPAL_CLIENT_SECRET || "").trim()
+    && String(env.PAYPAL_WEBHOOK_ID || "").trim()
+  );
 }
 
 function handleCatalog(env) {

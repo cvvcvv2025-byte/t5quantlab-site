@@ -269,7 +269,11 @@ function priceFor(env, productCode, currency) {
 }
 
 function paypalConfigured(env) {
-  return Boolean(env.PAYPAL_CLIENT_ID && env.PAYPAL_CLIENT_SECRET && env.PAYPAL_WEBHOOK_ID);
+  return Boolean(
+    String(env.PAYPAL_CLIENT_ID || "").trim()
+    && String(env.PAYPAL_CLIENT_SECRET || "").trim()
+    && String(env.PAYPAL_WEBHOOK_ID || "").trim()
+  );
 }
 
 function providerStatus(env) {
@@ -739,7 +743,7 @@ async function verifyPayPalWebhook(request, env) {
     transmission_id: request.headers.get("PAYPAL-TRANSMISSION-ID") || "",
     transmission_sig: request.headers.get("PAYPAL-TRANSMISSION-SIG") || "",
     transmission_time: request.headers.get("PAYPAL-TRANSMISSION-TIME") || "",
-    webhook_id: env.PAYPAL_WEBHOOK_ID,
+    webhook_id: String(env.PAYPAL_WEBHOOK_ID || "").trim(),
     webhook_event: event
   };
   if (!payload.auth_algo || !payload.cert_url || !payload.transmission_id || !payload.transmission_sig || !payload.transmission_time) {

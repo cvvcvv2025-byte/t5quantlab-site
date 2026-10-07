@@ -36,7 +36,11 @@ function configState(env) {
   const openai = Boolean(env.OPENAI_API_KEY);
   const accountSecret = Boolean(env.ACCOUNT_AUTH_SECRET);
   const resend = Boolean(env.RESEND_API_KEY && env.AUTH_EMAIL_FROM);
-  const paypal = Boolean(env.PAYPAL_CLIENT_ID && env.PAYPAL_CLIENT_SECRET && env.PAYPAL_WEBHOOK_ID);
+  const paypal = Boolean(
+    String(env.PAYPAL_CLIENT_ID || "").trim()
+    && String(env.PAYPAL_CLIENT_SECRET || "").trim()
+    && String(env.PAYPAL_WEBHOOK_ID || "").trim()
+  );
   const auditSalt = String(env.AUDIT_HASH_SALT || "").trim().length >= 16;
   const paypalEnvironment = String(env.PAYPAL_ENVIRONMENT || "sandbox").toLowerCase() === "live" ? "live" : "sandbox";
   const paymentTestMode = String(env.ENABLE_PAYMENT_TEST_MODE || "").toLowerCase() === "true";
@@ -133,9 +137,12 @@ async function externalDeepChecks(request, env) {
   }
 
   let paypalToken = "";
-  if (env.PAYPAL_CLIENT_ID && env.PAYPAL_CLIENT_SECRET) {
+  const paypalClientId = String(env.PAYPAL_CLIENT_ID || "").trim();
+  const paypalClientSecret = String(env.PAYPAL_CLIENT_SECRET || "").trim();
+  const paypalWebhookId = String(env.PAYPAL_WEBHOOK_ID || "").trim();
+  if (paypalClientId && paypalClientSecret) {
     try {
-      const auth = btoa(`${env.PAYPAL_CLIENT_ID}:${env.PAYPAL_CLIENT_SECRET}`);
+      const auth = btoa(`${paypalClientId}:${paypalClientSecret}`);
       const r = await fetchWithTimeout(`${paypalBase(env)}/v1/oauth2/token`, {
         method: "POST",
         headers: { "Authorization": `Basic ${auth}`, "Content-Type": "application/x-www-form-urlencoded" },
@@ -150,17 +157,23 @@ async function externalDeepChecks(request, env) {
     }
   }
 
-  if (paypalToken && env.PAYPAL_WEBHOOK_ID) {
+  if (paypalToken && paypalWebhookId) {
     try {
-      const r = await fetchWithTimeout(`${paypalBase(env)}/v1/notifications/webhooks/${encodeURIComponent(env.PAYPAL_WEBHOOK_ID)}`, {
+      const r = await fetchWithTimeout(`${paypalBase(env)}/v1/notifications/webhooks?page_size=20`, {
         headers: { "Authorization": `Bearer ${paypalToken}`, "Accept": "application/json" }
       });
       let d = {};
       try { d = await r.json(); } catch {}
-      const expectedUrl = `${new URL(request.url).origin}/api/payment/paypal/webhook`;
-      const actualUrl = String(d.url || "").replace(/\/$/, "");
-      const urlMatch = actualUrl === expectedUrl.replace(/\/$/, "");
-      const names = (d.event_types || []).map(x => String(x?.name || ""));
+      const expectedUrl = `${new URL(request.url).origin}/api/payment/paypal/webhook`.replace(/\/$/, "");
+      const webhooks = Array.isArray(d.webhooks) ? d.webhooks : [];
+      const webhookById = webhooks.find(x => String(x?.id || "").trim() === paypalWebhookId);
+      const webhookByUrl = webhooks.find(x => String(x?.url || "").replace(/\/$/, "") === expectedUrl);
+      const webhook = webhookById || webhookByUrl || null;
+      const actualId = String(webhook?.id || "").trim();
+      const actualUrl = String(webhook?.url || "").replace(/\/$/, "");
+      const idMatch = actualId === paypalWebhookId;
+      const urlMatch = actualUrl === expectedUrl;
+      const names = (webhook?.event_types || []).map(x => String(x?.name || ""));
       const wildcard = names.includes("*");
       const required = [
         "PAYMENT.CAPTURE.COMPLETED",
@@ -171,11 +184,22 @@ async function externalDeepChecks(request, env) {
         "CUSTOMER.DISPUTE.RESOLVED"
       ];
       const missing = wildcard ? [] : required.filter(name => !names.includes(name));
-      const ok = r.ok && urlMatch && missing.length === 0;
+      const ok = r.ok && Boolean(webhook) && idMatch && urlMatch && missing.length === 0;
       result.paypal_webhook = {
         ok,
         http_status: r.status,
-        detail: !r.ok ? `PayPal webhook HTTP ${r.status}` : !urlMatch ? "Webhook URL mismatch" : missing.length ? "Required webhook events missing" : "Webhook URL and required events verified",
+        detail: !r.ok
+          ? `PayPal webhook list HTTP ${r.status}`
+          : !webhook
+            ? "No webhook found for the production callback URL"
+            : !idMatch
+              ? "Configured webhook ID does not match the production callback"
+              : !urlMatch
+                ? "Webhook URL mismatch"
+                : missing.length
+                  ? "Required webhook events missing"
+                  : "Webhook ID, URL and required events verified",
+        id_match: idMatch,
         url_match: urlMatch,
         missing_events: missing
       };

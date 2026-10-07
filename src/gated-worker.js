@@ -698,13 +698,17 @@ function paypalCaptureFromOrder(ppOrder) {
   return null;
 }
 
-async function handlePayPalCapture(request, env) {
+async function handlePayPalCapture(request, env, { adminAuthorized = false } = {}) {
   if (!paypalConfigured(env)) return paymentAdapterNotConfigured("PayPal");
   await ensureAccessDb(env);
   const body = await request.json();
   const orderId = String(body.order_id || "");
   const paypalOrderId = String(body.paypal_order_id || "");
-  const order = await getAuthorizedOrder(request, env, orderId);
+  const order = adminAuthorized
+    ? await env.BUILDER_DB.prepare(`SELECT order_id, product_code, product_name, amount_minor, currency,
+        payment_provider, provider_trade_id, status, grant_id, created_at, paid_at, granted_at, updated_at
+      FROM orders WHERE order_id = ?`).bind(orderId).first()
+    : await getAuthorizedOrder(request, env, orderId);
   if (!order) return json({ ok: false, error: "订单不存在或订单令牌无效" }, 403);
   if (order.status === "granted") return json({ ok: true, order_id: orderId, status: "granted", duplicate: true });
   if (order.status !== "pending" && order.status !== "paid") return json({ ok: false, error: "该订单当前不能完成付款" }, 409);
@@ -974,7 +978,7 @@ async function handleAdminSandboxCreate(request, env) {
 async function handleAdminSandboxCapture(request, env) {
   const ready = await sandboxAdminReady(request, env);
   if (ready.response) return ready.response;
-  return handlePayPalCapture(request, ready.sandboxEnv);
+  return handlePayPalCapture(request, ready.sandboxEnv, { adminAuthorized: true });
 }
 
 async function handleAdminSandboxStatus(request, env) {

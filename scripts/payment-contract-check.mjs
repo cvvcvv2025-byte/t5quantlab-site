@@ -48,6 +48,7 @@ for (const secret of ['PAYPAL_SANDBOX_CLIENT_ID','PAYPAL_SANDBOX_CLIENT_SECRET',
 need('src/gated-worker.js', 'PAYPAL_ENVIRONMENT: "sandbox"', 'sandbox E2E must pin the PayPal API environment');
 need('src/gated-worker.js', 'callbackPath: "/admin/paypal-sandbox/"', 'sandbox approval must return to the private test surface');
 need('src/gated-worker.js', 'paypalSandboxE2EEnabled(env)', 'sandbox routes must fail closed behind an explicit feature flag');
+need('wrangler.jsonc', '"ENABLE_PAYPAL_SANDBOX_E2E": "false"', 'production deploys must leave the Sandbox E2E feature disabled');
 need('src/gated-worker.js', 'await isAdmin(request, env)', 'sandbox control routes must require the admin key');
 need('src/gated-worker.js', '/api/payment/paypal-sandbox/webhook', 'sandbox webhook must be isolated from the live endpoint');
 need('src/gated-worker.js', '/v2/payments/captures/${encodeURIComponent(order.provider_trade_id)}/refund', 'sandbox cleanup must issue a provider refund');

@@ -42,6 +42,8 @@ need('account/login/index.html','默认不勾选','marketing opt-in must be expl
 forbid('account/login/index.html',/type=["']password["']/i,'login page must not ask for password');
 need('account/index.html','/api/account/summary','My T5 account summary');
 need('account/index.html','/api/account/marketing','My T5 marketing preference');
+need('account/index.html','/account/member-center/','My T5 member center entry');
+need('account/index.html','renderMembership(d.entitlements)','My T5 entitlement-aware membership status');
 need('account/index.html','t5_practice_progress_v2','legacy 132 local progress remains in existing account page');
 need('account/index.html','/assets/account-local-training.js','My T5 local training overview');
 need('assets/account-local-training.js','t5_specialist_progress_v1','specialist local progress');
@@ -55,6 +57,12 @@ need('checkout/index.html','ACCOUNT_REQUIRED','checkout handles auth requirement
 need('admin/accounts/index.html','X-Builder-Access-Key','admin emails protected by existing admin key');
 need('admin/accounts/index.html','sessionStorage','admin key must not be persisted in localStorage');
 need('unsubscribe/index.html','/api/marketing/unsubscribe','unsubscribe page');
+need('account/member-center/index.html','/api/account/summary','member center account summary');
+need('account/member-center/index.html','/api/member/indicators/mtf-structure-panel/download','member center protected indicator download');
+need('account/member-center/index.html','mtf_structure_panel_mt4','member center single-product entitlement support');
+need('account/member-center/index.html','1 个正式安装包','member center must disclose the exact current delivery count');
+need('account/member-center/index.html','尚无正式 Release 版本','member center must not present an unreleased EA as downloadable');
+need('account/member-center/index.html','noindex,nofollow','member center must stay out of search results');
 
 if(errors.length){console.error('Account contract check failed:');for(const e of errors)console.error('- '+e);process.exit(1)}
 console.log('Account contract OK: runtime -> marketing -> account stack, email-only auth, opt-in marketing, account/product-bound Builder access and local-only training summary protected.');

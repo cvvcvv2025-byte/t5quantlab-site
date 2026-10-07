@@ -13,6 +13,7 @@
     "AUTH_EMAIL_FROM": "T5 Quant Lab <login@t5quantlab.com>",
     "MARKETING_EMAIL_FROM": "T5 Quant Lab <updates@t5quantlab.com>",
     "PAYPAL_ENVIRONMENT": "live",
+    "ENABLE_PAYPAL_SANDBOX_E2E": "true",
     "T5_BUILDER_PASS_PRICE_USD_MINOR": "1490"
   },
   "triggers": {

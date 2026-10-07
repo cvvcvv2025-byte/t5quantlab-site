@@ -1,0 +1,34 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>PayPal Sandbox E2E｜T5 Runtime</title><meta name="robots" content="noindex,nofollow">
+<link rel="stylesheet" href="/assets/styles.css"><link rel="stylesheet" href="/assets/account.css">
+<style>.wrap{max-width:860px}.grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}.card{border:1px solid var(--line);border-radius:16px;background:#07111f;padding:18px}.card b{display:block;font-size:18px;margin-bottom:6px}.mono{font-family:ui-monospace,SFMono-Regular,Menlo,monospace;word-break:break-all}.result{white-space:pre-wrap;line-height:1.7}.good{border-color:#2f655e;color:#9fe8d1}.bad{border-color:#7b4c4c;color:#ffd1d1}@media(max-width:680px){.grid{grid-template-columns:1fr}}</style>
+</head>
+<body>
+<header class="topbar"><div class="container nav"><a class="brand" href="/admin/health/"><span class="mark">T5</span><span>PayPal Sandbox E2E</span></a></div></header>
+<main><section class="page-hero"><div class="container wrap"><div class="eyebrow">PRIVATE ADMIN · PAYPAL SANDBOX</div><h1>隔离测试付款闭环。</h1><p>这里只连接 PayPal Sandbox。不会扣真实资金，也不会修改正式 Live 凭据。</p></div></section>
+<section class="section"><div class="container wrap">
+<div class="account-card"><div class="account-field"><label for="key">BUILDER_ACCESS_KEY</label><input id="key" type="password" autocomplete="off" placeholder="管理员密钥"></div><div class="account-actions"><button class="btn primary" id="start" type="button">开始 Sandbox 付款</button><button class="btn" id="statusBtn" type="button">检查测试结果</button><button class="btn" id="refund" type="button">Sandbox 退款并撤销权限</button><button class="btn" id="clear" type="button">清除本地测试记录</button></div><div id="message" class="account-status account-hidden"></div></div>
+<div class="section" style="padding-left:0;padding-right:0;padding-bottom:0"><div class="grid">
+<div class="card"><b>测试环境</b><span>PayPal Sandbox · 虚拟余额</span></div>
+<div class="card"><b>验证范围</b><span>创建订单 → 买家批准 → 捕获 → 自动授权 → 退款撤销</span></div>
+</div></div>
+<div class="section" style="padding-left:0;padding-right:0;padding-bottom:0"><div class="card"><b>测试结果</b><div id="result" class="result">尚未开始。</div></div></div>
+</div></section></main>
+<script>
+const $=id=>document.getElementById(id),KEY_STORE='t5_admin_key_session',TEST_STORE='t5_paypal_sandbox_e2e';
+$('key').value=sessionStorage.getItem(KEY_STORE)||'';
+function show(text,type=''){const x=$('message');x.textContent=text;x.className='account-status'+(type?' '+type:'');x.classList.remove('account-hidden')}
+function getTest(){try{return JSON.parse(sessionStorage.getItem(TEST_STORE)||'null')}catch{return null}}
+function saveTest(data){sessionStorage.setItem(TEST_STORE,JSON.stringify(data))}
+function key(){const value=$('key').value.trim();if(value)sessionStorage.setItem(KEY_STORE,value);return value}
+async function api(url,opt={}){const adminKey=key();if(!adminKey)throw new Error('请输入管理员密钥。');const headers=new Headers(opt.headers||{});headers.set('X-Builder-Access-Key',adminKey);const r=await fetch(url,{...opt,headers,credentials:'same-origin',cache:'no-store'});let d={};try{d=await r.json()}catch{}if(!r.ok||!d.ok)throw new Error(d.error||`HTTP ${r.status}`);return d}
+function render(d){const r=d?.result||{};$('result').textContent=[`环境：${d?.environment||'sandbox'}`,`T5订单：${r.order_id||'—'}`,`订单状态：${r.status||'—'}`,`PayPal订单：${r.provider_order_id||'—'}`,`支付状态：${r.payment_status||'—'}`,`授权状态：${r.grant_status||'—'}`,`分析次数：${r.analyze_remaining??'—'}`,`修改次数：${r.modify_remaining??'—'}`,`有效期：${r.expires_at||'—'}`].join('\n');$('result').parentElement.className='card '+(r.status==='granted'&&r.grant_status==='active'?'good':r.status==='refunded'&&r.grant_status==='revoked'?'good':'')}
+async function status(){const t=getTest();if(!t?.order_id)throw new Error('没有本地 Sandbox 测试订单。');const d=await api('/api/admin/paypal-sandbox/status?order_id='+encodeURIComponent(t.order_id));render(d);return d}
+async function start(){const adminKey=key();if(!adminKey){show('请输入管理员密钥。','account-warn');return}try{show('正在创建隔离测试订单…');const order=await api('/api/admin/paypal-sandbox/order',{method:'POST'});const t={order_id:order.order.order_id,order_token:order.order.order_token};saveTest(t);const d=await api('/api/admin/paypal-sandbox/create',{method:'POST',headers:{'Content-Type':'application/json','X-Order-Token':t.order_token},body:JSON.stringify({order_id:t.order_id})});saveTest({...t,paypal_order_id:d.paypal_order_id});location.href=d.approval_url}catch(e){show(e.message,'account-warn')}}
+async function captureReturn(){const q=new URLSearchParams(location.search);if(q.get('provider')!=='paypal-sandbox')return;const t=getTest(),statusValue=q.get('status'),paypalOrderId=q.get('token')||t?.paypal_order_id||'';if(!t?.order_id){show('当前标签页没有对应的 Sandbox 订单记录。','account-warn');return}if(statusValue==='cancel'){show('Sandbox 付款已取消。','account-warn');history.replaceState({},'',location.pathname);return}if(statusValue!=='return'||!paypalOrderId)return;try{show('买家已批准，正在捕获并核对自动授权…');await api('/api/admin/paypal-sandbox/capture',{method:'POST',headers:{'Content-Type':'application/json','X-Order-Token':t.order_token},body:JSON.stringify({order_id:t.order_id,paypal_order_id:paypalOrderId})});const d=await status();const r=d.result||{};if(r.status!=='granted'||r.grant_status!=='active'||Number(r.analyze_remaining)!==3||Number(r.modify_remaining)!==2)throw new Error('付款已捕获，但自动授权结果不符合 3次分析 / 2次修改。');show('Sandbox 闭环通过：付款已捕获，3次分析与2次修改已自动授权。','account-good');history.replaceState({},'',location.pathname)}catch(e){show(e.message,'account-warn')}}
+$('start').addEventListener('click',start);$('statusBtn').addEventListener('click',()=>status().then(()=>show('已刷新测试结果。','account-good')).catch(e=>show(e.message,'account-warn')));$('refund').addEventListener('click',async()=>{const t=getTest();if(!t?.order_id){show('没有可退款的 Sandbox 测试订单。','account-warn');return}try{show('正在执行 Sandbox 退款并撤销测试权限…');await api('/api/admin/paypal-sandbox/refund',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({order_id:t.order_id})});const d=await status();if(d.result?.status!=='refunded'||d.result?.grant_status!=='revoked')throw new Error('退款后的本地撤销状态不完整。');show('Sandbox 退款完成，测试权限已撤销。','account-good')}catch(e){show(e.message,'account-warn')}});$('clear').addEventListener('click',()=>{sessionStorage.removeItem(TEST_STORE);$('result').textContent='尚未开始。';$('result').parentElement.className='card';show('已清除本标签页测试记录。','account-good')});captureReturn();
+</script>
+</body></html>

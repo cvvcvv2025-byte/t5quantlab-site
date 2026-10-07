@@ -38,6 +38,23 @@ for (const field of ['issue: diagnostics.issue','description: diagnostics.descri
 }
 forbid('src/gated-worker.js',/paypal\s*:\s*(?:error\?\.|error\.|diagnostics\.)?paypal/,'raw PayPal error payload must never be returned to clients');
 
+need('src/gated-worker.js', 'function paypalSandboxEnv(env) {', 'sandbox E2E must use an isolated PayPal credential projection');
+for (const secret of ['PAYPAL_SANDBOX_CLIENT_ID','PAYPAL_SANDBOX_CLIENT_SECRET','PAYPAL_SANDBOX_WEBHOOK_ID']) {
+  need('src/gated-worker.js', secret, `sandbox E2E missing isolated secret ${secret}`);
+}
+need('src/gated-worker.js', 'PAYPAL_ENVIRONMENT: "sandbox"', 'sandbox E2E must pin the PayPal API environment');
+need('src/gated-worker.js', 'callbackPath: "/admin/paypal-sandbox/"', 'sandbox approval must return to the private test surface');
+need('src/gated-worker.js', 'paypalSandboxE2EEnabled(env)', 'sandbox routes must fail closed behind an explicit feature flag');
+need('src/gated-worker.js', 'await isAdmin(request, env)', 'sandbox control routes must require the admin key');
+need('src/gated-worker.js', '/api/payment/paypal-sandbox/webhook', 'sandbox webhook must be isolated from the live endpoint');
+need('src/gated-worker.js', '/v2/payments/captures/${encodeURIComponent(order.provider_trade_id)}/refund', 'sandbox cleanup must issue a provider refund');
+need('src/commercial-worker.js', 'url.pathname === "/api/admin/paypal-sandbox/capture"', 'sandbox capture must pass through commercial 3+2 normalization');
+need('src/commercial-worker.js', 'url.pathname === "/api/payment/paypal-sandbox/webhook"', 'sandbox webhook must pass through commercial entitlement normalization');
+need('admin/paypal-sandbox/index.html', 'X-Builder-Access-Key', 'sandbox UI must authenticate every control request');
+need('admin/paypal-sandbox/index.html', 'sessionStorage', 'sandbox UI must keep admin and test state tab-scoped');
+need('admin/paypal-sandbox/index.html', '3次分析与2次修改已自动授权', 'sandbox UI must verify the commercial entitlement result');
+forbid('admin/paypal-sandbox/index.html',/PAYPAL_(?:SANDBOX_)?CLIENT_(?:ID|SECRET)|PAYPAL_(?:SANDBOX_)?WEBHOOK_ID/,'sandbox credentials must not appear in static admin assets');
+
 need('src/commercial-worker.js', 'const PASS_ANALYZE_CREDITS = 3;', 'analysis credits');
 need('src/commercial-worker.js', 'const PASS_MODIFY_CREDITS = 2;', 'modify credits');
 need('src/commercial-worker.js', 'const PASS_EXPIRES_DAYS = 30;', 'commercial expiry');

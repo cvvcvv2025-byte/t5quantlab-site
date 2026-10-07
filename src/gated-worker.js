@@ -532,9 +532,26 @@ function paypalBase(env) {
     : "https://api-m.sandbox.paypal.com";
 }
 
+function paypalSandboxE2EEnabled(env) {
+  return String(env.ENABLE_PAYPAL_SANDBOX_E2E || "").toLowerCase() === "true";
+}
+
+function paypalSandboxEnv(env) {
+  return {
+    ...env,
+    PAYPAL_CLIENT_ID: String(env.PAYPAL_SANDBOX_CLIENT_ID || "").trim(),
+    PAYPAL_CLIENT_SECRET: String(env.PAYPAL_SANDBOX_CLIENT_SECRET || "").trim(),
+    PAYPAL_WEBHOOK_ID: String(env.PAYPAL_SANDBOX_WEBHOOK_ID || "").trim(),
+    PAYPAL_ENVIRONMENT: "sandbox",
+    ENABLE_PAYMENT_TEST_MODE: "true"
+  };
+}
+
 async function paypalAccessToken(env) {
   if (!paypalConfigured(env)) throw new Error("PAYPAL_NOT_CONFIGURED");
-  const auth = btoa(`${env.PAYPAL_CLIENT_ID}:${env.PAYPAL_CLIENT_SECRET}`);
+  const clientId = String(env.PAYPAL_CLIENT_ID || "").trim();
+  const clientSecret = String(env.PAYPAL_CLIENT_SECRET || "").trim();
+  const auth = btoa(`${clientId}:${clientSecret}`);
   const response = await fetch(`${paypalBase(env)}/v1/oauth2/token`, {
     method: "POST",
     headers: {
@@ -591,7 +608,7 @@ function paypalSafeDiagnostics(error) {
   };
 }
 
-async function handlePayPalCreate(request, env) {
+async function handlePayPalCreate(request, env, { callbackPath = "/checkout/", callbackProvider = "paypal" } = {}) {
   if (!paypalConfigured(env)) return paymentAdapterNotConfigured("PayPal");
   await ensureAccessDb(env);
   const body = await request.json();
@@ -615,8 +632,8 @@ async function handlePayPalCreate(request, env) {
   }
 
   const origin = new URL(request.url).origin;
-  const returnUrl = `${origin}/checkout/?provider=paypal&status=return&order_id=${encodeURIComponent(orderId)}`;
-  const cancelUrl = `${origin}/checkout/?provider=paypal&status=cancel&order_id=${encodeURIComponent(orderId)}`;
+  const returnUrl = `${origin}${callbackPath}?provider=${encodeURIComponent(callbackProvider)}&status=return&order_id=${encodeURIComponent(orderId)}`;
+  const cancelUrl = `${origin}${callbackPath}?provider=${encodeURIComponent(callbackProvider)}&status=cancel&order_id=${encodeURIComponent(orderId)}`;
   const value = (Number(order.amount_minor) / 100).toFixed(2);
 
   try {
@@ -912,6 +929,99 @@ async function handleAdminRefund(request, env) {
   }
 }
 
+function sandboxAdminError(message, status = 503) {
+  return json({ ok: false, error: message, code: "PAYPAL_SANDBOX_E2E_NOT_READY" }, status);
+}
+
+async function sandboxAdminReady(request, env) {
+  if (!(await isAdmin(request, env))) return { response: json({ ok: false, error: "Unauthorized" }, 403) };
+  if (!paypalSandboxE2EEnabled(env)) return { response: sandboxAdminError("PayPal Sandbox E2E is disabled") };
+  const sandboxEnv = paypalSandboxEnv(env);
+  if (!paypalConfigured(sandboxEnv)) return { response: sandboxAdminError("PayPal Sandbox credentials or webhook ID are incomplete") };
+  return { sandboxEnv };
+}
+
+async function handleAdminSandboxOrder(request, env) {
+  const ready = await sandboxAdminReady(request, env);
+  if (ready.response) return ready.response;
+  const body = JSON.stringify({
+    product_code: "code_workshop_single",
+    currency: "USD",
+    email: "sandbox-e2e@t5quantlab.invalid"
+  });
+  const internal = new Request(request.url, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body
+  });
+  return handleCreateOrder(internal, env);
+}
+
+async function handleAdminSandboxCreate(request, env) {
+  const ready = await sandboxAdminReady(request, env);
+  if (ready.response) return ready.response;
+  return handlePayPalCreate(request, ready.sandboxEnv, {
+    callbackPath: "/admin/paypal-sandbox/",
+    callbackProvider: "paypal-sandbox"
+  });
+}
+
+async function handleAdminSandboxCapture(request, env) {
+  const ready = await sandboxAdminReady(request, env);
+  if (ready.response) return ready.response;
+  return handlePayPalCapture(request, ready.sandboxEnv);
+}
+
+async function handleAdminSandboxStatus(request, env) {
+  const ready = await sandboxAdminReady(request, env);
+  if (ready.response) return ready.response;
+  await ensureAccessDb(env);
+  const orderId = String(new URL(request.url).searchParams.get("order_id") || "").trim();
+  if (!orderId) return json({ ok: false, error: "缺少 order_id" }, 400);
+  const row = await env.BUILDER_DB.prepare(`SELECT o.order_id, o.status, o.amount_minor, o.currency,
+      o.payment_provider, o.provider_trade_id, o.grant_id, o.created_at, o.paid_at, o.granted_at,
+      p.provider_order_id, p.status AS payment_status,
+      g.status AS grant_status, g.analyze_remaining, g.modify_remaining, g.expires_at
+    FROM orders o
+    LEFT JOIN payment_intents p ON p.order_id = o.order_id AND p.provider = 'paypal'
+    LEFT JOIN builder_access_grants g ON g.grant_id = o.grant_id
+    WHERE o.order_id = ?`).bind(orderId).first();
+  if (!row) return json({ ok: false, error: "ORDER_NOT_FOUND" }, 404);
+  return json({ ok: true, environment: "sandbox", result: row });
+}
+
+async function handleAdminSandboxRefund(request, env) {
+  const ready = await sandboxAdminReady(request, env);
+  if (ready.response) return ready.response;
+  let body = {};
+  try { body = await request.json(); } catch {}
+  const orderId = String(body.order_id || "").trim();
+  if (!orderId) return json({ ok: false, error: "缺少 order_id" }, 400);
+  const order = await env.BUILDER_DB.prepare(`SELECT order_id, status, provider_trade_id
+    FROM orders WHERE order_id = ?`).bind(orderId).first();
+  if (!order) return json({ ok: false, error: "ORDER_NOT_FOUND" }, 404);
+  if (!order.provider_trade_id) return json({ ok: false, error: "PAYPAL_CAPTURE_NOT_FOUND" }, 409);
+  try {
+    const refund = await paypalJson(ready.sandboxEnv, `/v2/payments/captures/${encodeURIComponent(order.provider_trade_id)}/refund`, {
+      method: "POST",
+      requestId: `sandbox-refund-${orderId}`,
+      body: {}
+    });
+    if (!refund?.id || !["COMPLETED", "PENDING"].includes(String(refund.status || ""))) {
+      throw new Error("PAYPAL_SANDBOX_REFUND_NOT_ACCEPTED");
+    }
+    const result = await revokePaidOrder(env, {
+      orderId,
+      provider: "paypal",
+      providerTradeId: String(refund.id),
+      eventId: `sandbox-refund:${refund.id}`
+    });
+    return json({ ok: true, environment: "sandbox", refund_status: refund.status, ...result });
+  } catch (error) {
+    return json({ ok: false, error: `PayPal Sandbox退款失败：${String(error?.message || error)}` }, 502);
+  }
+}
+
 function paymentAdapterNotConfigured(provider) {
   return json({
     ok: false,
@@ -954,6 +1064,26 @@ export default {
       return handlePayPalCapture(request, env);
     }
 
+    if (url.pathname === "/api/admin/paypal-sandbox/order" && request.method === "POST") {
+      return handleAdminSandboxOrder(request, env);
+    }
+
+    if (url.pathname === "/api/admin/paypal-sandbox/create" && request.method === "POST") {
+      return handleAdminSandboxCreate(request, env);
+    }
+
+    if (url.pathname === "/api/admin/paypal-sandbox/capture" && request.method === "POST") {
+      return handleAdminSandboxCapture(request, env);
+    }
+
+    if (url.pathname === "/api/admin/paypal-sandbox/status" && request.method === "GET") {
+      return handleAdminSandboxStatus(request, env);
+    }
+
+    if (url.pathname === "/api/admin/paypal-sandbox/refund" && request.method === "POST") {
+      return handleAdminSandboxRefund(request, env);
+    }
+
     if (url.pathname === "/api/admin/orders/mark-paid" && request.method === "POST") {
       return handleAdminMarkPaid(request, env);
     }
@@ -970,6 +1100,12 @@ export default {
     }
     if (url.pathname === "/api/payment/paypal/webhook" && request.method === "POST") {
       return handlePayPalWebhook(request, env);
+    }
+    if (url.pathname === "/api/payment/paypal-sandbox/webhook" && request.method === "POST") {
+      if (!paypalSandboxE2EEnabled(env)) return sandboxAdminError("PayPal Sandbox E2E is disabled");
+      const sandboxEnv = paypalSandboxEnv(env);
+      if (!paypalConfigured(sandboxEnv)) return sandboxAdminError("PayPal Sandbox credentials or webhook ID are incomplete");
+      return handlePayPalWebhook(request, sandboxEnv);
     }
 
     if (PAID_BUILDER_ROUTES.has(url.pathname)) {

@@ -33,6 +33,7 @@ need('src/gated-worker.js', 'PAYMENT_FULFILLMENT_INCOMPLETE', 'payment fulfillme
 forbid('src/gated-worker.js',/const grantId = order\.grant_id \|\| randomId\("GRANT"\)/,'random grant id is unsafe under concurrent capture/webhook fulfillment');
 need('src/gated-worker.js', 'function paypalSafeDiagnostics(error) {', 'PayPal failures must expose a sanitized diagnostic projection');
 need('src/gated-worker.js', 'console.error("paypal_create_failed", JSON.stringify(diagnostics));', 'PayPal create diagnostics must be available in provider logs');
+need('src/gated-worker.js', '[unit?.custom_id, unit?.invoice_id, unit?.reference_id]', 'PayPal capture must accept the documented purchase-unit reference_id while cross-checking every returned order reference');
 for (const field of ['issue: diagnostics.issue','description: diagnostics.description','debug_id: diagnostics.debug_id']) {
   need('src/gated-worker.js', field, `PayPal safe diagnostic response missing ${field}`);
 }

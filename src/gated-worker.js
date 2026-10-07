@@ -1005,6 +1005,11 @@ async function handleAdminSandboxStatus(request, env) {
     LEFT JOIN builder_access_grants g ON g.grant_id = o.grant_id
     WHERE o.order_id = ?`).bind(orderId).first();
   if (!row) return json({ ok: false, error: "ORDER_NOT_FOUND" }, 404);
+  if (row.status === "refunded" && row.payment_status !== "refunded") {
+    await env.BUILDER_DB.prepare("UPDATE payment_intents SET status = 'refunded', updated_at = ? WHERE provider = 'paypal' AND order_id = ?")
+      .bind(nowIso(), orderId).run();
+    row.payment_status = "refunded";
+  }
   return json({ ok: true, environment: "sandbox", result: row });
 }
 

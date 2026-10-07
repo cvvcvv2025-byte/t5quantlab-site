@@ -52,6 +52,7 @@ need('src/gated-worker.js', 'await isAdmin(request, env)', 'sandbox control rout
 need('src/gated-worker.js', '/api/payment/paypal-sandbox/webhook', 'sandbox webhook must be isolated from the live endpoint');
 need('src/gated-worker.js', '/v2/payments/captures/${encodeURIComponent(order.provider_trade_id)}/refund', 'sandbox cleanup must issue a provider refund');
 need('src/gated-worker.js', "UPDATE payment_intents SET status = 'refunded'", 'refunds must synchronize the local payment-intent status');
+need('src/gated-worker.js', 'row.status === "refunded" && row.payment_status !== "refunded"', 'Sandbox status must reconcile legacy refunded test records without another provider refund');
 need('src/commercial-worker.js', 'url.pathname === "/api/admin/paypal-sandbox/capture"', 'sandbox capture must pass through commercial 3+2 normalization');
 need('src/commercial-worker.js', 'url.pathname === "/api/payment/paypal-sandbox/webhook"', 'sandbox webhook must pass through commercial entitlement normalization');
 need('admin/paypal-sandbox/index.html', 'X-Builder-Access-Key', 'sandbox UI must authenticate every control request');

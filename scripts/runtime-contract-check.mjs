@@ -49,7 +49,9 @@ need(runtime,'const modifyModel = String(env.OPENAI_MODIFY_MODEL || "gpt-5.6-sol
 need(runtime,'modify: String(env.OPENAI_MODIFY_MODEL || "gpt-5.6-sol")','admin health must report actual modification model default');
 need(runtime,'https://api.resend.com/domains?limit=100','Resend deep check must read domain status only');
 need(runtime,'/v1/oauth2/token','PayPal deep check must validate OAuth credentials');
-need(runtime,'/v1/notifications/webhooks/','PayPal deep check must retrieve configured webhook');
+need(runtime,'/v1/notifications/webhooks?page_size=20','PayPal deep check must list live-app webhooks');
+need(runtime,'Configured webhook ID does not match the production callback','PayPal deep check must diagnose webhook ID mismatch');
+need(runtime,'id_match: idMatch','PayPal deep check must report webhook ID match');
 for(const event of ['PAYMENT.CAPTURE.COMPLETED','PAYMENT.CAPTURE.REFUNDED','PAYMENT.CAPTURE.REVERSED','CUSTOMER.DISPUTE.CREATED','CUSTOMER.DISPUTE.UPDATED','CUSTOMER.DISPUTE.RESOLVED'])need(runtime,event,`PayPal deep check missing required event ${event}`);
 need(runtime,'production_verified: productionVerified','deep check must expose final production verification state');
 need(runtime,'result.all_ok = result.openai_model.ok && result.openai_modify_model.ok && result.paypal_oauth.ok && result.paypal_webhook.ok && result.resend_domains.ok','external production verification must require both OpenAI models and every provider check');

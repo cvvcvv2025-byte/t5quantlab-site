@@ -470,7 +470,7 @@ async function completePaidOrder(env, { orderId, provider, providerTradeId, paid
 
   const fulfilled = await env.BUILDER_DB.prepare(`SELECT o.status, o.grant_id, g.grant_id AS live_grant
     FROM orders o LEFT JOIN builder_access_grants g ON g.grant_id = o.grant_id
-    WHERE o.order_id = ?`).bind(orderId).first();
+    WHERE o.order_id = ?`).bind(provider, orderId).first();
   if (fulfilled?.status !== "granted" || !fulfilled?.grant_id || !fulfilled?.live_grant) {
     throw new Error("PAYMENT_FULFILLMENT_INCOMPLETE");
   }
@@ -509,6 +509,10 @@ async function revokePaidOrder(env, { orderId, provider, eventId = null, provide
     env.BUILDER_DB.prepare("UPDATE orders SET status = 'refunded', updated_at = ? WHERE order_id = ?")
       .bind(updated, orderId)
   );
+  statements.push(
+    env.BUILDER_DB.prepare("UPDATE payment_intents SET status = 'refunded', updated_at = ? WHERE provider = ? AND order_id = ?")
+      .bind(updated, provider, orderId)
+  );
   if (order.grant_id) {
     statements.push(env.BUILDER_DB.prepare("UPDATE builder_access_grants SET status = 'revoked', updated_at = ? WHERE grant_id = ?")
       .bind(updated, order.grant_id));
@@ -517,10 +521,15 @@ async function revokePaidOrder(env, { orderId, provider, eventId = null, provide
   // The provider event ledger and local access revocation must commit together.
   await env.BUILDER_DB.batch(statements);
 
-  const revoked = await env.BUILDER_DB.prepare(`SELECT o.status AS order_status, o.grant_id, g.status AS grant_status
-    FROM orders o LEFT JOIN builder_access_grants g ON g.grant_id = o.grant_id
+  const revoked = await env.BUILDER_DB.prepare(`SELECT o.status AS order_status, o.grant_id, g.status AS grant_status,
+      p.status AS payment_status
+    FROM orders o
+    LEFT JOIN builder_access_grants g ON g.grant_id = o.grant_id
+    LEFT JOIN payment_intents p ON p.order_id = o.order_id AND p.provider = ?
     WHERE o.order_id = ?`).bind(orderId).first();
-  if (revoked?.order_status !== "refunded" || (revoked?.grant_id && revoked?.grant_status !== "revoked")) {
+  if (revoked?.order_status !== "refunded"
+    || (revoked?.payment_status && revoked.payment_status !== "refunded")
+    || (revoked?.grant_id && revoked?.grant_status !== "revoked")) {
     throw new Error("PAYMENT_REVOCATION_INCOMPLETE");
   }
   return { orderId, duplicate: Boolean(existingEvent) };

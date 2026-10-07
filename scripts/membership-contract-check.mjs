@@ -15,6 +15,10 @@ for (const html of [membership, account]) {
 need((membership.match(/<span class="plan-state wait">暂不可购买<\/span>/g) || []).length >= 2, 'Indicator and automation purchases must remain visibly closed');
 need(!membership.includes('href="/checkout/?plan=indicator') && !membership.includes('href="/checkout/?plan=automation'), 'Closed membership plans must not expose checkout links');
 need(membership.includes('.ex4 / .ex5'), 'Membership page must disclose downloadable MT4/MT5 file formats');
+need(membership.includes('1 个 MT4 指标安装包'), 'Membership page must disclose the exact current delivery count');
+need(membership.includes('T5 MTF Structure Panel v0.1.1'), 'Membership page must name the current released indicator');
+need(membership.includes('无 Release 版本'), 'Membership page must disclose that no EA release exists');
+need(membership.includes('/account/member-center/'), 'Membership page must link to the member content center');
 need(accountNav.includes("membership.href='/membership/'"), 'Global account navigation must expose the membership page');
 need(membership.includes('$14.90') && membership.includes('3次 AI 深度源码分析') && membership.includes('2次完整源码修改'), 'Builder Pass must remain a separate $14.90 service with 3+2 credits');
 need(!/稳赚|保本收益|承诺盈利/.test(membership), 'Membership copy must not promise trading profits');

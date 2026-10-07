@@ -74,6 +74,7 @@ need(adminHub,'noindex,nofollow','admin hub must remain private to search engine
 need(adminHub,'/admin/health/','admin hub must link runtime health');
 need(adminHub,'/admin/accounts/','admin hub must link account admin');
 need(adminHub,'/admin/campaigns/','admin hub must link campaign admin');
+need(adminHub,'/admin/paypal-sandbox/','admin hub must link isolated PayPal sandbox E2E');
 need(adminHealth,'noindex,nofollow','runtime health page must not be indexed');
 need(adminHealth,'t5_admin_key_session','admin health key must use tab-scoped session store');
 need(adminHealth,'sessionStorage','admin health must not persist key in localStorage');

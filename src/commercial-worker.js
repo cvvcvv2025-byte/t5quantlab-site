@@ -484,7 +484,13 @@ export default {
     if (url.pathname === "/api/payment/paypal/capture" && request.method === "POST") {
       return handlePayPalCapture(request, env, ctx);
     }
+    if (url.pathname === "/api/admin/paypal-sandbox/capture" && request.method === "POST") {
+      return handlePayPalCapture(request, env, ctx);
+    }
     if (url.pathname === "/api/payment/paypal/webhook" && request.method === "POST") {
+      return handlePayPalWebhook(request, env, ctx);
+    }
+    if (url.pathname === "/api/payment/paypal-sandbox/webhook" && request.method === "POST") {
       return handlePayPalWebhook(request, env, ctx);
     }
     if (url.pathname === "/api/builder/upload" && request.method === "POST") {

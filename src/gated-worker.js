@@ -730,7 +730,12 @@ async function handlePayPalCapture(request, env) {
     const found = paypalCaptureFromOrder(ppOrder);
     if (!found) throw new Error("PAYPAL_CAPTURE_NOT_COMPLETED");
     const { capture, unit } = found;
-    if (String(unit?.custom_id || unit?.invoice_id || "") !== orderId) throw new Error("PAYPAL_ORDER_REFERENCE_MISMATCH");
+    const orderReferences = [unit?.custom_id, unit?.invoice_id, unit?.reference_id]
+      .filter(value => value !== undefined && value !== null && String(value) !== "")
+      .map(String);
+    if (!orderReferences.length || orderReferences.some(reference => reference !== orderId)) {
+      throw new Error("PAYPAL_ORDER_REFERENCE_MISMATCH");
+    }
     const paidMinor = paypalMinor(capture?.amount?.value);
     const currency = String(capture?.amount?.currency_code || "").toUpperCase();
     const result = await completePaidOrder(env, {

@@ -4,15 +4,34 @@ const SESSION_COOKIE = "t5_session";
 const SESSION_DAYS = 30;
 const CODE_TTL_MINUTES = 10;
 const MAX_CODE_ATTEMPTS = 6;
-const INDICATOR_ARTIFACT = {
-  code: "mtf_structure_panel_mt4",
-  version: "0.1.1",
-  filename: "T5_MTF_Structure_Panel_v0_1_1_MT4_Customer_Pack.zip",
-  r2Key: "member-artifacts/mtf-structure-panel/0.1.1/T5_MTF_Structure_Panel_v0_1_1_MT4_Customer_Pack.zip",
-  sha256: "97897c8925f964b140e314c96b6d6a5365d129e3abee31193a0d4d9e488de345",
-  maxBytes: 1024 * 1024
+const INDICATOR_ARTIFACTS = {
+  "mtf-structure-panel": {
+    code: "mtf_structure_panel_mt4",
+    version: "0.1.1",
+    filename: "T5_MTF_Structure_Panel_v0_1_1_MT4_Customer_Pack.zip",
+    r2Key: "member-artifacts/mtf-structure-panel/0.1.1/T5_MTF_Structure_Panel_v0_1_1_MT4_Customer_Pack.zip",
+    sha256: "97897c8925f964b140e314c96b6d6a5365d129e3abee31193a0d4d9e488de345",
+    maxBytes: 1024 * 1024
+  },
+  "neckline-mtf": {
+    code: "neckline_mtf_mt4",
+    version: "0.1.0",
+    filename: "T5_Neckline_MTF_v0_1_0_MT4_Customer_Pack.zip",
+    r2Key: "member-artifacts/neckline-mtf/0.1.0/T5_Neckline_MTF_v0_1_0_MT4_Customer_Pack.zip",
+    sha256: "451a32efd60707d3c9cb63e80ef9204db6cbb74400eb16fdea77565eb53d30f1",
+    maxBytes: 1024 * 1024
+  },
+  "progress-candle": {
+    code: "progress_candle_mt4",
+    version: "0.1.0",
+    filename: "T5_Progress_Candle_v0_1_0_MT4_Customer_Pack.zip",
+    r2Key: "member-artifacts/progress-candle/0.1.0/T5_Progress_Candle_v0_1_0_MT4_Customer_Pack.zip",
+    sha256: "2e8775b4174e84749e162093ea63f6f0c74cca0cdc9cca2c751238cc1a39e54c",
+    maxBytes: 1024 * 1024
+  }
 };
-const INDICATOR_ACCESS_PRODUCTS = ["indicator_membership", "premium_membership", INDICATOR_ARTIFACT.code];
+const INDICATOR_MEMBERSHIP_PRODUCTS = ["indicator_membership", "premium_membership"];
+const INDICATOR_PRODUCT_CODES = [...INDICATOR_MEMBERSHIP_PRODUCTS, ...Object.values(INDICATOR_ARTIFACTS).map(item => item.code)];
 
 function json(data, status = 200, extraHeaders = {}) {
   const headers = new Headers({
@@ -363,74 +382,75 @@ async function isAdmin(request, env) {
   return Boolean(env.BUILDER_ACCESS_KEY) && constantTimeEqual(env.BUILDER_ACCESS_KEY, supplied);
 }
 
-async function activeIndicatorEntitlement(env, userId) {
-  const placeholders = INDICATOR_ACCESS_PRODUCTS.map(() => "?").join(",");
+async function activeIndicatorEntitlement(env, userId, artifact) {
+  const products = [...INDICATOR_MEMBERSHIP_PRODUCTS, artifact.code];
+  const placeholders = products.map(() => "?").join(",");
   return env.BUILDER_DB.prepare(`SELECT entitlement_id, product_code, expires_at
     FROM product_entitlements
     WHERE user_id = ? AND product_code IN (${placeholders}) AND status = 'active'
       AND starts_at <= ? AND (expires_at IS NULL OR expires_at > ?)
     ORDER BY expires_at DESC LIMIT 1`)
-    .bind(userId, ...INDICATOR_ACCESS_PRODUCTS, nowIso(), nowIso()).first();
+    .bind(userId, ...products, nowIso(), nowIso()).first();
 }
 
-async function indicatorAccess(request, env) {
+async function indicatorAccess(request, env, artifact) {
   const user = await resolveSession(request, env);
   if (!user) return json({ ok: false, error: "请先登录 T5 账户", code: "ACCOUNT_REQUIRED" }, 401);
   await ensureAccountDb(env);
-  const entitlement = await activeIndicatorEntitlement(env, user.user_id);
+  const entitlement = await activeIndicatorEntitlement(env, user.user_id, artifact);
   return json({
     ok: true,
-    artifact: { code: INDICATOR_ARTIFACT.code, version: INDICATOR_ARTIFACT.version, filename: INDICATOR_ARTIFACT.filename },
+    artifact: { code: artifact.code, version: artifact.version, filename: artifact.filename },
     entitled: Boolean(entitlement),
     entitlement: entitlement || null
   });
 }
 
-async function downloadIndicator(request, env) {
+async function downloadIndicator(request, env, artifact) {
   const user = await resolveSession(request, env);
   if (!user) return json({ ok: false, error: "请先登录后下载", code: "ACCOUNT_REQUIRED" }, 401);
   await ensureAccountDb(env);
-  const entitlement = await activeIndicatorEntitlement(env, user.user_id);
+  const entitlement = await activeIndicatorEntitlement(env, user.user_id, artifact);
   if (!entitlement) return json({ ok: false, error: "当前账户没有有效的指标会员权限", code: "INDICATOR_ENTITLEMENT_REQUIRED" }, 403);
   if (!env.USER_CODE_BUCKET) return json({ ok: false, error: "下载存储尚未就绪", code: "ARTIFACT_STORAGE_NOT_READY" }, 503);
-  const object = await env.USER_CODE_BUCKET.get(INDICATOR_ARTIFACT.r2Key);
+  const object = await env.USER_CODE_BUCKET.get(artifact.r2Key);
   if (!object) return json({ ok: false, error: "安装包尚未上传，请稍后再试", code: "ARTIFACT_NOT_READY" }, 503);
-  if (object.customMetadata?.sha256 !== INDICATOR_ARTIFACT.sha256 || object.customMetadata?.version !== INDICATOR_ARTIFACT.version) {
+  if (object.customMetadata?.sha256 !== artifact.sha256 || object.customMetadata?.version !== artifact.version) {
     return json({ ok: false, error: "安装包校验信息不一致，下载已暂停", code: "ARTIFACT_METADATA_MISMATCH" }, 503);
   }
   await env.BUILDER_DB.prepare(`INSERT INTO member_download_events
     (event_id, user_id, entitlement_id, artifact_code, artifact_version, ip_hash, user_agent, created_at)
     VALUES (?, ?, ?, ?, ?, ?, ?, ?)`)
-    .bind(randomId("DL"), user.user_id, entitlement.entitlement_id, INDICATOR_ARTIFACT.code, INDICATOR_ARTIFACT.version,
+    .bind(randomId("DL"), user.user_id, entitlement.entitlement_id, artifact.code, artifact.version,
       await ipHash(request, env), (request.headers.get("User-Agent") || "").slice(0, 500), nowIso()).run();
   const headers = new Headers({
     "Content-Type": "application/zip",
-    "Content-Disposition": `attachment; filename="${INDICATOR_ARTIFACT.filename}"`,
+    "Content-Disposition": `attachment; filename="${artifact.filename}"`,
     "Cache-Control": "private, no-store, max-age=0",
     "X-Content-Type-Options": "nosniff",
-    "X-T5-Artifact-Version": INDICATOR_ARTIFACT.version,
-    "X-T5-Artifact-SHA256": INDICATOR_ARTIFACT.sha256
+    "X-T5-Artifact-Version": artifact.version,
+    "X-T5-Artifact-SHA256": artifact.sha256
   });
   if (object.size != null) headers.set("Content-Length", String(object.size));
   return new Response(object.body, { status: 200, headers });
 }
 
-async function adminUploadIndicator(request, env) {
+async function adminUploadIndicator(request, env, artifact) {
   if (!(await isAdmin(request, env))) return json({ ok: false, error: "Unauthorized", code: "ADMIN_REQUIRED" }, 403);
   if (!env.USER_CODE_BUCKET) return json({ ok: false, error: "R2 storage is not configured", code: "ARTIFACT_STORAGE_NOT_READY" }, 503);
   const length = Number(request.headers.get("Content-Length") || 0);
-  if (length > INDICATOR_ARTIFACT.maxBytes) return json({ ok: false, error: "文件过大", code: "ARTIFACT_TOO_LARGE" }, 413);
+  if (length > artifact.maxBytes) return json({ ok: false, error: "文件过大", code: "ARTIFACT_TOO_LARGE" }, 413);
   const bytes = await request.arrayBuffer();
-  if (!bytes.byteLength || bytes.byteLength > INDICATOR_ARTIFACT.maxBytes) return json({ ok: false, error: "文件为空或过大", code: "INVALID_ARTIFACT_SIZE" }, 400);
+  if (!bytes.byteLength || bytes.byteLength > artifact.maxBytes) return json({ ok: false, error: "文件为空或过大", code: "INVALID_ARTIFACT_SIZE" }, 400);
   const actualHash = await sha256BytesHex(bytes);
-  if (!(await constantTimeEqual(actualHash, INDICATOR_ARTIFACT.sha256))) {
+  if (!(await constantTimeEqual(actualHash, artifact.sha256))) {
     return json({ ok: false, error: "文件校验失败，拒绝上传", code: "ARTIFACT_HASH_MISMATCH" }, 400);
   }
-  await env.USER_CODE_BUCKET.put(INDICATOR_ARTIFACT.r2Key, bytes, {
+  await env.USER_CODE_BUCKET.put(artifact.r2Key, bytes, {
     httpMetadata: { contentType: "application/zip" },
-    customMetadata: { version: INDICATOR_ARTIFACT.version, sha256: INDICATOR_ARTIFACT.sha256 }
+    customMetadata: { version: artifact.version, sha256: artifact.sha256 }
   });
-  return json({ ok: true, artifact: { filename: INDICATOR_ARTIFACT.filename, version: INDICATOR_ARTIFACT.version, sha256: INDICATOR_ARTIFACT.sha256, size: bytes.byteLength } });
+  return json({ ok: true, artifact: { code: artifact.code, filename: artifact.filename, version: artifact.version, sha256: artifact.sha256, size: bytes.byteLength } });
 }
 
 async function adminEntitlement(request, env) {
@@ -442,7 +462,7 @@ async function adminEntitlement(request, env) {
   const productCode = String(body.product_code || "indicator_membership");
   if (!email) return json({ ok: false, error: "请输入有效邮箱", code: "INVALID_EMAIL" }, 400);
   if (!["grant", "revoke"].includes(action)) return json({ ok: false, error: "无效操作", code: "INVALID_ACTION" }, 400);
-  if (!INDICATOR_ACCESS_PRODUCTS.includes(productCode)) return json({ ok: false, error: "无效产品权限", code: "INVALID_PRODUCT_CODE" }, 400);
+  if (!INDICATOR_PRODUCT_CODES.includes(productCode)) return json({ ok: false, error: "无效产品权限", code: "INVALID_PRODUCT_CODE" }, 400);
   const user = await env.BUILDER_DB.prepare("SELECT user_id, email FROM users WHERE email = ? AND status = 'active'").bind(email).first();
   if (!user) return json({ ok: false, error: "该邮箱尚未注册 T5 账户", code: "USER_NOT_FOUND" }, 404);
   const now = nowIso();
@@ -588,9 +608,17 @@ export default {
       if (p === "/api/account/marketing" && request.method === "POST") return updateMarketing(request, env);
       if (p === "/api/admin/accounts" && request.method === "GET") return adminAccounts(request, env);
       if (p === "/api/admin/member-entitlements" && request.method === "POST") return adminEntitlement(request, env);
-      if (p === "/api/admin/indicator-artifacts/upload" && request.method === "PUT") return adminUploadIndicator(request, env);
-      if (p === "/api/member/indicators/mtf-structure-panel/access" && request.method === "GET") return indicatorAccess(request, env);
-      if (p === "/api/member/indicators/mtf-structure-panel/download" && request.method === "GET") return downloadIndicator(request, env);
+      if (p === "/api/admin/indicator-artifacts/upload" && request.method === "PUT") {
+        const artifact = INDICATOR_ARTIFACTS[url.searchParams.get("artifact") || "mtf-structure-panel"];
+        if (!artifact) return json({ ok: false, error: "未知指标安装包", code: "UNKNOWN_ARTIFACT" }, 404);
+        return adminUploadIndicator(request, env, artifact);
+      }
+      const indicatorRoute = p.match(/^\/api\/member\/indicators\/([^/]+)\/(access|download)$/);
+      if (indicatorRoute && request.method === "GET") {
+        const artifact = INDICATOR_ARTIFACTS[indicatorRoute[1]];
+        if (!artifact) return json({ ok: false, error: "未知指标", code: "UNKNOWN_ARTIFACT" }, 404);
+        return indicatorRoute[2] === "access" ? indicatorAccess(request, env, artifact) : downloadIndicator(request, env, artifact);
+      }
       if (p === "/api/marketing/unsubscribe" && request.method === "POST") return unsubscribe(request, env);
       if (p === "/api/orders/create" && request.method === "POST") return bindOrderToAccount(request, env, ctx);
       if (p === "/api/orders/status" && request.method === "GET") return forwardOwnedOrderAction(request, env, ctx);

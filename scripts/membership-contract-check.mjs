@@ -15,8 +15,11 @@ for (const html of [membership, account]) {
 need((membership.match(/<span class="plan-state wait">暂不可购买<\/span>/g) || []).length >= 2, 'Indicator and automation purchases must remain visibly closed');
 need(!membership.includes('href="/checkout/?plan=indicator') && !membership.includes('href="/checkout/?plan=automation'), 'Closed membership plans must not expose checkout links');
 need(membership.includes('.ex4 / .ex5'), 'Membership page must disclose downloadable MT4/MT5 file formats');
-need(membership.includes('1 个 MT4 指标安装包'), 'Membership page must disclose the exact current delivery count');
-need(membership.includes('T5 MTF Structure Panel v0.1.1'), 'Membership page must name the current released indicator');
+need(membership.includes('3 个 MT4 指标安装包'), 'Membership page must disclose the exact current delivery count');
+need(membership.includes('T5 MTF Structure Panel v0.1.1'), 'Membership page must list the released structure panel');
+need(membership.includes('T5 Neckline MTF v0.1.2'), 'Membership page must list the released neckline indicator');
+need(membership.includes('T5 Progress Candle v0.1.2'), 'Membership page must list the released progress candle indicator');
+need(account.includes('3 个正式 MT4 指标安装包'), 'Account page must disclose the exact current delivery count');
 need(membership.includes('无 Release 版本'), 'Membership page must disclose that no EA release exists');
 need(membership.includes('/account/member-center/'), 'Membership page must link to the member content center');
 need(accountNav.includes("membership.href='/membership/'"), 'Global account navigation must expose the membership page');

@@ -13,7 +13,7 @@ need('src/account-worker.js','/api/auth/verify-code','verify-code endpoint');
 need('src/account-worker.js','/api/auth/me','session endpoint');
 need('src/account-worker.js','/api/account/summary','account dashboard endpoint');
 need('src/account-worker.js','/api/account/marketing','marketing preference endpoint');
-need('src/account-worker.js','/api/member/indicators/mtf-structure-panel/download','protected indicator download endpoint');
+need('src/account-worker.js','const indicatorRoute = p.match','protected indicator download endpoint');
 need('src/account-worker.js','product_entitlements','product entitlement storage');
 need('src/account-worker.js','INDICATOR_ENTITLEMENT_REQUIRED','indicator download must fail closed without entitlement');
 need('src/account-worker.js','/api/admin/accounts','protected account admin endpoint');
@@ -58,9 +58,11 @@ need('admin/accounts/index.html','X-Builder-Access-Key','admin emails protected 
 need('admin/accounts/index.html','sessionStorage','admin key must not be persisted in localStorage');
 need('unsubscribe/index.html','/api/marketing/unsubscribe','unsubscribe page');
 need('account/member-center/index.html','/api/account/summary','member center account summary');
-need('account/member-center/index.html','/api/member/indicators/mtf-structure-panel/download','member center protected indicator download');
+need('account/member-center/index.html','/api/member/indicators/${encodeURIComponent(slug)}/download','member center protected indicator download');
 need('account/member-center/index.html','mtf_structure_panel_mt4','member center single-product entitlement support');
-need('account/member-center/index.html','1 个正式安装包','member center must disclose the exact current delivery count');
+need('account/member-center/index.html','neckline_mtf_mt4','member center neckline entitlement support');
+need('account/member-center/index.html','progress_candle_mt4','member center progress entitlement support');
+need('account/member-center/index.html','3 个正式安装包','member center must disclose the exact current delivery count');
 need('account/member-center/index.html','尚无正式 Release 版本','member center must not present an unreleased EA as downloadable');
 need('account/member-center/index.html','noindex,nofollow','member center must stay out of search results');
 

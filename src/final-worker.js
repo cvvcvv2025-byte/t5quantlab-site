@@ -18,7 +18,7 @@ async function authorizedOrder(request, env, orderId) {
   const token = request.headers.get("X-Order-Token") || "";
   if (!token || !orderId || !env.BUILDER_DB) return null;
   const hash = await sha256Hex(token);
-  return env.BUILDER_DB.prepare(`SELECT order_id, status, grant_id, payment_provider, provider_trade_id
+  return env.BUILDER_DB.prepare(`SELECT order_id, product_code, user_id, status, grant_id, payment_provider, provider_trade_id
     FROM orders WHERE order_id = ? AND order_token_hash = ?`).bind(orderId, hash).first();
 }
 
@@ -27,18 +27,29 @@ async function refundEligibility(request, env) {
   const orderId = url.searchParams.get("order_id") || "";
   const order = await authorizedOrder(request, env, orderId);
   if (!order) return json({ ok: false, error: "订单不存在或订单令牌无效" }, 403);
-  const row = await env.BUILDER_DB.prepare(`SELECT COUNT(*) AS n FROM service_events
-    WHERE order_id = ? AND status = 'success' AND action IN ('analyze','modify')`).bind(orderId).first();
-  const successfulPaidActions = Number(row?.n || 0);
-  const eligible = successfulPaidActions === 0;
+  let usageCount = 0;
+  let usageLabel = "付费 AI 分析或修改";
+  if (order.product_code === "indicator_membership") {
+    const row = await env.BUILDER_DB.prepare(`SELECT COUNT(*) AS n FROM member_download_events d
+      JOIN product_entitlements e ON e.entitlement_id = d.entitlement_id
+      WHERE e.source_order_id = ?`).bind(orderId).first();
+    usageCount = Number(row?.n || 0);
+    usageLabel = "会员指标下载";
+  } else {
+    const row = await env.BUILDER_DB.prepare(`SELECT COUNT(*) AS n FROM service_events
+      WHERE order_id = ? AND status = 'success' AND action IN ('analyze','modify')`).bind(orderId).first();
+    usageCount = Number(row?.n || 0);
+  }
+  const eligible = usageCount === 0;
   return json({
     ok: true,
     order_id: orderId,
     refund_eligible_under_t5_policy: eligible,
-    successful_paid_ai_actions: successfulPaidActions,
+    successful_paid_ai_actions: order.product_code === "indicator_membership" ? 0 : usageCount,
+    successful_member_downloads: order.product_code === "indicator_membership" ? usageCount : 0,
     reason: eligible
-      ? "尚未发现成功执行的付费 AI 分析或修改，可按退款规则申请。"
-      : "该订单已经成功执行过付费 AI 数字服务，不属于普通无理由退款范围。",
+      ? `尚未发现成功的${usageLabel}，可按退款规则申请。`
+      : `该订单已经发生${usageLabel}，数字内容已经开始交付，不属于普通无理由退款范围。`,
     payment_provider_rules_still_apply: true
   });
 }

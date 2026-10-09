@@ -24,7 +24,7 @@ forbid('src/audit-guard-worker.js',/core\.fetch|OPENAI_API_KEY|USER_CODE_BUCKET\
 need('src/gated-worker.js', 'analyzeCredits: 1,', 'legacy base grant analysis credit');
 need('src/gated-worker.js', 'modifyCredits: 1,', 'legacy base grant modify credit');
 need('src/gated-worker.js', 'expiresDays: 30', 'base grant expiry');
-need('src/gated-worker.js', 'const grantId = order.grant_id || `GRANT-${orderId}`;', 'payment fulfillment must use deterministic per-order grant id');
+need('src/gated-worker.js', 'order.grant_id || `GRANT-${orderId}`', 'payment fulfillment must use deterministic per-order grant id');
 need('src/gated-worker.js', 'PAYMENT_EVENT_CONFLICT', 'duplicate provider events must be checked for ownership conflicts');
 need('src/gated-worker.js', "VALUES (?, ?, 'payment_completed', ?, ?, ?) ON CONFLICT(event_key) DO NOTHING", 'payment completion event must be part of atomic fulfillment statements');
 need('src/gated-worker.js', 'ON CONFLICT DO NOTHING', 'concurrent deterministic grant insert must be idempotent');
@@ -97,6 +97,12 @@ for (const internalCode of ['PAYPAL_NOT_LIVE', 'PAID_SERVICE_NOT_READY', 'PAYPAL
   if (fs.readFileSync('checkout/index.html', 'utf8').includes(internalCode)) throw new Error(`checkout must not expose internal provider state ${internalCode}`);
 }
 need('checkout/index.html', "return Boolean(p?.prices?.USD)&&Boolean(pp.enabled)", 'create order button must require enabled PayPal provider');
+need('membership/checkout/index.html', "PRODUCT='indicator_membership'", 'indicator checkout must create the membership product');
+need('membership/checkout/index.html', 'terms_accepted:true', 'indicator checkout terms acceptance');
+need('src/gated-worker.js', 'ENT-${orderId}', 'indicator fulfillment must use deterministic entitlement id');
+need('src/gated-worker.js', 'source_order_id = excluded.source_order_id', 'indicator entitlement must remain linked to its source order');
+need('src/gated-worker.js', '? "/membership/checkout/" : callbackPath', 'PayPal must return membership buyers to membership checkout');
+need('src/gated-worker.js', '.bind(provider, orderId).first()', 'payment revocation verification must bind provider and order id');
 need('refund-policy/index.html', 'refund-v1-2026-09-28', 'published terms version');
 need('builder-schema.sql', 'CREATE TABLE IF NOT EXISTS service_events', 'fulfillment ledger');
 need('builder-schema.sql', 'CREATE TABLE IF NOT EXISTS payment_disputes', 'dispute ledger');

@@ -6,14 +6,13 @@ const accountNav = fs.readFileSync('assets/account-nav.js', 'utf8');
 const errors = [];
 const need = (ok, message) => { if (!ok) errors.push(message); };
 
-for (const html of [membership, account]) {
-  need(/¥99(?:\s|<[^>]+>)*\/ 90天/.test(html), 'Indicator Member launch price must be ¥99 / 90 days');
-  need(/¥399(?:\s|<[^>]+>)*\/ 90天/.test(html), 'Automation Member launch price must be ¥399 / 90 days');
-  need(html.includes('不自动续费'), 'Membership plans must disclose no auto-renewal');
-}
+for (const html of [membership, account]) need(html.includes('不自动续费'), 'Membership plans must disclose no auto-renewal');
+need(/\$13\.90(?:\s|<[^>]+>)*\/ 90天/.test(membership), 'Indicator Member launch price must be $13.90 / 90 days');
+need(account.includes('$13.90 / 90天'), 'Account must show the Indicator Member checkout price');
 
-need((membership.match(/<span class="plan-state wait">暂不可购买<\/span>/g) || []).length >= 2, 'Indicator and automation purchases must remain visibly closed');
-need(!membership.includes('href="/checkout/?plan=indicator') && !membership.includes('href="/checkout/?plan=automation'), 'Closed membership plans must not expose checkout links');
+need(membership.includes('<span class="plan-state ready">现在可购买</span>'), 'Indicator membership must be visibly open');
+need((membership.match(/<span class="plan-state wait">暂不可购买<\/span>/g) || []).length === 1, 'Automation membership alone must remain closed');
+need(membership.includes('href="/membership/checkout/"'), 'Indicator membership must link to checkout');
 need(membership.includes('.ex4 / .ex5'), 'Membership page must disclose downloadable MT4/MT5 file formats');
 need(membership.includes('3 个 MT4 指标安装包'), 'Membership page must disclose the exact current delivery count');
 need(membership.includes('T5 MTF Structure Panel v0.1.1'), 'Membership page must list the released structure panel');

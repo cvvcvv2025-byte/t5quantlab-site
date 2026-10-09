@@ -15,18 +15,18 @@ const INDICATOR_ARTIFACTS = {
   },
   "neckline-mtf": {
     code: "neckline_mtf_mt4",
-    version: "0.1.0",
-    filename: "T5_Neckline_MTF_v0_1_0_MT4_Customer_Pack.zip",
-    r2Key: "member-artifacts/neckline-mtf/0.1.0/T5_Neckline_MTF_v0_1_0_MT4_Customer_Pack.zip",
-    sha256: "451a32efd60707d3c9cb63e80ef9204db6cbb74400eb16fdea77565eb53d30f1",
+    version: "0.1.2",
+    filename: "T5_Neckline_MTF_v0_1_2_MT4_Customer_Pack.zip",
+    r2Key: "member-artifacts/neckline-mtf/0.1.2/T5_Neckline_MTF_v0_1_2_MT4_Customer_Pack.zip",
+    sha256: "c857653ace97cc3f98254b1bbd6ca5ff939a7e393aea2dc53b36a01080e8c952",
     maxBytes: 1024 * 1024
   },
   "progress-candle": {
     code: "progress_candle_mt4",
-    version: "0.1.0",
-    filename: "T5_Progress_Candle_v0_1_0_MT4_Customer_Pack.zip",
-    r2Key: "member-artifacts/progress-candle/0.1.0/T5_Progress_Candle_v0_1_0_MT4_Customer_Pack.zip",
-    sha256: "2e8775b4174e84749e162093ea63f6f0c74cca0cdc9cca2c751238cc1a39e54c",
+    version: "0.1.2",
+    filename: "T5_Progress_Candle_v0_1_2_MT4_Customer_Pack.zip",
+    r2Key: "member-artifacts/progress-candle/0.1.2/T5_Progress_Candle_v0_1_2_MT4_Customer_Pack.zip",
+    sha256: "c5ef1fc912b20f0446142cb3fbc005bdfa043313f078fa108bb4294f26a07d01",
     maxBytes: 1024 * 1024
   }
 };

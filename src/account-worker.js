@@ -524,7 +524,7 @@ async function unsubscribe(request, env) {
 
 async function bindOrderToAccount(request, env, ctx) {
   const user = await resolveSession(request, env);
-  if (!user) return json({ ok: false, error: "购买 Builder Pass 前请先使用邮箱登录。", code: "ACCOUNT_REQUIRED" }, 401);
+  if (!user) return json({ ok: false, error: "购买前请先使用邮箱登录。", code: "ACCOUNT_REQUIRED" }, 401);
   let body = {}; try { body = await request.clone().json(); } catch {}
   body.email = user.email;
   const headers = new Headers(request.headers); headers.set("Content-Type", "application/json");

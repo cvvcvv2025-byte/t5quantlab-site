@@ -2,6 +2,7 @@ import fs from 'node:fs';
 
 const files = [
   'checkout/index.html',
+  'membership/checkout/index.html',
   'tools/strategy-builder/index.html'
 ];
 

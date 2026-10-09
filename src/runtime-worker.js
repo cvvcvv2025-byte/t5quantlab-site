@@ -46,7 +46,9 @@ function configState(env) {
   const paymentTestMode = String(env.ENABLE_PAYMENT_TEST_MODE || "").toLowerCase() === "true";
   const accountReady = d1 && accountSecret && resend;
   const paidBuilderReady = d1 && r2 && openai && accountReady && paypal && auditSalt;
+  const indicatorCheckoutReady = d1 && r2 && accountReady && paypal && auditSalt;
   const checkoutReady = paidBuilderReady && (paypalEnvironment === "live" || paymentTestMode);
+  const indicatorCheckoutOpen = indicatorCheckoutReady && (paypalEnvironment === "live" || paymentTestMode);
   const marketingReady = d1 && accountSecret && Boolean(env.RESEND_API_KEY && (env.MARKETING_EMAIL_FROM || env.AUTH_EMAIL_FROM));
   return {
     assets,
@@ -59,6 +61,7 @@ function configState(env) {
     audit_salt: auditSalt,
     account_ready: accountReady,
     paid_builder_ready: paidBuilderReady,
+    indicator_checkout_ready: indicatorCheckoutOpen,
     checkout_ready: checkoutReady,
     marketing_ready: marketingReady,
     free_source_inspector_ready: assets,
@@ -342,6 +345,15 @@ function grantStillUsable(builder) {
   return Number(builder.analyze_remaining || 0) > 0 || Number(builder.modify_remaining || 0) > 0;
 }
 
+function indicatorMembershipStillActive(entitlements) {
+  return (entitlements || []).some(item => ["indicator_membership", "premium_membership"].includes(item.product_code));
+}
+
+async function requestedProduct(request) {
+  try { return String((await request.clone().json())?.product_code || "code_workshop_single"); }
+  catch { return "code_workshop_single"; }
+}
+
 async function guardedCatalog(request, env, ctx) {
   const response = await app.fetch(request, env, ctx);
   if (!response.ok) return response;
@@ -371,7 +383,9 @@ function checkoutNotReady() {
 
 async function guardedCreateOrder(request, env, ctx) {
   const state = configState(env);
-  if (!state.checkout_ready) return checkoutNotReady();
+  const productCode = await requestedProduct(request);
+  const ready = productCode === "indicator_membership" ? state.indicator_checkout_ready : state.checkout_ready;
+  if (!ready) return checkoutNotReady();
 
   const precheck = await accountSummaryPrecheck(request, env, ctx);
   if (precheck.status === 401) return app.fetch(request, env, ctx);
@@ -383,7 +397,14 @@ async function guardedCreateOrder(request, env, ctx) {
     }, 503);
   }
   const summary = precheck.data;
-  if (grantStillUsable(summary.builder)) {
+  if (productCode === "indicator_membership" && indicatorMembershipStillActive(summary.entitlements)) {
+    return json({
+      ok: false,
+      error: "当前账户已有有效的指标下载权限，无需重复购买。",
+      code: "ACTIVE_MEMBERSHIP_REMAINS"
+    }, 409);
+  }
+  if (productCode === "code_workshop_single" && grantStillUsable(summary.builder)) {
     return json({
       ok: false,
       error: "当前账户仍有可用 AI 次数，无需重复购买。",
@@ -404,7 +425,8 @@ async function guardedPayPalCreate(request, env, ctx) {
 }
 
 async function guardedPayPalCapture(request, env, ctx) {
-  if (!configState(env).paid_builder_ready) {
+  const state = configState(env);
+  if (!state.paid_builder_ready && !state.indicator_checkout_ready) {
     return json({
       ok: false,
       error: "付款确认前检测到数字服务履约环境未就绪。本次不会执行 PayPal Capture，请稍后重试。",

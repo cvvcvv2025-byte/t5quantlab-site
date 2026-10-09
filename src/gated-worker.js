@@ -16,7 +16,15 @@ const PRODUCT_CATALOG = {
     name: "T5 Code Workshop · 单次完整处理",
     analyzeCredits: 1,
     modifyCredits: 1,
-    expiresDays: 30
+    expiresDays: 30,
+    fulfillment: "builder"
+  },
+  indicator_membership: {
+    name: "T5 指标会员 · 90天",
+    analyzeCredits: 0,
+    modifyCredits: 0,
+    expiresDays: 90,
+    fulfillment: "membership"
   }
 };
 
@@ -259,9 +267,13 @@ function accessStatus(access) {
 }
 
 function priceFor(env, productCode, currency) {
-  if (productCode !== "code_workshop_single") return null;
   const c = String(currency || "").toUpperCase();
-  const raw = c === "CNY" ? env.CODE_WORKSHOP_PRICE_CNY_MINOR : c === "USD" ? env.CODE_WORKSHOP_PRICE_USD_MINOR : null;
+  let raw = null;
+  if (productCode === "code_workshop_single") {
+    raw = c === "CNY" ? env.CODE_WORKSHOP_PRICE_CNY_MINOR : c === "USD" ? env.CODE_WORKSHOP_PRICE_USD_MINOR : null;
+  } else if (productCode === "indicator_membership") {
+    raw = c === "USD" ? env.INDICATOR_MEMBERSHIP_PRICE_USD_MINOR : null;
+  }
   if (raw == null || raw === "") return null;
   const amount = Number(raw);
   if (!Number.isInteger(amount) || amount <= 0) return null;
@@ -300,19 +312,16 @@ function providerStatus(env) {
 }
 
 function handleCatalog(env) {
-  const product = PRODUCT_CATALOG.code_workshop_single;
-  const cny = priceFor(env, "code_workshop_single", "CNY");
-  const usd = priceFor(env, "code_workshop_single", "USD");
   return json({
     ok: true,
-    products: [{
-      code: "code_workshop_single",
+    products: Object.entries(PRODUCT_CATALOG).map(([code, product]) => ({
+      code,
       name: product.name,
       analyze_credits: product.analyzeCredits,
       modify_credits: product.modifyCredits,
       expires_days: product.expiresDays,
-      prices: { CNY: cny, USD: usd }
-    }],
+      prices: { CNY: priceFor(env, code, "CNY"), USD: priceFor(env, code, "USD") }
+    })),
     providers: providerStatus(env)
   });
 }
@@ -409,11 +418,11 @@ async function recordPaymentEvent(env, { provider, eventId, eventType, orderId =
 
 async function completePaidOrder(env, { orderId, provider, providerTradeId, paidAmountMinor, currency, eventId = null }) {
   await ensureAccessDb(env);
-  const order = await env.BUILDER_DB.prepare(`SELECT order_id, builder_token_hash, product_code, amount_minor, currency, status, grant_id
+  const order = await env.BUILDER_DB.prepare(`SELECT order_id, user_id, builder_token_hash, product_code, amount_minor, currency, status, grant_id
     FROM orders WHERE order_id = ?`).bind(orderId).first();
   if (!order) throw new Error("ORDER_NOT_FOUND");
 
-  if (order.status === "granted" && order.grant_id) {
+  if (order.status === "granted") {
     return { orderId, grantId: order.grant_id, duplicate: true };
   }
   if (order.status !== "pending" && order.status !== "paid") throw new Error("ORDER_NOT_GRANTABLE");
@@ -439,7 +448,7 @@ async function completePaidOrder(env, { orderId, provider, providerTradeId, paid
 
   // Deterministic for a given order so concurrent capture/webhook fulfillment attempts
   // cannot point the order at different random grant IDs.
-  const grantId = order.grant_id || `GRANT-${orderId}`;
+  const grantId = product.fulfillment === "builder" ? (order.grant_id || `GRANT-${orderId}`) : null;
   const created = nowIso();
   const expiresAt = new Date(Date.now() + product.expiresDays * 86400000).toISOString();
   const statements = [];
@@ -451,27 +460,41 @@ async function completePaidOrder(env, { orderId, provider, providerTradeId, paid
       .bind(`${provider}:${eventId}`, provider, orderId, providerTradeId, created));
   }
 
-  statements.push(
-    env.BUILDER_DB.prepare(`INSERT INTO builder_access_grants
+  if (product.fulfillment === "builder") {
+    statements.push(env.BUILDER_DB.prepare(`INSERT INTO builder_access_grants
       (grant_id, token_hash, label, plan, status, analyze_remaining, modify_remaining, expires_at, created_at, updated_at)
       VALUES (?, ?, ?, ?, 'active', ?, ?, ?, ?, ?)
       ON CONFLICT DO NOTHING`)
       .bind(grantId, order.builder_token_hash, `Order ${orderId}`, order.product_code,
-        product.analyzeCredits, product.modifyCredits, expiresAt, created, created),
-    env.BUILDER_DB.prepare(`UPDATE orders SET status = 'granted', payment_provider = ?, provider_trade_id = ?,
+        product.analyzeCredits, product.modifyCredits, expiresAt, created, created));
+  } else {
+    if (!order.user_id) throw new Error("ORDER_ACCOUNT_REQUIRED");
+    statements.push(env.BUILDER_DB.prepare(`INSERT INTO product_entitlements
+      (entitlement_id, user_id, product_code, status, starts_at, expires_at, source, source_order_id, created_at, updated_at)
+      VALUES (?, ?, ?, 'active', ?, ?, ?, ?, ?, ?)
+      ON CONFLICT(user_id, product_code) DO UPDATE SET status = 'active', starts_at = excluded.starts_at,
+        expires_at = excluded.expires_at, source = excluded.source, source_order_id = excluded.source_order_id,
+        updated_at = excluded.updated_at`)
+      .bind(`ENT-${orderId}`, order.user_id, order.product_code, created, expiresAt, provider, orderId, created, created));
+  }
+  statements.push(env.BUILDER_DB.prepare(`UPDATE orders SET status = 'granted', payment_provider = ?, provider_trade_id = ?,
       grant_id = ?, paid_at = COALESCE(paid_at, ?), granted_at = COALESCE(granted_at, ?), updated_at = ?
       WHERE order_id = ? AND status IN ('pending','paid','granted')`)
-      .bind(provider, providerTradeId, grantId, created, created, created, orderId)
-  );
+      .bind(provider, providerTradeId, grantId, created, created, created, orderId));
 
   // D1 batch is transactional: payment event de-duplication, grant creation, and
   // order fulfillment either commit together or roll back together.
   await env.BUILDER_DB.batch(statements);
 
-  const fulfilled = await env.BUILDER_DB.prepare(`SELECT o.status, o.grant_id, g.grant_id AS live_grant
+  const fulfilled = await env.BUILDER_DB.prepare(`SELECT o.status, o.grant_id, o.product_code,
+      g.grant_id AS live_grant, e.entitlement_id AS live_entitlement
     FROM orders o LEFT JOIN builder_access_grants g ON g.grant_id = o.grant_id
-    WHERE o.order_id = ?`).bind(provider, orderId).first();
-  if (fulfilled?.status !== "granted" || !fulfilled?.grant_id || !fulfilled?.live_grant) {
+    LEFT JOIN product_entitlements e ON e.source_order_id = o.order_id AND e.status = 'active'
+    WHERE o.order_id = ?`).bind(orderId).first();
+  const fulfillmentPresent = product.fulfillment === "builder"
+    ? Boolean(fulfilled?.grant_id && fulfilled?.live_grant)
+    : Boolean(fulfilled?.live_entitlement);
+  if (fulfilled?.status !== "granted" || !fulfillmentPresent) {
     throw new Error("PAYMENT_FULFILLMENT_INCOMPLETE");
   }
 
@@ -480,7 +503,7 @@ async function completePaidOrder(env, { orderId, provider, providerTradeId, paid
 
 async function revokePaidOrder(env, { orderId, provider, eventId = null, providerTradeId = null, eventType = "payment_refunded" }) {
   await ensureAccessDb(env);
-  const order = await env.BUILDER_DB.prepare("SELECT order_id, status, grant_id FROM orders WHERE order_id = ?").bind(orderId).first();
+  const order = await env.BUILDER_DB.prepare("SELECT order_id, status, grant_id, product_code, user_id FROM orders WHERE order_id = ?").bind(orderId).first();
   if (!order) throw new Error("ORDER_NOT_FOUND");
 
   let existingEvent = null;
@@ -517,19 +540,26 @@ async function revokePaidOrder(env, { orderId, provider, eventId = null, provide
     statements.push(env.BUILDER_DB.prepare("UPDATE builder_access_grants SET status = 'revoked', updated_at = ? WHERE grant_id = ?")
       .bind(updated, order.grant_id));
   }
+  if (order.product_code === "indicator_membership" && order.user_id) {
+    statements.push(env.BUILDER_DB.prepare(`UPDATE product_entitlements SET status = 'revoked', updated_at = ?
+      WHERE user_id = ? AND product_code = ? AND source_order_id = ?`)
+      .bind(updated, order.user_id, order.product_code, orderId));
+  }
 
   // The provider event ledger and local access revocation must commit together.
   await env.BUILDER_DB.batch(statements);
 
-  const revoked = await env.BUILDER_DB.prepare(`SELECT o.status AS order_status, o.grant_id, g.status AS grant_status,
-      p.status AS payment_status
+  const revoked = await env.BUILDER_DB.prepare(`SELECT o.status AS order_status, o.grant_id, o.product_code,
+      g.status AS grant_status, e.status AS entitlement_status, p.status AS payment_status
     FROM orders o
     LEFT JOIN builder_access_grants g ON g.grant_id = o.grant_id
+    LEFT JOIN product_entitlements e ON e.source_order_id = o.order_id
     LEFT JOIN payment_intents p ON p.order_id = o.order_id AND p.provider = ?
-    WHERE o.order_id = ?`).bind(orderId).first();
+    WHERE o.order_id = ?`).bind(provider, orderId).first();
   if (revoked?.order_status !== "refunded"
     || (revoked?.payment_status && revoked.payment_status !== "refunded")
-    || (revoked?.grant_id && revoked?.grant_status !== "revoked")) {
+    || (revoked?.grant_id && revoked?.grant_status !== "revoked")
+    || (revoked?.product_code === "indicator_membership" && revoked?.entitlement_status !== "revoked")) {
     throw new Error("PAYMENT_REVOCATION_INCOMPLETE");
   }
   return { orderId, duplicate: Boolean(existingEvent) };
@@ -641,8 +671,10 @@ async function handlePayPalCreate(request, env, { callbackPath = "/checkout/", c
   }
 
   const origin = new URL(request.url).origin;
-  const returnUrl = `${origin}${callbackPath}?provider=${encodeURIComponent(callbackProvider)}&status=return&order_id=${encodeURIComponent(orderId)}`;
-  const cancelUrl = `${origin}${callbackPath}?provider=${encodeURIComponent(callbackProvider)}&status=cancel&order_id=${encodeURIComponent(orderId)}`;
+  const effectiveCallbackPath = callbackPath === "/checkout/" && order.product_code === "indicator_membership"
+    ? "/membership/checkout/" : callbackPath;
+  const returnUrl = `${origin}${effectiveCallbackPath}?provider=${encodeURIComponent(callbackProvider)}&status=return&order_id=${encodeURIComponent(orderId)}`;
+  const cancelUrl = `${origin}${effectiveCallbackPath}?provider=${encodeURIComponent(callbackProvider)}&status=cancel&order_id=${encodeURIComponent(orderId)}`;
   const value = (Number(order.amount_minor) / 100).toFixed(2);
 
   try {

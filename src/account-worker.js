@@ -415,8 +415,10 @@ async function downloadIndicator(request, env, artifact) {
   if (!env.USER_CODE_BUCKET) return json({ ok: false, error: "下载存储尚未就绪", code: "ARTIFACT_STORAGE_NOT_READY" }, 503);
   const object = await env.USER_CODE_BUCKET.get(artifact.r2Key);
   if (!object) return json({ ok: false, error: "安装包尚未上传，请稍后再试", code: "ARTIFACT_NOT_READY" }, 503);
-  if (object.customMetadata?.sha256 !== artifact.sha256 || object.customMetadata?.version !== artifact.version) {
-    return json({ ok: false, error: "安装包校验信息不一致，下载已暂停", code: "ARTIFACT_METADATA_MISMATCH" }, 503);
+  const bytes = await object.arrayBuffer();
+  const actualHash = await sha256BytesHex(bytes);
+  if (!(await constantTimeEqual(actualHash, artifact.sha256))) {
+    return json({ ok: false, error: "安装包内容校验失败，下载已暂停", code: "ARTIFACT_CONTENT_MISMATCH" }, 503);
   }
   await env.BUILDER_DB.prepare(`INSERT INTO member_download_events
     (event_id, user_id, entitlement_id, artifact_code, artifact_version, ip_hash, user_agent, created_at)
@@ -431,8 +433,8 @@ async function downloadIndicator(request, env, artifact) {
     "X-T5-Artifact-Version": artifact.version,
     "X-T5-Artifact-SHA256": artifact.sha256
   });
-  if (object.size != null) headers.set("Content-Length", String(object.size));
-  return new Response(object.body, { status: 200, headers });
+  headers.set("Content-Length", String(bytes.byteLength));
+  return new Response(bytes, { status: 200, headers });
 }
 
 async function adminUploadIndicator(request, env, artifact) {

@@ -23,9 +23,11 @@ need(worker, 'const indicatorRoute = p.match', 'generic protected indicator rout
 
 need(worker, 'const INDICATOR_MEMBERSHIP_PRODUCTS = ["indicator_membership", "premium_membership"]', 'tier allowlist');
 need(worker, '97897c8925f964b140e314c96b6d6a5365d129e3abee31193a0d4d9e488de345', 'pinned customer-pack sha256');
-need(worker, '451a32efd60707d3c9cb63e80ef9204db6cbb74400eb16fdea77565eb53d30f1', 'pinned neckline customer-pack sha256');
-need(worker, '2e8775b4174e84749e162093ea63f6f0c74cca0cdc9cca2c751238cc1a39e54c', 'pinned progress customer-pack sha256');
+need(worker, 'c857653ace97cc3f98254b1bbd6ca5ff939a7e393aea2dc53b36a01080e8c952', 'pinned neckline customer-pack sha256');
+need(worker, 'c5ef1fc912b20f0446142cb3fbc005bdfa043313f078fa108bb4294f26a07d01', 'pinned progress customer-pack sha256');
 need(worker, 'member-artifacts/mtf-structure-panel/0.1.1/', 'private R2 artifact key');
+need(worker, 'member-artifacts/neckline-mtf/0.1.2/', 'private neckline R2 artifact key');
+need(worker, 'member-artifacts/progress-candle/0.1.2/', 'private progress R2 artifact key');
 need(worker, 'INDICATOR_ENTITLEMENT_REQUIRED', 'fail-closed entitlement response');
 need(worker, 'Cache-Control": "private, no-store, max-age=0"', 'download cache boundary');
 need(worker, 'Content-Disposition', 'attachment response');

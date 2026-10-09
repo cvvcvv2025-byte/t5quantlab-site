@@ -31,7 +31,8 @@ need(worker, 'Cache-Control": "private, no-store, max-age=0"', 'download cache b
 need(worker, 'Content-Disposition', 'attachment response');
 need(worker, 'INSERT INTO member_download_events', 'download audit ledger');
 need(worker, 'ARTIFACT_HASH_MISMATCH', 'admin upload hash rejection');
-need(worker, 'ARTIFACT_METADATA_MISMATCH', 'download object metadata verification');
+need(worker, 'ARTIFACT_CONTENT_MISMATCH', 'download object content verification');
+need(worker, 'const actualHash = await sha256BytesHex(bytes)', 'download must hash the stored object bytes');
 need(worker, 'entitlements: entitlementResult?.results || []', 'account summary entitlement visibility');
 
 const downloadStart = worker.indexOf('async function downloadIndicator');

@@ -39,7 +39,15 @@ const EA_ARTIFACTS = {
     filename: "T5_Attack_Completion_C_v6_10_8_MT5_Customer_Pack.zip",
     r2Key: "member-artifacts/ea/attack-completion-c/6.10.8/T5_Attack_Completion_C_v6_10_8_MT5_Customer_Pack.zip",
     sha256: "ffc33da4245c135aa2f00eef1a9fc17fe5b6c4eb7aa722e76289f8fffcc65521",
-    
+    maxBytes: 2 * 1024 * 1024
+  },
+  "trend-capture": {
+    code: "trend_capture_mt5",
+    version: "0.1.0",
+    filename: "T5_Trend_Capture_v0_1_0_MT5_Customer_Pack.zip",
+    r2Key: "member-artifacts/ea/trend-capture/0.1.0/T5_Trend_Capture_v0_1_0_MT5_Customer_Pack.zip",
+    sha256: "0577e6a43b5e1bb36d9ab71c80b8602884d2e7f5e74a5b0d1415dd7ecb800b37",
+    maxBytes: 2 * 1024 * 1024
   }
 };
 const EA_MEMBERSHIP_PRODUCTS = ["premium_membership"];

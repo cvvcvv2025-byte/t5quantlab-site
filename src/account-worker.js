@@ -39,7 +39,7 @@ const EA_ARTIFACTS = {
     filename: "T5_Attack_Completion_C_v6_10_8_MT5_Customer_Pack.zip",
     r2Key: "member-artifacts/ea/attack-completion-c/6.10.8/T5_Attack_Completion_C_v6_10_8_MT5_Customer_Pack.zip",
     sha256: "ffc33da4245c135aa2f00eef1a9fc17fe5b6c4eb7aa722e76289f8fffcc65521",
-    maxBytes: 2 * 1024 * 1024
+    
   }
 };
 const EA_MEMBERSHIP_PRODUCTS = ["premium_membership"];

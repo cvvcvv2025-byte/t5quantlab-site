@@ -14,6 +14,8 @@ const adminHealth=read('admin/health/index.html');
 need(wrangler,'"main": "src/runtime-worker.js"','wrangler must use runtime guard');
 need(wrangler,'"PAYPAL_ENVIRONMENT": "live"','production deploy must pin PayPal to live mode');
 need(wrangler,'"T5_BUILDER_PASS_PRICE_USD_MINOR": "1490"','production Builder price must be explicit and version-controlled');
+need(wrangler,'"T5_PREMIUM_MEMBERSHIP_PRICE_USD_MINOR": "5990"','production automation membership price must be explicit');
+need(runtime,'membership_checkout_ready','automation membership checkout readiness');
 need(runtime,'import app from "./marketing-worker.js";','runtime must preserve marketing stack');
 need(runtime,'runtime-guard-v4','runtime version must include dual-model external deep checks');
 need(runtime,'/api/health','public health endpoint');

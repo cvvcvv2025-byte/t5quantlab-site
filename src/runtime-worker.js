@@ -47,8 +47,10 @@ function configState(env) {
   const accountReady = d1 && accountSecret && resend;
   const paidBuilderReady = d1 && r2 && openai && accountReady && paypal && auditSalt;
   const indicatorCheckoutReady = d1 && r2 && accountReady && paypal && auditSalt;
+  const membershipCheckoutReady = d1 && r2 && accountReady && paypal && auditSalt;
   const checkoutReady = paidBuilderReady && (paypalEnvironment === "live" || paymentTestMode);
   const indicatorCheckoutOpen = indicatorCheckoutReady && (paypalEnvironment === "live" || paymentTestMode);
+  const membershipCheckoutOpen = membershipCheckoutReady && (paypalEnvironment === "live" || paymentTestMode);
   const marketingReady = d1 && accountSecret && Boolean(env.RESEND_API_KEY && (env.MARKETING_EMAIL_FROM || env.AUTH_EMAIL_FROM));
   return {
     assets,
@@ -62,6 +64,7 @@ function configState(env) {
     account_ready: accountReady,
     paid_builder_ready: paidBuilderReady,
     indicator_checkout_ready: indicatorCheckoutOpen,
+    membership_checkout_ready: membershipCheckoutOpen,
     checkout_ready: checkoutReady,
     marketing_ready: marketingReady,
     free_source_inspector_ready: assets,
@@ -348,10 +351,23 @@ function grantStillUsable(builder) {
 function indicatorMembershipStillActive(entitlements) {
   return (entitlements || []).some(item => ["indicator_membership", "premium_membership"].includes(item.product_code));
 }
+function premiumMembershipStillActive(entitlements) {
+  return (entitlements || []).some(item => item.product_code === "premium_membership");
+}
 
 async function requestedProduct(request) {
   try { return String((await request.clone().json())?.product_code || "code_workshop_single"); }
   catch { return "code_workshop_single"; }
+}
+async function requestedOrderProduct(request, env) {
+  try {
+    const orderId = String((await request.clone().json())?.order_id || "");
+    if (!orderId || !env.BUILDER_DB) return "code_workshop_single";
+    const row = await env.BUILDER_DB.prepare("SELECT product_code FROM orders WHERE order_id = ?").bind(orderId).first();
+    return String(row?.product_code || "code_workshop_single");
+  } catch {
+    return "code_workshop_single";
+  }
 }
 
 async function guardedCatalog(request, env, ctx) {
@@ -384,7 +400,8 @@ function checkoutNotReady() {
 async function guardedCreateOrder(request, env, ctx) {
   const state = configState(env);
   const productCode = await requestedProduct(request);
-  const ready = productCode === "indicator_membership" ? state.indicator_checkout_ready : state.checkout_ready;
+  const ready = productCode === "premium_membership" ? state.membership_checkout_ready
+    : productCode === "indicator_membership" ? state.indicator_checkout_ready : state.checkout_ready;
   if (!ready) return checkoutNotReady();
 
   const precheck = await accountSummaryPrecheck(request, env, ctx);
@@ -397,7 +414,8 @@ async function guardedCreateOrder(request, env, ctx) {
     }, 503);
   }
   const summary = precheck.data;
-  if (productCode === "indicator_membership" && indicatorMembershipStillActive(summary.entitlements)) {
+  if ((productCode === "indicator_membership" && indicatorMembershipStillActive(summary.entitlements))
+    || (productCode === "premium_membership" && premiumMembershipStillActive(summary.entitlements))) {
     return json({
       ok: false,
       error: "当前账户已有有效的指标下载权限，无需重复购买。",
@@ -420,13 +438,20 @@ async function guardedCreateOrder(request, env, ctx) {
 }
 
 async function guardedPayPalCreate(request, env, ctx) {
-  if (!configState(env).checkout_ready) return checkoutNotReady();
+  const state = configState(env);
+  const productCode = await requestedOrderProduct(request, env);
+  const ready = productCode === "premium_membership" ? state.membership_checkout_ready
+    : productCode === "indicator_membership" ? state.indicator_checkout_ready : state.checkout_ready;
+  if (!ready) return checkoutNotReady();
   return app.fetch(request, env, ctx);
 }
 
 async function guardedPayPalCapture(request, env, ctx) {
   const state = configState(env);
-  if (!state.paid_builder_ready && !state.indicator_checkout_ready) {
+  const productCode = await requestedOrderProduct(request, env);
+  const ready = productCode === "premium_membership" ? state.membership_checkout_ready
+    : productCode === "indicator_membership" ? state.indicator_checkout_ready : state.paid_builder_ready;
+  if (!ready) {
     return json({
       ok: false,
       error: "付款确认前检测到数字服务履约环境未就绪。本次不会执行 PayPal Capture，请稍后重试。",

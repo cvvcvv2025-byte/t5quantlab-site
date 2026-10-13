@@ -32,6 +32,19 @@ const INDICATOR_ARTIFACTS = {
 };
 const INDICATOR_MEMBERSHIP_PRODUCTS = ["indicator_membership", "premium_membership"];
 const INDICATOR_PRODUCT_CODES = [...INDICATOR_MEMBERSHIP_PRODUCTS, ...Object.values(INDICATOR_ARTIFACTS).map(item => item.code)];
+const EA_ARTIFACTS = {
+  "attack-completion-c": {
+    code: "attack_completion_c_mt5",
+    version: "6.10.8",
+    filename: "T5_Attack_Completion_C_v6_10_8_MT5_Customer_Pack.zip",
+    r2Key: "member-artifacts/ea/attack-completion-c/6.10.8/T5_Attack_Completion_C_v6_10_8_MT5_Customer_Pack.zip",
+    sha256: "ffc33da4245c135aa2f00eef1a9fc17fe5b6c4eb7aa722e76289f8fffcc65521",
+    maxBytes: 2 * 1024 * 1024
+  }
+};
+const EA_MEMBERSHIP_PRODUCTS = ["premium_membership"];
+const EA_PRODUCT_CODES = [...EA_MEMBERSHIP_PRODUCTS, ...Object.values(EA_ARTIFACTS).map(item => item.code)];
+const MEMBER_PRODUCT_CODES = [...new Set([...INDICATOR_PRODUCT_CODES, ...EA_PRODUCT_CODES])];
 
 function json(data, status = 200, extraHeaders = {}) {
   const headers = new Headers({
@@ -437,6 +450,51 @@ async function downloadIndicator(request, env, artifact) {
   return new Response(bytes, { status: 200, headers });
 }
 
+async function activeEaEntitlement(env, userId, artifact) {
+  const products = [...EA_MEMBERSHIP_PRODUCTS, artifact.code];
+  const placeholders = products.map(() => "?").join(",");
+  return env.BUILDER_DB.prepare(`SELECT entitlement_id, product_code, expires_at
+    FROM product_entitlements
+    WHERE user_id = ? AND product_code IN (${placeholders}) AND status = 'active'
+      AND starts_at <= ? AND (expires_at IS NULL OR expires_at > ?)
+    ORDER BY expires_at DESC LIMIT 1`)
+    .bind(userId, ...products, nowIso(), nowIso()).first();
+}
+async function eaAccess(request, env, artifact) {
+  const user = await resolveSession(request, env);
+  if (!user) return json({ ok: false, error: "请先登录 T5 账户", code: "ACCOUNT_REQUIRED" }, 401);
+  await ensureAccountDb(env);
+  const entitlement = await activeEaEntitlement(env, user.user_id, artifact);
+  return json({ ok: true, artifact: { code: artifact.code, version: artifact.version, filename: artifact.filename }, entitled: Boolean(entitlement), entitlement: entitlement || null });
+}
+async function downloadEa(request, env, artifact) {
+  const user = await resolveSession(request, env);
+  if (!user) return json({ ok: false, error: "请先登录后下载", code: "ACCOUNT_REQUIRED" }, 401);
+  await ensureAccountDb(env);
+  const entitlement = await activeEaEntitlement(env, user.user_id, artifact);
+  if (!entitlement) return json({ ok: false, error: "当前账户没有有效的自动化会员权限", code: "EA_ENTITLEMENT_REQUIRED" }, 403);
+  if (!env.USER_CODE_BUCKET) return json({ ok: false, error: "下载存储尚未就绪", code: "ARTIFACT_STORAGE_NOT_READY" }, 503);
+  const object = await env.USER_CODE_BUCKET.get(artifact.r2Key);
+  if (!object) return json({ ok: false, error: "安装包正在同步，请稍后再试", code: "ARTIFACT_NOT_READY" }, 503);
+  const bytes = await object.arrayBuffer();
+  const actualHash = await sha256BytesHex(bytes);
+  if (!(await constantTimeEqual(actualHash, artifact.sha256))) return json({ ok: false, error: "安装包内容校验失败，下载已暂停", code: "ARTIFACT_CONTENT_MISMATCH" }, 503);
+  await env.BUILDER_DB.prepare(`INSERT INTO member_download_events
+    (event_id, user_id, entitlement_id, artifact_code, artifact_version, ip_hash, user_agent, created_at)
+    VALUES (?, ?, ?, ?, ?, ?, ?, ?)`)
+    .bind(randomId("DL"), user.user_id, entitlement.entitlement_id, artifact.code, artifact.version,
+      await ipHash(request, env), (request.headers.get("User-Agent") || "").slice(0, 500), nowIso()).run();
+  const headers = new Headers({
+    "Content-Type": "application/zip",
+    "Content-Disposition": `attachment; filename="${artifact.filename}"`,
+    "Cache-Control": "private, no-store, max-age=0",
+    "X-Content-Type-Options": "nosniff",
+    "X-T5-Artifact-Version": artifact.version,
+    "X-T5-Artifact-SHA256": artifact.sha256
+  });
+  headers.set("Content-Length", String(bytes.byteLength));
+  return new Response(bytes, { status: 200, headers });
+}
 async function adminUploadIndicator(request, env, artifact) {
   if (!(await isAdmin(request, env))) return json({ ok: false, error: "Unauthorized", code: "ADMIN_REQUIRED" }, 403);
   if (!env.USER_CODE_BUCKET) return json({ ok: false, error: "R2 storage is not configured", code: "ARTIFACT_STORAGE_NOT_READY" }, 503);
@@ -464,7 +522,7 @@ async function adminEntitlement(request, env) {
   const productCode = String(body.product_code || "indicator_membership");
   if (!email) return json({ ok: false, error: "请输入有效邮箱", code: "INVALID_EMAIL" }, 400);
   if (!["grant", "revoke"].includes(action)) return json({ ok: false, error: "无效操作", code: "INVALID_ACTION" }, 400);
-  if (!INDICATOR_PRODUCT_CODES.includes(productCode)) return json({ ok: false, error: "无效产品权限", code: "INVALID_PRODUCT_CODE" }, 400);
+  if (!MEMBER_PRODUCT_CODES.includes(productCode)) return json({ ok: false, error: "无效产品权限", code: "INVALID_PRODUCT_CODE" }, 400);
   const user = await env.BUILDER_DB.prepare("SELECT user_id, email FROM users WHERE email = ? AND status = 'active'").bind(email).first();
   if (!user) return json({ ok: false, error: "该邮箱尚未注册 T5 账户", code: "USER_NOT_FOUND" }, 404);
   const now = nowIso();
@@ -614,6 +672,17 @@ export default {
         const artifact = INDICATOR_ARTIFACTS[url.searchParams.get("artifact") || "mtf-structure-panel"];
         if (!artifact) return json({ ok: false, error: "未知指标安装包", code: "UNKNOWN_ARTIFACT" }, 404);
         return adminUploadIndicator(request, env, artifact);
+      }
+      if (p === "/api/admin/ea-artifacts/upload" && request.method === "PUT") {
+        const artifact = EA_ARTIFACTS[url.searchParams.get("artifact") || "attack-completion-c"];
+        if (!artifact) return json({ ok: false, error: "未知 EA 安装包", code: "UNKNOWN_ARTIFACT" }, 404);
+        return adminUploadIndicator(request, env, artifact);
+      }
+      const eaRoute = p.match(/^\/api\/member\/eas\/([^/]+)\/(access|download)$/);
+      if (eaRoute && request.method === "GET") {
+        const artifact = EA_ARTIFACTS[eaRoute[1]];
+        if (!artifact) return json({ ok: false, error: "未知 EA", code: "UNKNOWN_ARTIFACT" }, 404);
+        return eaRoute[2] === "access" ? eaAccess(request, env, artifact) : downloadEa(request, env, artifact);
       }
       const indicatorRoute = p.match(/^\/api\/member\/indicators\/([^/]+)\/(access|download)$/);
       if (indicatorRoute && request.method === "GET") {

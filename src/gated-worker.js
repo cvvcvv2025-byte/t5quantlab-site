@@ -25,6 +25,13 @@ const PRODUCT_CATALOG = {
     modifyCredits: 0,
     expiresDays: 90,
     fulfillment: "membership"
+  },
+  premium_membership: {
+    name: "T5 自动化会员 · 90天",
+    analyzeCredits: 0,
+    modifyCredits: 0,
+    expiresDays: 90,
+    fulfillment: "membership"
   }
 };
 
@@ -273,6 +280,8 @@ function priceFor(env, productCode, currency) {
     raw = c === "CNY" ? env.CODE_WORKSHOP_PRICE_CNY_MINOR : c === "USD" ? env.CODE_WORKSHOP_PRICE_USD_MINOR : null;
   } else if (productCode === "indicator_membership") {
     raw = c === "USD" ? env.INDICATOR_MEMBERSHIP_PRICE_USD_MINOR : null;
+  } else if (productCode === "premium_membership") {
+    raw = c === "USD" ? env.PREMIUM_MEMBERSHIP_PRICE_USD_MINOR : null;
   }
   if (raw == null || raw === "") return null;
   const amount = Number(raw);
@@ -540,7 +549,7 @@ async function revokePaidOrder(env, { orderId, provider, eventId = null, provide
     statements.push(env.BUILDER_DB.prepare("UPDATE builder_access_grants SET status = 'revoked', updated_at = ? WHERE grant_id = ?")
       .bind(updated, order.grant_id));
   }
-  if (order.product_code === "indicator_membership" && order.user_id) {
+  if (["indicator_membership", "premium_membership"].includes(order.product_code) && order.user_id) {
     statements.push(env.BUILDER_DB.prepare(`UPDATE product_entitlements SET status = 'revoked', updated_at = ?
       WHERE user_id = ? AND product_code = ? AND source_order_id = ?`)
       .bind(updated, order.user_id, order.product_code, orderId));
@@ -671,8 +680,10 @@ async function handlePayPalCreate(request, env, { callbackPath = "/checkout/", c
   }
 
   const origin = new URL(request.url).origin;
-  const effectiveCallbackPath = callbackPath === "/checkout/" && order.product_code === "indicator_membership"
-    ? "/membership/checkout/" : callbackPath;
+  const effectiveCallbackPath = callbackPath === "/checkout/" && order.product_code === "premium_membership"
+    ? "/membership/automation-checkout/"
+    : callbackPath === "/checkout/" && ["indicator_membership", "premium_membership"].includes(order.product_code)
+      ? "/membership/checkout/" : callbackPath;
   const returnUrl = `${origin}${effectiveCallbackPath}?provider=${encodeURIComponent(callbackProvider)}&status=return&order_id=${encodeURIComponent(orderId)}`;
   const cancelUrl = `${origin}${effectiveCallbackPath}?provider=${encodeURIComponent(callbackProvider)}&status=cancel&order_id=${encodeURIComponent(orderId)}`;
   const value = (Number(order.amount_minor) / 100).toFixed(2);

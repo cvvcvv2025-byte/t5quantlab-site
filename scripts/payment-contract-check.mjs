@@ -98,6 +98,8 @@ for (const internalCode of ['PAYPAL_NOT_LIVE', 'PAID_SERVICE_NOT_READY', 'PAYPAL
 }
 need('checkout/index.html', "return Boolean(p?.prices?.USD)&&Boolean(pp.enabled)", 'create order button must require enabled PayPal provider');
 need('membership/checkout/index.html', "PRODUCT='indicator_membership'", 'indicator checkout must create the membership product');
+need('membership/automation-checkout/index.html', "PRODUCT='premium_membership'", 'automation checkout must create the premium product');
+need('src/gated-worker.js', 'premium_membership', 'premium membership must be in the payment catalog');
 need('membership/checkout/index.html', 'terms_accepted:true', 'indicator checkout terms acceptance');
 need('src/gated-worker.js', 'ENT-${orderId}', 'indicator fulfillment must use deterministic entitlement id');
 need('src/gated-worker.js', 'source_order_id = excluded.source_order_id', 'indicator entitlement must remain linked to its source order');

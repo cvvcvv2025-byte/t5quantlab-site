@@ -10,6 +10,10 @@ const INDICATOR_PRODUCT_CODE = "indicator_membership";
 const INDICATOR_NAME = "T5 指标会员 · 90天";
 const INDICATOR_EXPIRES_DAYS = 90;
 const DEFAULT_INDICATOR_USD_PRICE_MINOR = 1390;
+const PREMIUM_PRODUCT_CODE = "premium_membership";
+const PREMIUM_NAME = "T5 自动化会员 · 90天";
+const PREMIUM_EXPIRES_DAYS = 90;
+const DEFAULT_PREMIUM_USD_PRICE_MINOR = 5990;
 const TERMS_VERSION = "refund-v1-2026-09-28";
 
 function json(data, status = 200, extraHeaders = {}) {
@@ -128,12 +132,19 @@ function indicatorPriceUsdMinor(env) {
   return Number.isInteger(n) && n > 0 ? n : DEFAULT_INDICATOR_USD_PRICE_MINOR;
 }
 
+function premiumPriceUsdMinor(env) {
+  const raw = env.T5_PREMIUM_MEMBERSHIP_PRICE_USD_MINOR;
+  if (raw == null || raw === "") return DEFAULT_PREMIUM_USD_PRICE_MINOR;
+  const n = Number(raw);
+  return Number.isInteger(n) && n > 0 ? n : DEFAULT_PREMIUM_USD_PRICE_MINOR;
+}
 function coreEnv(env) {
   return {
     ...env,
     CODE_WORKSHOP_PRICE_USD_MINOR: String(passPriceUsdMinor(env)),
     CODE_WORKSHOP_PRICE_CNY_MINOR: "",
-    INDICATOR_MEMBERSHIP_PRICE_USD_MINOR: String(indicatorPriceUsdMinor(env))
+    INDICATOR_MEMBERSHIP_PRICE_USD_MINOR: String(indicatorPriceUsdMinor(env)),
+    PREMIUM_MEMBERSHIP_PRICE_USD_MINOR: String(premiumPriceUsdMinor(env))
   };
 }
 
@@ -163,6 +174,13 @@ function handleCatalog(env) {
       modify_credits: 0,
       expires_days: INDICATOR_EXPIRES_DAYS,
       prices: { CNY: null, USD: indicatorPriceUsdMinor(env) }
+    }, {
+      code: PREMIUM_PRODUCT_CODE,
+      name: PREMIUM_NAME,
+      analyze_credits: 0,
+      modify_credits: 0,
+      expires_days: PREMIUM_EXPIRES_DAYS,
+      prices: { CNY: null, USD: premiumPriceUsdMinor(env) }
     }],
     providers: {
       alipay: { enabled: false, configured: false, adapter_ready: false, currency: "CNY" },
@@ -202,7 +220,7 @@ async function handleCreateOrder(request, env, ctx) {
   try { body = await request.clone().json(); } catch { return json({ ok: false, error: "订单参数无效" }, 400); }
 
   const productCode = String(body?.product_code || PASS_PRODUCT_CODE);
-  if (![PASS_PRODUCT_CODE, INDICATOR_PRODUCT_CODE].includes(productCode)) {
+  if (![PASS_PRODUCT_CODE, INDICATOR_PRODUCT_CODE, PREMIUM_PRODUCT_CODE].includes(productCode)) {
     return json({ ok: false, error: "产品不存在", code: "PRODUCT_NOT_FOUND" }, 400);
   }
   if (body?.terms_accepted !== true || String(body?.terms_version || "") !== TERMS_VERSION) {
@@ -238,7 +256,7 @@ async function handleCreateOrder(request, env, ctx) {
       ON CONFLICT(order_id) DO NOTHING`)
       .bind(orderId, TERMS_VERSION, acceptedAt, ipHash, ua, acceptedAt),
     env.BUILDER_DB.prepare(`UPDATE orders SET product_name = ?, updated_at = ? WHERE order_id = ?`)
-      .bind(productCode === INDICATOR_PRODUCT_CODE ? INDICATOR_NAME : PASS_NAME, acceptedAt, orderId)
+      .bind(productCode === PREMIUM_PRODUCT_CODE ? PREMIUM_NAME : productCode === INDICATOR_PRODUCT_CODE ? INDICATOR_NAME : PASS_NAME, acceptedAt, orderId)
   ]);
   return response;
 }
@@ -331,7 +349,7 @@ async function setGrantStatus(env, orderId, status) {
     await env.BUILDER_DB.prepare(`UPDATE builder_access_grants SET status = ?, updated_at = ? WHERE grant_id = ?`)
       .bind(status, nowIso(), order.grant_id).run();
   }
-  if (order.product_code === INDICATOR_PRODUCT_CODE && order.user_id) {
+  if ([INDICATOR_PRODUCT_CODE, PREMIUM_PRODUCT_CODE].includes(order.product_code) && order.user_id) {
     await env.BUILDER_DB.prepare(`UPDATE product_entitlements SET status = ?, updated_at = ?
       WHERE user_id = ? AND product_code = ? AND source_order_id = ?`)
       .bind(status, nowIso(), order.user_id, order.product_code, orderId).run();

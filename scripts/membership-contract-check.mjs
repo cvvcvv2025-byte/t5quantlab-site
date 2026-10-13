@@ -3,6 +3,8 @@ import fs from 'node:fs';
 const membership = fs.readFileSync('membership/index.html', 'utf8');
 const account = fs.readFileSync('account/index.html', 'utf8');
 const accountNav = fs.readFileSync('assets/account-nav.js', 'utf8');
+const eaMatrix = fs.readFileSync('tools/ea/index.html', 'utf8');
+const attackCompletion = fs.readFileSync('tools/ea/attack-completion-c/index.html', 'utf8');
 const errors = [];
 const need = (ok, message) => { if (!ok) errors.push(message); };
 
@@ -20,6 +22,9 @@ need(membership.includes('T5 Neckline MTF v0.1.2'), 'Membership page must list t
 need(membership.includes('T5 Progress Candle v0.1.2'), 'Membership page must list the released progress candle indicator');
 need(account.includes('3 个正式 MT4 指标安装包'), 'Account page must disclose the exact current delivery count');
 need(membership.includes('T5 Attack Completion C v6.10.8'), 'Membership page must list the released MT5 EA');
+need(['T5 Attack Completion C', 'T5 Trend Capture', 'T5 Range Boundary'].every(name => eaMatrix.includes(name)), 'EA hub must expose the three-product matrix');
+need(eaMatrix.includes('+7.84%') && eaMatrix.includes('1.41') && eaMatrix.includes('3.42%'), 'EA hub must publish the frozen 6108 verification snapshot');
+need(attackCompletion.includes('最大净值回撤') && attackCompletion.includes('冻结版本') && attackCompletion.includes('稳健型'), '6108 page must preserve its conservative frozen positioning');
 need(membership.includes('$59.90') && membership.includes('/membership/automation-checkout/'), 'Automation membership must show its live 90-day checkout');
 need(membership.includes('/account/member-center/'), 'Membership page must link to the member content center');
 need(accountNav.includes("membership.href='/membership/'"), 'Global account navigation must expose the membership page');

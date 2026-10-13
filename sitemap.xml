@@ -102,8 +102,6 @@
   <url><loc>https://t5quantlab.com/faq/</loc><changefreq>monthly</changefreq><priority>0.75</priority></url>
   <url><loc>https://t5quantlab.com/refund-policy/</loc><changefreq>yearly</changefreq><priority>0.5</priority></url>
   <url><loc>https://t5quantlab.com/membership/</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
-  <url><loc>https://t5quantlab.com/membership/checkout/</loc><changefreq>monthly</changefreq><priority>0.5</priority></url>
-  <url><loc>https://t5quantlab.com/membership/automation-checkout/</loc><changefreq>monthly</changefreq><priority>0.5</priority></url>
   <url><loc>https://t5quantlab.com/tools/ea/attack-completion-c/</loc><changefreq>monthly</changefreq><priority>0.7</priority></url>
   <url><loc>https://t5quantlab.com/library/indicators/</loc><changefreq>weekly</changefreq><priority>0.95</priority></url>
   <url><loc>https://t5quantlab.com/library/indicators/moving-averages/</loc><changefreq>monthly</changefreq><priority>0.88</priority></url>

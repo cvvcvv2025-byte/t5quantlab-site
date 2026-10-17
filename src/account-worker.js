@@ -33,6 +33,15 @@ const INDICATOR_ARTIFACTS = {
 const INDICATOR_MEMBERSHIP_PRODUCTS = ["indicator_membership", "premium_membership"];
 const INDICATOR_PRODUCT_CODES = [...INDICATOR_MEMBERSHIP_PRODUCTS, ...Object.values(INDICATOR_ARTIFACTS).map(item => item.code)];
 const EA_ARTIFACTS = {
+  "range-martingale": {
+    code: "range_martingale_mt4",
+    version: "0.3.4",
+    filename: "T5_Range_Martingale_v0_3_4_MT4_Customer_Pack.zip",
+    r2Key: "member-artifacts/ea/range-martingale/0.3.4/T5_Range_Martingale_v0_3_4_MT4_Customer_Pack.zip",
+    releaseStatus: "awaiting_binary",
+    sha256: null,
+    maxBytes: 2 * 1024 * 1024
+  },
   "attack-completion-c": {
     code: "attack_completion_c_mt5",
     version: "6.10.8",
@@ -473,7 +482,7 @@ async function eaAccess(request, env, artifact) {
   if (!user) return json({ ok: false, error: "请先登录 T5 账户", code: "ACCOUNT_REQUIRED" }, 401);
   await ensureAccountDb(env);
   const entitlement = await activeEaEntitlement(env, user.user_id, artifact);
-  return json({ ok: true, artifact: { code: artifact.code, version: artifact.version, filename: artifact.filename }, entitled: Boolean(entitlement), entitlement: entitlement || null });
+  return json({ ok: true, artifact: { code: artifact.code, version: artifact.version, filename: artifact.filename, ready: artifact.releaseStatus !== "awaiting_binary" }, entitled: Boolean(entitlement), entitlement: entitlement || null });
 }
 async function downloadEa(request, env, artifact) {
   const user = await resolveSession(request, env);
@@ -481,6 +490,7 @@ async function downloadEa(request, env, artifact) {
   await ensureAccountDb(env);
   const entitlement = await activeEaEntitlement(env, user.user_id, artifact);
   if (!entitlement) return json({ ok: false, error: "当前账户没有有效的自动化会员权限", code: "EA_ENTITLEMENT_REQUIRED" }, 403);
+  if (artifact.releaseStatus === "awaiting_binary") return json({ ok: false, error: "该版本客户安装包尚未就绪，请查看产品页的交付状态", code: "ARTIFACT_NOT_RELEASED" }, 503);
   if (!env.USER_CODE_BUCKET) return json({ ok: false, error: "下载存储尚未就绪", code: "ARTIFACT_STORAGE_NOT_READY" }, 503);
   const object = await env.USER_CODE_BUCKET.get(artifact.r2Key);
   if (!object) return json({ ok: false, error: "安装包正在同步，请稍后再试", code: "ARTIFACT_NOT_READY" }, 503);
@@ -505,6 +515,7 @@ async function downloadEa(request, env, artifact) {
 }
 async function adminUploadIndicator(request, env, artifact) {
   if (!(await isAdmin(request, env))) return json({ ok: false, error: "Unauthorized", code: "ADMIN_REQUIRED" }, 403);
+  if (artifact.releaseStatus === "awaiting_binary") return json({ ok: false, error: "请先完成编译文件与客户安装包的校验登记", code: "ARTIFACT_NOT_RELEASED" }, 409);
   if (!env.USER_CODE_BUCKET) return json({ ok: false, error: "R2 storage is not configured", code: "ARTIFACT_STORAGE_NOT_READY" }, 503);
   const length = Number(request.headers.get("Content-Length") || 0);
   if (length > artifact.maxBytes) return json({ ok: false, error: "文件过大", code: "ARTIFACT_TOO_LARGE" }, 413);

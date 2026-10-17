@@ -47,6 +47,8 @@ jobs:
           node scripts/start-route-contract-check.mjs
           node scripts/indicator-release-contract-check.mjs
           node scripts/indicator-download-contract-check.mjs
+          node scripts/ea-download-contract-check.mjs
+          node scripts/range-martingale-delivery-check.mjs
           node scripts/check-internal-links.mjs
 
   deploy:

@@ -36,10 +36,10 @@ const EA_ARTIFACTS = {
   "range-martingale": {
     code: "range_martingale_mt4",
     version: "0.3.4",
-    filename: "T5_Range_Martingale_v0_3_4_MT4_Customer_Pack.zip",
-    r2Key: "member-artifacts/ea/range-martingale/0.3.4/T5_Range_Martingale_v0_3_4_MT4_Customer_Pack.zip",
-    releaseStatus: "awaiting_binary",
-    sha256: null,
+    filename: "T5_Range_Martingale_v0_3_4_MT4_MT5_Customer_Pack.zip",
+    r2Key: "member-artifacts/ea/range-martingale/0.3.4/T5_Range_Martingale_v0_3_4_MT4_MT5_Customer_Pack.zip",
+    releaseStatus: "awaiting_upload",
+    sha256: "76a6c84c9c3d7e3def09bc3df87e730240ff607d76e6534d6f12bb6df939bfaf",
     maxBytes: 2 * 1024 * 1024
   },
   "attack-completion-c": {
@@ -482,7 +482,12 @@ async function eaAccess(request, env, artifact) {
   if (!user) return json({ ok: false, error: "请先登录 T5 账户", code: "ACCOUNT_REQUIRED" }, 401);
   await ensureAccountDb(env);
   const entitlement = await activeEaEntitlement(env, user.user_id, artifact);
-  return json({ ok: true, artifact: { code: artifact.code, version: artifact.version, filename: artifact.filename, ready: artifact.releaseStatus !== "awaiting_binary" }, entitled: Boolean(entitlement), entitlement: entitlement || null });
+  let ready = artifact.releaseStatus !== "awaiting_binary";
+  if (artifact.releaseStatus === "awaiting_upload") {
+    const stored = env.USER_CODE_BUCKET ? await env.USER_CODE_BUCKET.head(artifact.r2Key) : null;
+    ready = stored?.customMetadata?.sha256 === artifact.sha256 && stored?.customMetadata?.version === artifact.version;
+  }
+  return json({ ok: true, artifact: { code: artifact.code, version: artifact.version, filename: artifact.filename, ready }, entitled: Boolean(entitlement), entitlement: entitlement || null });
 }
 async function downloadEa(request, env, artifact) {
   const user = await resolveSession(request, env);
@@ -529,7 +534,15 @@ async function adminUploadIndicator(request, env, artifact) {
     httpMetadata: { contentType: "application/zip" },
     customMetadata: { version: artifact.version, sha256: artifact.sha256 }
   });
-  return json({ ok: true, artifact: { code: artifact.code, filename: artifact.filename, version: artifact.version, sha256: artifact.sha256, size: bytes.byteLength } });
+  let storageVerified = false;
+  if (artifact.releaseStatus === "awaiting_upload") {
+    const stored = await env.USER_CODE_BUCKET.get(artifact.r2Key);
+    if (!stored || !(await constantTimeEqual(await sha256BytesHex(await stored.arrayBuffer()), artifact.sha256))) {
+      return json({ ok: false, error: "安装包上传后回读校验失败，请重试", code: "ARTIFACT_STORAGE_MISMATCH" }, 503);
+    }
+    storageVerified = true;
+  }
+  return json({ ok: true, storage_verified: storageVerified, artifact: { code: artifact.code, filename: artifact.filename, version: artifact.version, sha256: artifact.sha256, size: bytes.byteLength } });
 }
 
 async function adminEntitlement(request, env) {

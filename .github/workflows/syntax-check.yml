@@ -66,7 +66,9 @@ jobs:
         run: node scripts/ea-download-contract-check.mjs
       - name: Check Range Martingale release and entitlement boundary
         run: node scripts/range-martingale-delivery-check.mjs
-      - name: Check Aggressive profile evidence and pending delivery
+      - name: Check Aggressive protected delivery
+        run: node scripts/range-aggressive-delivery-check.mjs
+      - name: Check Aggressive profile evidence and delivery status
         run: node scripts/range-aggressive-publication-check.mjs
       - name: Check SEO and case visual contract
         run: node scripts/seo-contract-check.mjs

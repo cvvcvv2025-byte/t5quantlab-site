@@ -50,6 +50,7 @@ jobs:
           node scripts/ea-download-contract-check.mjs
           node scripts/range-martingale-delivery-check.mjs
           node scripts/range-aggressive-publication-check.mjs
+          node scripts/range-aggressive-delivery-check.mjs
           node scripts/check-internal-links.mjs
 
   deploy:

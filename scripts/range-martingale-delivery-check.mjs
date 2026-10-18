@@ -71,6 +71,6 @@ const page=fs.readFileSync('tools/ea/range-boundary/index.html','utf8');
 for(const text of ['v0.3.4','v0.3.5','18.39%','29.69%—32.64%','5个有记录日期','逐笔结果未发现实际佣金扣款','不是运行门槛','80%篮子预算','MT5客户包已制作','尚未完成原生回测'])assert(page.includes(text),text);
 const center=fs.readFileSync('account/member-center/index.html','utf8');
 assert(center.includes('data-ea-download="range-martingale"'));
-assert(center.includes('6 个正式安装包'));
-assert(center.includes('5 个正式安装包 · 区间马丁待同步'));
+assert(center.includes("let readyCount=5"));
+assert(center.includes("readyCount+' 个正式安装包'"));
 console.log('Range delivery: product isolation, hash-pinned upload, private readback, storage readiness, authorised download, corruption rejection, premium access and honest platform claims passed.');

@@ -33,6 +33,15 @@ const INDICATOR_ARTIFACTS = {
 const INDICATOR_MEMBERSHIP_PRODUCTS = ["indicator_membership", "premium_membership"];
 const INDICATOR_PRODUCT_CODES = [...INDICATOR_MEMBERSHIP_PRODUCTS, ...Object.values(INDICATOR_ARTIFACTS).map(item => item.code)];
 const EA_ARTIFACTS = {
+  "range-aggressive": {
+    code: "range_aggressive_mt4_mt5",
+    version: "0.3.6",
+    filename: "T5_Range_Boundary_Aggressive_v0_3_6_MT4_MT5_Customer_Pack.zip",
+    r2Key: "member-artifacts/ea/range-aggressive/0.3.6/T5_Range_Boundary_Aggressive_v0_3_6_MT4_MT5_Customer_Pack.zip",
+    releaseStatus: "awaiting_upload",
+    sha256: "ddba5758b7c9d2a899cb4efd6578d8b58e4437fded0592a202667a013fa84e89",
+    maxBytes: 2 * 1024 * 1024
+  },
   "range-martingale": {
     code: "range_martingale_mt4",
     version: "0.3.4",

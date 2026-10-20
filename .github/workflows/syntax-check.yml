@@ -23,6 +23,7 @@ jobs:
         run: |
           node --check src/builder-lifecycle.js
           node --check src/support-worker.js
+          node --check src/runtime-license.js
           node --check src/release-info.js
           node --check src/worker.js
           node --check src/gated-worker.js
@@ -42,6 +43,8 @@ jobs:
           node scripts/delivery-behavior-check.mjs
           node scripts/builder-recovery-behavior-check.mjs
           node scripts/runtime-health-behavior-check.mjs
+          node scripts/runtime-license-behavior-check.mjs
+          node scripts/runtime-client-state-check.mjs
       - name: Check payment contract
         run: node scripts/payment-contract-check.mjs
       - name: Check production payment ownership contract

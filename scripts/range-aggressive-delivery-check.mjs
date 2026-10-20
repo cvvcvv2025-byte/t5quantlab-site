@@ -1,3 +1,4 @@
+import { runtimeLicenseResponse } from '../src/runtime-license.js';
 import fs from 'node:fs';
 import vm from 'node:vm';
 import assert from 'node:assert/strict';
@@ -5,8 +6,9 @@ import {webcrypto} from 'node:crypto';
 
 const source=fs.readFileSync('src/account-worker.js','utf8')
  .replace('import app from "./final-worker.js";','const app={fetch:()=>new Response("unused",{status:404})};')
+ .replace("import { runtimeLicenseResponse } from './runtime-license.js';",'')
  .replace('export default {','globalThis.worker = {');
-const context=vm.createContext({Request,Response,Headers,URL,TextEncoder,crypto:webcrypto,console});
+const context=vm.createContext({Request,Response,Headers,URL,TextEncoder,crypto:webcrypto,console,runtimeLicenseResponse});
 vm.runInContext(source+'\nensureAccountDb=async()=>{};',context);
 let grants=[],gets=0,puts=0,downloads=0,stored=null,corruptReadback=false;
 const env={ACCOUNT_AUTH_SECRET:'test-secret',BUILDER_ACCESS_KEY:'test-admin-only',

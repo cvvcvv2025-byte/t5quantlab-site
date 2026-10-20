@@ -216,6 +216,27 @@ async function externalDeepChecks(request, env) {
     }
   }
 
+  // Verify existing captured orders read-only. Never create, capture or refund a payment here.
+  if (paypalToken && env.BUILDER_DB) {
+    try {
+      const rows = await env.BUILDER_DB.prepare(`SELECT order_id,product_code,provider_trade_id,amount_minor,currency,status,grant_id
+        FROM orders WHERE payment_provider='paypal' AND provider_trade_id IS NOT NULL
+          AND status IN ('granted','refunded') ORDER BY paid_at DESC LIMIT 6`).all();
+      result.paypal_delivery_samples = await Promise.all((rows.results || []).map(async order => {
+        try {
+          const r = await fetchWithTimeout(`${paypalBase(env)}/v2/payments/captures/${encodeURIComponent(order.provider_trade_id)}`, {
+            headers: { Authorization: `Bearer ${paypalToken}`, Accept: 'application/json' }
+          });
+          let capture = {}; try { capture = await r.json(); } catch {}
+          return { order_id: order.order_id, product_code: order.product_code, local_status: order.status,
+            live_capture_found: r.ok && Boolean(capture.id), capture_status: r.ok ? String(capture.status || '') : null,
+            amount_match: r.ok ? Math.round(Number(capture.amount?.value) * 100) === Number(order.amount_minor) : null,
+            currency_match: r.ok ? capture.amount?.currency_code === order.currency : null, http_status: r.status };
+        } catch { return { order_id: order.order_id, product_code: order.product_code, error: 'CAPTURE_LOOKUP_FAILED' }; }
+      }));
+    } catch { result.paypal_delivery_samples = { error: 'ORDER_LEDGER_QUERY_FAILED' }; }
+  }
+
   if (env.RESEND_API_KEY) {
     try {
       const r = await fetchWithTimeout("https://api.resend.com/domains?limit=100", {
@@ -234,8 +255,10 @@ async function externalDeepChecks(request, env) {
       result.resend_domains = {
         ok: r.ok && expected.length > 0 && domains.every(x => x.ok),
         http_status: r.status,
-        detail: !r.ok ? `Resend HTTP ${r.status}` : expected.length === 0 ? "Sender domain could not be parsed" : domains.every(x => x.ok) ? "Sender domain(s) verified" : "One or more sender domains are not verified for sending",
-        domains
+        provider_error: !r.ok ? String(d.name || '').slice(0, 80) : null,
+        permission_limited: !r.ok && d.name === 'restricted_api_key',
+        detail: !r.ok && d.name === 'restricted_api_key' ? 'Sending-only key cannot list domains; this check does not test email delivery' : !r.ok ? `Resend HTTP ${r.status}` : expected.length === 0 ? "Sender domain could not be parsed" : domains.every(x => x.ok) ? "Sender domain(s) verified" : "One or more sender domains are not verified for sending",
+        domains: r.ok ? domains : []
       };
     } catch (error) {
       result.resend_domains = { ok: false, detail: `Resend domain check failed: ${String(error?.name || error).slice(0, 80)}`, domains: [] };
@@ -279,7 +302,8 @@ async function adminHealth(request, env) {
   const expectedCoreTables = [
     "users", "auth_challenges", "auth_sessions", "orders", "builder_access_grants",
     "projects", "jobs", "versions", "payment_intents", "payment_events",
-    "order_terms", "entitlement_adjustments", "service_events", "payment_disputes"
+    "order_terms", "entitlement_adjustments", "service_events", "payment_disputes",
+    "product_entitlements", "member_download_events", "builder_operations", "builder_project_owners", "support_tickets"
   ];
   const expectedMarketingTables = ["marketing_consent_events", "marketing_campaigns", "marketing_deliveries"];
   const missingCoreTables = expectedCoreTables.filter(name => !tables.includes(name));
@@ -293,6 +317,30 @@ async function adminHealth(request, env) {
   if (!env.PAYPAL_CLIENT_SECRET) missingSecrets.push("PAYPAL_CLIENT_SECRET");
   if (!env.PAYPAL_WEBHOOK_ID) missingSecrets.push("PAYPAL_WEBHOOK_ID");
   if (String(env.AUDIT_HASH_SALT || "").trim().length < 16) missingSecrets.push("AUDIT_HASH_SALT");
+
+  let deliveryEvidence = null;
+  if (checks.d1_query.ok && missingCoreTables.length === 0) {
+    try {
+      const since = new Date(Date.now() - 86400000).toISOString();
+      const login = await env.BUILDER_DB.prepare(`SELECT COUNT(*) AS issued, SUM(CASE WHEN consumed_at IS NOT NULL THEN 1 ELSE 0 END) AS verified
+        FROM auth_challenges WHERE created_at >= ?`).bind(since).first();
+      const orders = await env.BUILDER_DB.prepare(`SELECT product_code,status,COUNT(*) AS count FROM orders GROUP BY product_code,status`).all();
+      const download = await env.BUILDER_DB.prepare(`SELECT artifact_code,artifact_version,COUNT(*) AS count FROM member_download_events GROUP BY artifact_code,artifact_version`).all();
+      const services = await env.BUILDER_DB.prepare(`SELECT action,status,COUNT(*) AS count FROM service_events GROUP BY action,status`).all();
+      const pending = await env.BUILDER_DB.prepare(`SELECT COUNT(*) AS count FROM builder_operations WHERE state='reserved' AND created_at < ?`)
+        .bind(new Date(Date.now() - 15 * 60000).toISOString()).first();
+      const unmatched = await env.BUILDER_DB.prepare(`SELECT COUNT(*) AS count FROM orders o
+        WHERE o.status='granted' AND (
+          (o.product_code='code_workshop_single' AND NOT EXISTS (SELECT 1 FROM builder_access_grants g WHERE g.grant_id=o.grant_id))
+          OR (o.product_code IN ('indicator_membership','premium_membership') AND NOT EXISTS (
+            SELECT 1 FROM product_entitlements e WHERE e.source_order_id=o.order_id
+          )))`).first();
+      deliveryEvidence = { login_last_24h: { issued: Number(login?.issued || 0), verified: Number(login?.verified || 0) },
+        orders: orders.results || [], downloads: download.results || [], services: services.results || [],
+        abandoned_reservations: Number(pending?.count || 0), granted_orders_without_current_entitlement: Number(unmatched?.count || 0),
+        note: 'Historical ledger evidence; renewal may replace the current entitlement source. Counts alone do not verify a live PayPal capture or inbox delivery.' };
+    } catch (error) { deliveryEvidence = { error: 'DELIVERY_EVIDENCE_QUERY_FAILED', detail: String(error?.message || error).slice(0, 180) }; }
+  }
 
   const coreHealthy = state.assets && checks.d1_query.ok && checks.r2_access.ok && state.paid_builder_ready && missingCoreTables.length === 0;
   const marketingHealthy = state.marketing_ready && missingMarketingTables.length === 0;
@@ -309,6 +357,7 @@ async function adminHealth(request, env) {
     runtime: "runtime-guard-v4",
     configuration: state,
     checks,
+    delivery_evidence: deliveryEvidence,
     external,
     database: {
       table_count: tables.length,

@@ -212,6 +212,7 @@ async function ensureAccountDb(env) {
       event_id TEXT PRIMARY KEY,
       user_id TEXT NOT NULL,
       entitlement_id TEXT NOT NULL,
+      source_order_id TEXT,
       artifact_code TEXT NOT NULL,
       artifact_version TEXT NOT NULL,
       ip_hash TEXT,
@@ -229,6 +230,26 @@ async function ensureAccountDb(env) {
     )`),
     env.BUILDER_DB.prepare(`CREATE INDEX IF NOT EXISTS idx_marketing_consent_user ON marketing_consent_events(user_id, created_at)`)
   ]);
+  await env.BUILDER_DB.prepare(`CREATE TABLE IF NOT EXISTS builder_project_owners (
+    project_id TEXT PRIMARY KEY, user_id TEXT NOT NULL, created_at TEXT NOT NULL
+  )`).run();
+  await env.BUILDER_DB.prepare("CREATE TABLE IF NOT EXISTS schema_migrations (migration_id TEXT PRIMARY KEY, applied_at TEXT NOT NULL)").run();
+  await ensureDownloadOrderColumn(env);
+}
+
+async function ensureDownloadOrderColumn(env) {
+  const columns = await env.BUILDER_DB.prepare('PRAGMA table_info(member_download_events)').all();
+  if (!(columns.results || []).some(x => x.name === 'source_order_id')) try { await env.BUILDER_DB.prepare('ALTER TABLE member_download_events ADD COLUMN source_order_id TEXT').run(); }
+  catch (error) { if (!String(error.message).toLowerCase().includes('duplicate')) throw error; }
+  const migrated = await env.BUILDER_DB.prepare("SELECT migration_id FROM schema_migrations WHERE migration_id = 'download-order-v1'").first();
+  if (!migrated && await ordersTableExists(env)) {
+    // Legacy renewal rows reuse entitlement_id. Attribute by purchase time, not its current source_order_id.
+    await env.BUILDER_DB.batch([env.BUILDER_DB.prepare(`UPDATE member_download_events AS d SET source_order_id = (
+      SELECT o.order_id FROM orders o JOIN product_entitlements e ON e.entitlement_id = d.entitlement_id
+      WHERE o.user_id = d.user_id AND o.product_code = e.product_code AND o.granted_at IS NOT NULL
+        AND o.granted_at <= d.created_at ORDER BY o.granted_at DESC LIMIT 1
+    ) WHERE source_order_id IS NULL`), env.BUILDER_DB.prepare("INSERT INTO schema_migrations (migration_id, applied_at) VALUES ('download-order-v1', ?) ON CONFLICT DO NOTHING").bind(nowIso())]);
+  }
 }
 
 async function ordersTableExists(env) {
@@ -424,12 +445,38 @@ async function isAdmin(request, env) {
 async function activeIndicatorEntitlement(env, userId, artifact) {
   const products = [...INDICATOR_MEMBERSHIP_PRODUCTS, artifact.code];
   const placeholders = products.map(() => "?").join(",");
-  return env.BUILDER_DB.prepare(`SELECT entitlement_id, product_code, expires_at
+  return env.BUILDER_DB.prepare(`SELECT entitlement_id, product_code, expires_at, source_order_id
     FROM product_entitlements
     WHERE user_id = ? AND product_code IN (${placeholders}) AND status = 'active'
       AND starts_at <= ? AND (expires_at IS NULL OR expires_at > ?)
     ORDER BY expires_at DESC LIMIT 1`)
     .bind(userId, ...products, nowIso(), nowIso()).first();
+}
+
+async function artifactState(env, artifact) {
+  if (artifact.releaseStatus === 'awaiting_binary' || !env.USER_CODE_BUCKET) return { ready: false, size: null };
+  try {
+    const stored = await env.USER_CODE_BUCKET.head(artifact.r2Key);
+    return { ready: Boolean(stored && stored.customMetadata?.sha256 === artifact.sha256 && stored.customMetadata?.version === artifact.version), size: stored?.size || null };
+  } catch { return { ready: false, size: null }; }
+}
+
+async function deliveryCatalog(env, verify = false) {
+  const items = [...Object.entries(INDICATOR_ARTIFACTS).map(([slug, a]) => [slug, a, 'indicator']), ...Object.entries(EA_ARTIFACTS).map(([slug, a]) => [slug, a, 'ea'])];
+  const artifacts = await Promise.all(items.map(async ([slug, artifact, kind]) => {
+    const state = await artifactState(env, artifact);
+    const out = { slug, kind, version: artifact.version, filename: artifact.filename, ...state };
+    if (verify) {
+      const object = env.USER_CODE_BUCKET ? await env.USER_CODE_BUCKET.get(artifact.r2Key) : null;
+      const bytes = object ? await object.arrayBuffer() : null;
+      out.content_verified = Boolean(bytes && await sha256BytesHex(bytes) === artifact.sha256);
+      out.size = bytes?.byteLength || null;
+      out.ready = out.ready && out.content_verified;
+      out.sha256 = artifact.sha256;
+    }
+    return out;
+  }));
+  return json({ ok: true, artifacts, ready_count: artifacts.filter(x => x.ready).length, total_count: artifacts.length });
 }
 
 async function indicatorAccess(request, env, artifact) {
@@ -439,7 +486,7 @@ async function indicatorAccess(request, env, artifact) {
   const entitlement = await activeIndicatorEntitlement(env, user.user_id, artifact);
   return json({
     ok: true,
-    artifact: { code: artifact.code, version: artifact.version, filename: artifact.filename },
+    artifact: { code: artifact.code, version: artifact.version, filename: artifact.filename, ...await artifactState(env, artifact) },
     entitled: Boolean(entitlement),
     entitlement: entitlement || null
   });
@@ -460,10 +507,10 @@ async function downloadIndicator(request, env, artifact) {
     return json({ ok: false, error: "安装包内容校验失败，下载已暂停", code: "ARTIFACT_CONTENT_MISMATCH" }, 503);
   }
   await env.BUILDER_DB.prepare(`INSERT INTO member_download_events
-    (event_id, user_id, entitlement_id, artifact_code, artifact_version, ip_hash, user_agent, created_at)
-    VALUES (?, ?, ?, ?, ?, ?, ?, ?)`)
+    (event_id, user_id, entitlement_id, artifact_code, artifact_version, ip_hash, user_agent, created_at, source_order_id)
+    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`)
     .bind(randomId("DL"), user.user_id, entitlement.entitlement_id, artifact.code, artifact.version,
-      await ipHash(request, env), (request.headers.get("User-Agent") || "").slice(0, 500), nowIso()).run();
+      await ipHash(request, env), (request.headers.get("User-Agent") || "").slice(0, 500), nowIso(), entitlement.source_order_id || null).run();
   const headers = new Headers({
     "Content-Type": "application/zip",
     "Content-Disposition": `attachment; filename="${artifact.filename}"`,
@@ -479,7 +526,7 @@ async function downloadIndicator(request, env, artifact) {
 async function activeEaEntitlement(env, userId, artifact) {
   const products = [...EA_MEMBERSHIP_PRODUCTS, artifact.code];
   const placeholders = products.map(() => "?").join(",");
-  return env.BUILDER_DB.prepare(`SELECT entitlement_id, product_code, expires_at
+  return env.BUILDER_DB.prepare(`SELECT entitlement_id, product_code, expires_at, source_order_id
     FROM product_entitlements
     WHERE user_id = ? AND product_code IN (${placeholders}) AND status = 'active'
       AND starts_at <= ? AND (expires_at IS NULL OR expires_at > ?)
@@ -491,11 +538,7 @@ async function eaAccess(request, env, artifact) {
   if (!user) return json({ ok: false, error: "请先登录 T5 账户", code: "ACCOUNT_REQUIRED" }, 401);
   await ensureAccountDb(env);
   const entitlement = await activeEaEntitlement(env, user.user_id, artifact);
-  let ready = artifact.releaseStatus !== "awaiting_binary";
-  if (artifact.releaseStatus === "awaiting_upload") {
-    const stored = env.USER_CODE_BUCKET ? await env.USER_CODE_BUCKET.head(artifact.r2Key) : null;
-    ready = stored?.customMetadata?.sha256 === artifact.sha256 && stored?.customMetadata?.version === artifact.version;
-  }
+  const { ready } = await artifactState(env, artifact);
   return json({ ok: true, artifact: { code: artifact.code, version: artifact.version, filename: artifact.filename, ready }, entitled: Boolean(entitlement), entitlement: entitlement || null });
 }
 async function downloadEa(request, env, artifact) {
@@ -512,10 +555,10 @@ async function downloadEa(request, env, artifact) {
   const actualHash = await sha256BytesHex(bytes);
   if (!(await constantTimeEqual(actualHash, artifact.sha256))) return json({ ok: false, error: "安装包内容校验失败，下载已暂停", code: "ARTIFACT_CONTENT_MISMATCH" }, 503);
   await env.BUILDER_DB.prepare(`INSERT INTO member_download_events
-    (event_id, user_id, entitlement_id, artifact_code, artifact_version, ip_hash, user_agent, created_at)
-    VALUES (?, ?, ?, ?, ?, ?, ?, ?)`)
+    (event_id, user_id, entitlement_id, artifact_code, artifact_version, ip_hash, user_agent, created_at, source_order_id)
+    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`)
     .bind(randomId("DL"), user.user_id, entitlement.entitlement_id, artifact.code, artifact.version,
-      await ipHash(request, env), (request.headers.get("User-Agent") || "").slice(0, 500), nowIso()).run();
+      await ipHash(request, env), (request.headers.get("User-Agent") || "").slice(0, 500), nowIso(), entitlement.source_order_id || null).run();
   const headers = new Headers({
     "Content-Type": "application/zip",
     "Content-Disposition": `attachment; filename="${artifact.filename}"`,
@@ -680,31 +723,89 @@ async function activeGrantForUser(env, userId) {
   return env.BUILDER_DB.prepare(`SELECT g.grant_id, g.token_hash, g.plan, g.status, g.analyze_remaining, g.modify_remaining, g.expires_at, o.order_id FROM orders o JOIN builder_access_grants g ON g.grant_id = o.grant_id WHERE o.user_id = ? AND o.product_code = 'code_workshop_single' AND o.status = 'granted' AND g.status = 'active' AND (g.expires_at IS NULL OR g.expires_at > ?) ORDER BY o.granted_at DESC LIMIT 1`).bind(userId, nowIso()).first();
 }
 
+async function claimLegacyProject(request, env) {
+  const user = await resolveSession(request, env);
+  if (!user) return json({ ok: false, code: 'ACCOUNT_REQUIRED', error: '请先登录' }, 401);
+  let body; try { body = await request.json(); } catch { return json({ ok: false, error: '请求无效' }, 400); }
+  const id = String(body.project_id || ''), supplied = String(body.project_token || '');
+  if (!id || !supplied) return json({ ok: false, error: '旧项目凭据不完整' }, 400);
+  const tokenHash = await sha256Hex(supplied);
+  const project = await env.BUILDER_DB.prepare('SELECT project_id FROM projects WHERE project_id = ? AND token_hash = ?').bind(id, tokenHash).first();
+  if (!project) return json({ ok: false, error: '旧项目凭据无效' }, 403);
+  const derived = await hmacHex(env.ACCOUNT_AUTH_SECRET, `project:${user.user_id}:${id}`);
+  await env.BUILDER_DB.batch([
+    env.BUILDER_DB.prepare('INSERT INTO builder_project_owners (project_id,user_id,created_at) VALUES (?,?,?) ON CONFLICT DO NOTHING').bind(id, user.user_id, nowIso()),
+    env.BUILDER_DB.prepare('UPDATE projects SET token_hash=? WHERE project_id=? AND token_hash=? AND EXISTS (SELECT 1 FROM builder_project_owners WHERE project_id=? AND user_id=?)').bind(await sha256Hex(derived), id, tokenHash, id, user.user_id)
+  ]);
+  const owner = await env.BUILDER_DB.prepare('SELECT user_id FROM builder_project_owners WHERE project_id=?').bind(id).first();
+  return owner?.user_id === user.user_id ? json({ ok: true }) : json({ ok: false, error: '项目不属于当前账户' }, 403);
+}
+
+async function accountProjects(request, env) {
+  const user = await resolveSession(request, env);
+  if (!user) return json({ ok: false, error: '请先登录', code: 'ACCOUNT_REQUIRED' }, 401);
+  const exists = await env.BUILDER_DB.prepare("SELECT name FROM sqlite_master WHERE type='table' AND name='projects'").first();
+  if (!exists) return json({ ok: true, projects: [] });
+  const rows = await env.BUILDER_DB.prepare(`SELECT p.project_id, p.filename, p.platform, p.status, p.updated_at
+    FROM builder_project_owners a JOIN projects p ON p.project_id = a.project_id
+    WHERE a.user_id = ? ORDER BY p.updated_at DESC LIMIT 30`).bind(user.user_id).all();
+  return json({ ok: true, projects: rows.results || [] });
+}
+
 async function bridgeBuilderAccess(request, env, ctx) {
   const user = await resolveSession(request, env);
   if (!user) return app.fetch(request, env, ctx);
-  const grant = await activeGrantForUser(env, user.user_id);
-  if (!grant) return app.fetch(request, env, ctx);
-  const derivedToken = await hmacHex(env.ACCOUNT_AUTH_SECRET, `grant:${user.user_id}:${grant.grant_id}`), derivedHash = await sha256Hex(derivedToken);
-  if (grant.token_hash !== derivedHash) {
-    await env.BUILDER_DB.batch([
-      env.BUILDER_DB.prepare("UPDATE builder_access_grants SET token_hash = ?, updated_at = ? WHERE grant_id = ?").bind(derivedHash, nowIso(), grant.grant_id),
-      env.BUILDER_DB.prepare("UPDATE orders SET builder_token_hash = ?, updated_at = ? WHERE order_id = ?").bind(derivedHash, nowIso(), grant.order_id)
-    ]);
+  const url = new URL(request.url), headers = new Headers(request.headers);
+  let projectId = url.searchParams.get('project_id') || '';
+  if (!projectId && request.method === 'POST' && /\/(analyze|modify)$/.test(url.pathname)) {
+    try { projectId = String((await request.clone().json()).projectId || ''); } catch {}
   }
-  const headers = new Headers(request.headers); headers.set("X-Builder-Access-Token", derivedToken);
-  return app.fetch(new Request(request, { headers }), env, ctx);
+  if (projectId) {
+    const owner = await env.BUILDER_DB.prepare('SELECT user_id FROM builder_project_owners WHERE project_id = ?').bind(projectId).first();
+    if (owner && owner.user_id !== user.user_id) return json({ ok: false, error: '项目不属于当前账户', code: 'PROJECT_ACCOUNT_MISMATCH' }, 403);
+    if (owner) headers.set('X-Project-Token', await hmacHex(env.ACCOUNT_AUTH_SECRET, `project:${user.user_id}:${projectId}`));
+  }
+  const grant = await activeGrantForUser(env, user.user_id);
+  if (grant) {
+    const derivedToken = await hmacHex(env.ACCOUNT_AUTH_SECRET, `grant:${user.user_id}:${grant.grant_id}`), derivedHash = await sha256Hex(derivedToken);
+    if (grant.token_hash !== derivedHash) {
+      await env.BUILDER_DB.batch([
+        env.BUILDER_DB.prepare("UPDATE builder_access_grants SET token_hash = ?, updated_at = ? WHERE grant_id = ?").bind(derivedHash, nowIso(), grant.grant_id),
+        env.BUILDER_DB.prepare("UPDATE orders SET builder_token_hash = ?, updated_at = ? WHERE order_id = ?").bind(derivedHash, nowIso(), grant.order_id)
+      ]);
+    }
+    headers.set('X-Builder-Access-Token', derivedToken);
+  }
+  const response = await app.fetch(new Request(request, { headers }), env, ctx);
+  if (url.pathname !== '/api/builder/upload' || !response.ok) return response;
+  const payload = await response.json();
+  const token = await hmacHex(env.ACCOUNT_AUTH_SECRET, `project:${user.user_id}:${payload.projectId}`);
+  await env.BUILDER_DB.batch([
+    env.BUILDER_DB.prepare('INSERT INTO builder_project_owners (project_id, user_id, created_at) VALUES (?, ?, ?)').bind(payload.projectId, user.user_id, nowIso()),
+    env.BUILDER_DB.prepare('UPDATE projects SET token_hash = ? WHERE project_id = ?').bind(await sha256Hex(token), payload.projectId)
+  ]);
+  // New account projects are recovered through the authenticated account, not a URL token.
+  delete payload.projectToken;
+  payload.accountUserId = user.user_id;
+  return json(payload);
 }
 
 export default {
   async fetch(request, env, ctx) {
     try {
       const url = new URL(request.url), p = url.pathname;
+      if (p === '/api/products/delivery' && request.method === 'GET') return deliveryCatalog(env);
+      if (p === '/api/admin/delivery-check' && request.method === 'GET') {
+        if (!(await isAdmin(request, env))) return json({ ok: false, error: 'Unauthorized' }, 403);
+        return deliveryCatalog(env, true);
+      }
       if (p === "/api/auth/config" && request.method === "GET") return json({ ok: true, email_login_ready: authConfigured(env), provider: "resend" });
       if (p === "/api/auth/request-code" && request.method === "POST") return requestCode(request, env);
       if (p === "/api/auth/verify-code" && request.method === "POST") return verifyCode(request, env);
       if (p === "/api/auth/me" && request.method === "GET") return me(request, env);
       if (p === "/api/auth/logout" && request.method === "POST") return logout(request, env);
+      if (p === '/api/account/builder-projects/claim' && request.method === 'POST') return claimLegacyProject(request, env);
+      if (p === "/api/account/builder-projects" && request.method === "GET") return accountProjects(request, env);
       if (p === "/api/account/summary" && request.method === "GET") return accountSummary(request, env);
       if (p === "/api/account/marketing" && request.method === "POST") return updateMarketing(request, env);
       if (p === "/api/admin/accounts" && request.method === "GET") return adminAccounts(request, env);

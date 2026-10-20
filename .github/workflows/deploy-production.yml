@@ -35,6 +35,8 @@ jobs:
       - name: Validate production entrypoint
         run: |
           node --check src/runtime-worker.js
+          node scripts/delivery-behavior-check.mjs
+          node scripts/builder-recovery-behavior-check.mjs
           node scripts/payment-contract-check.mjs
           node scripts/production-payment-contract-check.mjs
           node scripts/account-contract-check.mjs
@@ -96,6 +98,9 @@ jobs:
             echo
             echo "Trigger: \`${{ github.event_name }}\`"
           } >> "$GITHUB_STEP_SUMMARY"
+      - name: Stamp tested production revision
+        run: |
+          node --input-type=module -e "import fs from 'node:fs'; fs.writeFileSync('src/release-info.js', 'export const releaseInfo = ' + JSON.stringify({commit:process.env.TESTED_SHA,built_at:new Date().toISOString()}) + ';\n');"
       - name: Apply remote D1 schema
         if: ${{ github.event_name == 'workflow_run' || inputs.apply_schema }}
         uses: cloudflare/wrangler-action@v4
@@ -148,8 +153,10 @@ jobs:
           const fs=require('fs');
           const h=JSON.parse(fs.readFileSync('/tmp/t5-health.json','utf8'));
           console.log('Production health:', JSON.stringify(h,null,2));
-          const required=['ok','public_site_ready','free_source_inspector_ready'];
+          const required=['ok','public_site_ready','free_source_inspector_ready','account_ready','paid_builder_ready','checkout_ready'];
           const failed=required.filter(k=>h[k]!==true);
+          if(h.payment_environment!=='live') failed.push('payment_environment');
+          if(h.release?.commit!==process.env.TESTED_SHA) failed.push('release_commit');
           const lines=[
             '## Live smoke result',
             '',

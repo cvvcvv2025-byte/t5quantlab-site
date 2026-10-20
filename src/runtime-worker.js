@@ -1,4 +1,5 @@
 import app from "./marketing-worker.js";
+import { releaseInfo } from "./release-info.js";
 
 function json(data, status = 200) {
   return Response.json(data, {
@@ -79,6 +80,7 @@ async function publicHealth(env) {
     ok: true,
     service: "t5quantlab",
     runtime: "runtime-guard-v4",
+    release: releaseInfo,
     public_site_ready: state.assets,
     free_source_inspector_ready: state.free_source_inspector_ready,
     account_ready: state.account_ready,
@@ -370,12 +372,27 @@ async function requestedOrderProduct(request, env) {
   }
 }
 
+async function deliveryState(request, env, ctx) {
+  const response = await app.fetch(new Request(new URL('/api/products/delivery', request.url)), env, ctx);
+  if (!response.ok) throw new Error('DELIVERY_CHECK_FAILED');
+  return (await response.json()).artifacts || [];
+}
+async function membershipDeliveryReady(request, env, ctx, product) {
+  if (!['indicator_membership', 'premium_membership'].includes(product)) return true;
+  try {
+    const items = (await deliveryState(request, env, ctx)).filter(x => product === 'premium_membership' || x.kind === 'indicator');
+    return items.length >= (product === 'premium_membership' ? 7 : 3) && items.every(x => x.ready === true);
+  } catch { return false; }
+}
+function deliveryUnavailable() { return json({ ok: false, code: 'DELIVERY_NOT_READY', error: '会员安装包暂时未全部就绪，本次不会发起扣款。请稍后再试或联系客户支持。' }, 503); }
+
 async function guardedCatalog(request, env, ctx) {
   const response = await app.fetch(request, env, ctx);
   if (!response.ok) return response;
   let data;
   try { data = await response.clone().json(); } catch { return response; }
   const state = configState(env);
+  for (const product of data.products || []) product.delivery_ready = await membershipDeliveryReady(request, env, ctx, product.code);
   if (data?.providers?.paypal) {
     data.providers.paypal.environment = state.paypal_environment;
     data.providers.paypal.launch_ready = state.checkout_ready;
@@ -414,6 +431,7 @@ async function guardedCreateOrder(request, env, ctx) {
     }, 503);
   }
   const summary = precheck.data;
+  if (!(await membershipDeliveryReady(request, env, ctx, productCode))) return deliveryUnavailable();
   if ((productCode === "indicator_membership" && indicatorMembershipStillActive(summary.entitlements))
     || (productCode === "premium_membership" && premiumMembershipStillActive(summary.entitlements))) {
     return json({
@@ -443,6 +461,7 @@ async function guardedPayPalCreate(request, env, ctx) {
   const ready = productCode === "premium_membership" ? state.membership_checkout_ready
     : productCode === "indicator_membership" ? state.indicator_checkout_ready : state.checkout_ready;
   if (!ready) return checkoutNotReady();
+  if (!(await membershipDeliveryReady(request, env, ctx, productCode))) return deliveryUnavailable();
   return app.fetch(request, env, ctx);
 }
 
@@ -458,6 +477,7 @@ async function guardedPayPalCapture(request, env, ctx) {
       code: "FULFILLMENT_NOT_READY_BEFORE_CAPTURE"
     }, 503);
   }
+  if (!(await membershipDeliveryReady(request, env, ctx, productCode))) return deliveryUnavailable();
   return app.fetch(request, env, ctx);
 }
 

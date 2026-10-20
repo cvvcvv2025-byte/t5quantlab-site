@@ -1,4 +1,6 @@
 import app from "./account-worker.js";
+import { supportResponse } from "./support-worker.js";
+import { reconcileBuilderOperations } from "./builder-lifecycle.js";
 
 const BATCH_SIZE = 40;
 const MAX_ATTEMPTS = 3;
@@ -171,10 +173,11 @@ async function processDueCampaigns(env){
 export default {
   async fetch(request,env,ctx){
     const url=new URL(request.url),p=url.pathname;
+    const support = await supportResponse(request,env).catch(error => { console.error('Support service failure', error); return json({ok:false,error:'支持服务暂不可用，请稍后重试。'},503); }); if(support) return support;
     if(p==="/api/admin/campaigns"&&request.method==="GET")return listCampaigns(request,env);
     if(p==="/api/admin/campaigns"&&request.method==="POST")return createCampaign(request,env);
     if(p==="/api/admin/campaigns/cancel"&&request.method==="POST")return cancelCampaign(request,env);
     return app.fetch(request,env,ctx);
   },
-  async scheduled(controller,env,ctx){ctx.waitUntil(processDueCampaigns(env));}
+  async scheduled(controller,env,ctx){ctx.waitUntil(processDueCampaigns(env));ctx.waitUntil(reconcileBuilderOperations(env));}
 };

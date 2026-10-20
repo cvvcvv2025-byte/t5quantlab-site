@@ -70,7 +70,7 @@ need('src/commercial-worker.js', 'await env.BUILDER_DB.batch([', 'entitlement no
 need('src/commercial-worker.js', "WHERE grant_id = ? AND plan <> 't5_builder_pass_30d'", 'entitlement retries must not double-credit an already normalized grant');
 need('src/commercial-worker.js', 'PASS_ANALYZE_CREDITS - 1, PASS_MODIFY_CREDITS - 1', 'legacy base 1+1 must adjust exactly to commercial 3+2');
 need('src/commercial-worker.js', "SET plan = 't5_builder_pass_30d'", 'grant must be normalized to Builder Pass plan');
-need('src/commercial-worker.js', 'refund-v1-2026-09-28', 'terms version');
+need('src/commercial-worker.js', 'refund-v2-2026-10-20', 'terms version');
 need('src/commercial-worker.js', 'CUSTOMER.DISPUTE.CREATED', 'dispute create handling');
 need('src/commercial-worker.js', 'CUSTOMER.DISPUTE.RESOLVED', 'dispute resolve handling');
 need('src/final-worker.js', '/api/orders/refund-eligibility', 'refund eligibility endpoint');
@@ -105,7 +105,7 @@ need('src/gated-worker.js', 'ENT-${orderId}', 'indicator fulfillment must use de
 need('src/gated-worker.js', 'source_order_id = excluded.source_order_id', 'indicator entitlement must remain linked to its source order');
 need('src/gated-worker.js', '? "/membership/checkout/" : callbackPath', 'PayPal must return membership buyers to membership checkout');
 need('src/gated-worker.js', '.bind(provider, orderId).first()', 'payment revocation verification must bind provider and order id');
-need('refund-policy/index.html', 'refund-v1-2026-09-28', 'published terms version');
+need('refund-policy/index.html', 'refund-v2-2026-10-20', 'published terms version');
 need('builder-schema.sql', 'CREATE TABLE IF NOT EXISTS service_events', 'fulfillment ledger');
 need('builder-schema.sql', 'CREATE TABLE IF NOT EXISTS payment_disputes', 'dispute ledger');
 need('builder-schema.sql', 'user_id TEXT', 'orders must be account-bindable');

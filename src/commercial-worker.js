@@ -14,7 +14,7 @@ const PREMIUM_PRODUCT_CODE = "premium_membership";
 const PREMIUM_NAME = "T5 自动化会员 · 90天";
 const PREMIUM_EXPIRES_DAYS = 90;
 const DEFAULT_PREMIUM_USD_PRICE_MINOR = 5990;
-const TERMS_VERSION = "refund-v1-2026-09-28";
+const TERMS_VERSION = "refund-v2-2026-10-20";
 
 function json(data, status = 200, extraHeaders = {}) {
   return Response.json(data, {

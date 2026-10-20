@@ -1,4 +1,5 @@
 import app from "./final-worker.js";
+import { runtimeLicenseResponse } from './runtime-license.js';
 
 const SESSION_COOKIE = "t5_session";
 const SESSION_DAYS = 30;
@@ -794,6 +795,11 @@ export default {
   async fetch(request, env, ctx) {
     try {
       const url = new URL(request.url), p = url.pathname;
+      if (p.startsWith('/api/account/runtime-licenses') || p === '/api/licenses/verify') {
+        await ensureAccountDb(env);
+        const response = await runtimeLicenseResponse(request, env, resolveSession);
+        if (response) return response;
+      }
       if (p === '/api/products/delivery' && request.method === 'GET') return deliveryCatalog(env);
       if (p === '/api/admin/delivery-check' && request.method === 'GET') {
         if (!(await isAdmin(request, env))) return json({ ok: false, error: 'Unauthorized' }, 403);

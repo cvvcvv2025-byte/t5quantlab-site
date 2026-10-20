@@ -18,7 +18,7 @@ const db = {
 };
 const run = (q, ...v) => db.prepare(q).bind(...v).run();
 const hash = x => createHash('sha256').update(x).digest('hex');
-const env = { BUILDER_DB: db, ACCOUNT_AUTH_SECRET: 'local-only-secret', RUNTIME_LICENSE_PRODUCTS: 'range_aggressive_mt4_mt5,trend_capture_mt5,mtf_structure_panel_mt4' };
+const env = { BUILDER_DB: db, ACCOUNT_AUTH_SECRET: 'local-only-secret', BUILDER_ACCESS_KEY: 'local-admin-key', RUNTIME_LICENSE_PRODUCTS: 'range_aggressive_mt4_mt5,trend_capture_mt5,mtf_structure_panel_mt4' };
 let session = 'a', token;
 const binding = { product_code: 'range_aggressive_mt4_mt5', platform: 'MT5', account_login: '123456', broker_server: 'TMGM-Demo' };
 async function call(route, body, headers = {}) {
@@ -79,9 +79,37 @@ try {
   const stored = await db.prepare('SELECT token_hash FROM runtime_licenses').first(); assert.notEqual(stored.token_hash, token);
   session = ''; r = await call('/api/account/runtime-licenses'); assert.equal(r.status, 401);
   r = await verify({ nonce: 'bad' }); assert.equal(r.status, 400);
+  // Native acceptance QA can proceed while customer activation stays closed.
+  // Its grants are separate from paid membership and never create orders.
+  env.RUNTIME_LICENSE_PRODUCTS = '';
+  const qaBody = { demo_confirmed: true, minutes: 60, lease_seconds: 600, bindings: [binding] };
+  const admin = { 'X-Builder-Access-Key': 'local-admin-key' };
+  r = await call('/api/admin/runtime-license-qa', qaBody); assert.equal(r.status,403);
+  r = await call('/api/admin/runtime-license-qa', { ...qaBody, demo_confirmed: false },admin); assert.equal(r.status,400);
+  r = await call('/api/admin/runtime-license-qa', { ...qaBody, bindings: [{ ...binding, broker_server: 'Broker-Live' }] },admin); assert.equal(r.status,400);
+  r = await call('/api/admin/runtime-license-qa', { ...qaBody, bindings: [binding,binding] },admin); assert.equal(r.status,400);
+  r = await call('/api/admin/runtime-license-qa', qaBody,{...admin,Origin:'https://other.invalid'}); assert.equal(r.status,403);
+  r = await call('/api/admin/runtime-license-qa',qaBody,admin); assert.equal(r.status,200);
+  const test = r.data.tests[0]; token=test.license_key; assert.equal(r.data.production_activation_changed,false);
+  r = await verify(); assert.equal(r.status,200); assert.equal(r.data.lease_until-r.data.server_time,600);
+  r = await verify({}, {Accept:'text/plain'}); assert.match(r.text,/\|active$/);
+  r = await verify({account_login:'888888'}); assert.equal(r.status,403);
+  r = await verify({broker_server:'Other-Demo'}); assert.equal(r.status,403);
+  r = await verify({platform:'MT4'}); assert.equal(r.status,403);
+  r = await call('/api/admin/runtime-license-qa',null,admin); assert.ok(!r.text.includes(token));assert.ok(!r.text.includes(hash(token)));
+  assert.equal(r.data.tests[0].verified_count,2); assert.ok(r.data.tests[0].last_verified_at); assert.deepEqual(r.data.production_products_enabled,[]);
+  r = await call('/api/admin/runtime-license-qa/update',{qa_id:test.qa_id,action:'revoke'},admin); assert.equal(r.status,200);
+  r = await verify(); assert.equal(r.status,403);
+  r = await call('/api/admin/runtime-license-qa/update',{qa_id:test.qa_id,action:'renew',minutes:1},admin); assert.equal(r.status,200);
+  r = await verify(); assert.equal(r.status,200);assert.ok(r.data.lease_until-r.data.server_time<=60);
+  await run("UPDATE runtime_license_qa SET expires_at='2020-01-01T00:00:00.000Z' WHERE qa_id=?",test.qa_id);
+  r = await verify(); assert.equal(r.status,403);
+  session='a';r=await call('/api/account/runtime-licenses',binding);assert.equal(r.status,409,'QA never opens customer activation');
+  const indicatorQa={...qaBody,bindings:[{...binding,product_code:'mtf_structure_panel_mt4',platform:'MT4'}]};
+  r=await call('/api/admin/runtime-license-qa',indicatorQa,admin);assert.equal(r.status,400);
   // Fill local rate bucket without making external calls.
   await run('DELETE FROM runtime_license_requests');
   for (let i = 0; i < 60; i++) r = await verify();
   r = await verify(); assert.equal(r.status, 429);
-  console.log('Runtime licensing: tier isolation, account binding, expiry, renewal, revocation, capped offline lease, legacy default and rate limit passed.');
+  console.log('Runtime licensing and admin QA: tier/account isolation, expiry, renewal, revocation, capped leases, private handshake evidence, production-disabled QA and rate limits passed.');
 } finally { fs.rmSync(dir, { recursive: true, force: true }); }

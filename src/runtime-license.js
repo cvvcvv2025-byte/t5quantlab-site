@@ -32,6 +32,13 @@ async function setup(env) {
     )`),
     env.BUILDER_DB.prepare('CREATE INDEX IF NOT EXISTS idx_runtime_license_requests ON runtime_license_requests(ip_hash,created_at)')
   ]);
+  await env.BUILDER_DB.prepare(`CREATE TABLE IF NOT EXISTS runtime_license_qa (
+    qa_id TEXT PRIMARY KEY, product_code TEXT NOT NULL, platform TEXT NOT NULL,
+    account_login TEXT NOT NULL, broker_server TEXT NOT NULL, token_hash TEXT UNIQUE NOT NULL,
+    status TEXT NOT NULL DEFAULT 'active', expires_at TEXT NOT NULL,
+    lease_seconds INTEGER NOT NULL, created_at TEXT NOT NULL, updated_at TEXT NOT NULL,
+    last_verified_at TEXT, verified_count INTEGER NOT NULL DEFAULT 0
+  )`).run();
 }
 async function activeEntitlement(env, userId, product) {
   const spec = LICENSE_PRODUCTS[product];
@@ -57,6 +64,53 @@ function binding(body) {
   const login = String(body.account_login || '').trim(), server = String(body.broker_server || '').trim();
   if (!LICENSE_PRODUCTS[product]?.platforms.includes(platform) || !/^[1-9][0-9]{0,19}$/.test(login) || !server || server.length > 120 || /[\x00-\x1f\x7f]/.test(server)) return null;
   return { product, platform, login, server };
+}
+// Only call this after the account router has authenticated the existing admin
+// key. QA grants never create orders, member entitlements or customer licenses.
+export async function adminRuntimeLicenseQa(request, env) {
+  const p = new URL(request.url).pathname;
+  if (!['/api/admin/runtime-license-qa', '/api/admin/runtime-license-qa/update'].includes(p)) return json({ ok: false, code: 'NOT_FOUND' }, 404);
+  if (!env.BUILDER_DB || !env.ACCOUNT_AUTH_SECRET) return json({ ok: false, code: 'LICENSE_UNAVAILABLE' }, 503);
+  const origin = request.headers.get('Origin');
+  if ((origin && origin !== new URL(request.url).origin) || request.headers.get('Sec-Fetch-Site') === 'cross-site') return json({ ok: false, code: 'ORIGIN_MISMATCH' }, 403);
+  await setup(env);
+  if (p === '/api/admin/runtime-license-qa' && request.method === 'GET') {
+    const r = await env.BUILDER_DB.prepare(`SELECT qa_id,product_code,platform,account_login,broker_server,status,expires_at,lease_seconds,created_at,updated_at,last_verified_at,verified_count
+      FROM runtime_license_qa ORDER BY created_at DESC LIMIT 100`).all();
+    return json({ ok: true, tests: r.results || [], production_products_enabled: Object.keys(LICENSE_PRODUCTS).filter(code => enabled(env,code)) });
+  }
+  if (request.method !== 'POST') return json({ ok: false, code: 'METHOD_NOT_ALLOWED' }, 405);
+  const body = await bodyOf(request);
+  if (!body) return json({ ok: false, code: 'INVALID_REQUEST' }, 400);
+  if (p.endsWith('/update')) {
+    if (!['revoke','renew'].includes(body.action)) return json({ ok: false, code: 'INVALID_ACTION' }, 400);
+    const minutes = Number(body.minutes || 60);
+    if (!Number.isInteger(minutes) || minutes < 1 || minutes > 1440) return json({ ok: false, code: 'INVALID_DURATION' }, 400);
+    const expires = new Date(Date.now() + minutes * 60000).toISOString();
+    const statement = body.action === 'revoke'
+      ? env.BUILDER_DB.prepare("UPDATE runtime_license_qa SET status='revoked',updated_at=? WHERE qa_id=?").bind(now(),String(body.qa_id || ''))
+      : env.BUILDER_DB.prepare("UPDATE runtime_license_qa SET status='active',expires_at=?,updated_at=? WHERE qa_id=?").bind(expires,now(),String(body.qa_id || ''));
+    const r = await statement.run();
+    return Number(r.meta?.changes) === 1 ? json({ ok: true, action: body.action, expires_at: body.action === 'renew' ? expires : undefined }) : json({ ok: false, code: 'QA_NOT_FOUND' }, 404);
+  }
+  const minutes = Number(body.minutes || 60), leaseSeconds = Number(body.lease_seconds || 600);
+  if (body.demo_confirmed !== true || !Number.isInteger(minutes) || minutes < 1 || minutes > 1440 || !Number.isInteger(leaseSeconds) || leaseSeconds < 10 || leaseSeconds > 600 || !Array.isArray(body.bindings) || body.bindings.length < 1 || body.bindings.length > 6) return json({ ok: false, code: 'INVALID_QA_REQUEST' }, 400);
+  const bindings = body.bindings.map(binding);
+  if (bindings.some(b => !b || LICENSE_PRODUCTS[b.product].kind !== 'ea' || !/demo/i.test(b.server))) return json({ ok: false, code: 'DEMO_EA_BINDING_REQUIRED' }, 400);
+  // Demo in a server name is an additional input check, not proof of account
+  // type. The administrator must independently confirm the broker's demo label.
+  const unique = new Set(bindings.map(b => [b.product,b.platform,b.login,b.server].join('|')));
+  if (unique.size !== bindings.length) return json({ ok: false, code: 'DUPLICATE_QA_BINDING' }, 400);
+  const expires = new Date(Date.now() + minutes * 60000).toISOString(), created = now();
+  const items = [];
+  for (const b of bindings) {
+    const key = hex(crypto.getRandomValues(new Uint8Array(32)));
+    items.push({ ...b, qa_id: 'T5-QA-' + crypto.randomUUID(), license_key: key, token_hash: await hash(key) });
+  }
+  await env.BUILDER_DB.batch(items.map(b => env.BUILDER_DB.prepare(`INSERT INTO runtime_license_qa
+    (qa_id,product_code,platform,account_login,broker_server,token_hash,status,expires_at,lease_seconds,created_at,updated_at)
+    VALUES (?,?,?,?,?,?,'active',?,?,?,?)`).bind(b.qa_id,b.product,b.platform,b.login,b.server,b.token_hash,expires,leaseSeconds,created,created)));
+  return json({ ok: true, tests: items.map(b => ({ qa_id: b.qa_id, product_code: b.product, platform: b.platform, account_login: b.login, broker_server: b.server, license_key: b.license_key, expires_at: expires, lease_seconds: leaseSeconds })), production_activation_changed: false });
 }
 export async function runtimeLicenseResponse(request, env, resolveSession) {
   const p = new URL(request.url).pathname;
@@ -86,7 +140,7 @@ export async function runtimeLicenseResponse(request, env, resolveSession) {
   }
   const b = binding(body);
   if (!b) return json({ ok: false, code: 'INVALID_BINDING' }, 400);
-  if (!enabled(env, b.product)) return json({ ok: false, code: 'LICENSE_RELEASE_NOT_ENABLED', error: '当前安装包仍按原交付方式使用，无需激活。' }, 409);
+  if (!verifying && !enabled(env, b.product)) return json({ ok: false, code: 'LICENSE_RELEASE_NOT_ENABLED', error: '当前安装包仍按原交付方式使用，无需激活。' }, 409);
   if (!verifying) {
     const entitlement = await activeEntitlement(env, user.user_id, b.product);
     if (!entitlement) return json({ ok: false, code: 'ENTITLEMENT_REQUIRED' }, 403);
@@ -114,11 +168,15 @@ export async function runtimeLicenseResponse(request, env, resolveSession) {
     SELECT ?,? WHERE (SELECT COUNT(*) FROM runtime_license_requests WHERE ip_hash=? AND created_at>?)<60`).bind(ipHash, now(), ipHash, cutoff).run();
   if (!Number(rate.meta?.changes)) return json({ ok: false, code: 'RATE_LIMITED' }, 429);
   const token = (request.headers.get('Authorization') || '').replace(/^Bearer /, '');
-  const license = /^[a-f0-9]{64}$/.test(token) ? await env.BUILDER_DB.prepare('SELECT * FROM runtime_licenses WHERE token_hash=?').bind(await hash(token)).first() : null;
-  const allowed = license && license.status === 'active' && license.product_code === b.product && license.platform === b.platform && license.account_login === b.login && license.broker_server === b.server;
-  const entitlement = allowed ? await activeEntitlement(env, license.user_id, b.product) : null;
+  const tokenHash = /^[a-f0-9]{64}$/.test(token) ? await hash(token) : '';
+  const qa = tokenHash ? await env.BUILDER_DB.prepare('SELECT * FROM runtime_license_qa WHERE token_hash=?').bind(tokenHash).first() : null;
+  const matches = item => item && item.status === 'active' && item.product_code === b.product && item.platform === b.platform && item.account_login === b.login && item.broker_server === b.server;
+  const qaAllowed = matches(qa) && Date.parse(qa.expires_at) > Date.now();
+  const license = !qa && tokenHash && enabled(env,b.product) ? await env.BUILDER_DB.prepare('SELECT * FROM runtime_licenses WHERE token_hash=?').bind(tokenHash).first() : null;
+  const entitlement = qaAllowed ? { expires_at: qa.expires_at } : matches(license) ? await activeEntitlement(env, license.user_id, b.product) : null;
+  if (qaAllowed) await env.BUILDER_DB.prepare('UPDATE runtime_license_qa SET last_verified_at=?,verified_count=verified_count+1 WHERE qa_id=?').bind(now(),qa.qa_id).run();
   const issued = Math.floor(Date.now() / 1000), expiry = entitlement?.expires_at ? Math.floor(Date.parse(entitlement.expires_at) / 1000) : 0;
-  const lease = entitlement ? Math.min(issued + 86400, expiry || Infinity) : 0;
+  const lease = entitlement ? Math.min(issued + (qaAllowed ? qa.lease_seconds : 86400), expiry || Infinity) : 0;
   const state = entitlement ? 'active' : 'denied';
   const wire = ['T5L1', nonce, b.product, b.platform, b.login, issued, expiry, lease, state].join('|');
   if (request.headers.get('Accept') === 'text/plain') return new Response(wire, { status: entitlement ? 200 : 403, headers: { 'Content-Type': 'text/plain; charset=utf-8', 'Cache-Control': 'no-store', 'X-Content-Type-Options': 'nosniff' } });

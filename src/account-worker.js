@@ -1,5 +1,5 @@
 import app from "./final-worker.js";
-import { runtimeLicenseResponse } from './runtime-license.js';
+import { runtimeLicenseResponse, adminRuntimeLicenseQa } from './runtime-license.js';
 
 const SESSION_COOKIE = "t5_session";
 const SESSION_DAYS = 30;
@@ -795,6 +795,11 @@ export default {
   async fetch(request, env, ctx) {
     try {
       const url = new URL(request.url), p = url.pathname;
+      if (p === '/api/admin/runtime-license-qa' || p === '/api/admin/runtime-license-qa/update') {
+        if (!(await isAdmin(request,env))) return json({ ok: false, error: 'Unauthorized' },403);
+        await ensureAccountDb(env);
+        return adminRuntimeLicenseQa(request,env);
+      }
       if (p.startsWith('/api/account/runtime-licenses') || p === '/api/licenses/verify') {
         await ensureAccountDb(env);
         const response = await runtimeLicenseResponse(request, env, resolveSession);

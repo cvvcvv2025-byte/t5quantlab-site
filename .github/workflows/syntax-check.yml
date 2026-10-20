@@ -21,6 +21,7 @@ jobs:
           node-version: '22'
       - name: Check Worker syntax
         run: |
+          node scripts/prepare-release.mjs --ci
           node --check src/builder-lifecycle.js
           node --check src/support-worker.js
           node --check src/runtime-license.js
@@ -45,6 +46,7 @@ jobs:
           node scripts/runtime-health-behavior-check.mjs
           node scripts/runtime-license-behavior-check.mjs
           node scripts/runtime-client-state-check.mjs
+          node scripts/release-origin-behavior-check.mjs
       - name: Check payment contract
         run: node scripts/payment-contract-check.mjs
       - name: Check production payment ownership contract

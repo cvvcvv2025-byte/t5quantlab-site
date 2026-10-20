@@ -273,3 +273,16 @@ A successful public smoke check does **not** replace the private `/admin/health/
 - builder_operations records atomic quota reservations and blocks simultaneous execution per project/action. Explicit failures compensate once; the 15-minute cron reconciles abandoned attempts older than 15 minutes using persisted output. Provider calls time out after 120 seconds. Do not manually add credits until checking this ledger.
 - New projects bind to verified accounts and are listed in My T5. Status, analysis and source downloads are recoverable without charging again. A legacy project may be linked only with its valid capability token.
 - Before acceptance, use an existing authorised order to check seven downloads, native package contents, expired/revoked access and provider health. A successful public deployment alone is not acceptance of a real payment or trading performance.
+# Release origin boundary (2026-10-20)
+
+The generated `src/release-info.js` is deliberately absent from git. A fresh
+Cloudflare Git-integration deployment cannot bundle the Worker without it.
+Use the existing Deploy Production workflow, which prepares this module only
+after CI and validates TESTED_SHA against the checkout. Do not restore an
+`unreleased` placeholder to make another provider's build turn green.
+
+For local tests run `node scripts/prepare-release.mjs --local-test` first.
+GitHub test/preflight jobs use `--ci`; only Deploy Production uses `--production`.
+This also blocks an unprepared provider that ignores Wrangler custom build hooks.
+An account administrator can additionally disconnect the redundant provider Git
+auto-deploy trigger; no Cloudflare dashboard configuration is claimed changed here.

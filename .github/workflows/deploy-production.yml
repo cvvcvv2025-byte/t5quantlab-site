@@ -34,12 +34,14 @@ jobs:
           node-version: '22'
       - name: Validate production entrypoint
         run: |
+          node scripts/prepare-release.mjs --ci
           node --check src/runtime-worker.js
           node scripts/delivery-behavior-check.mjs
           node scripts/builder-recovery-behavior-check.mjs
           node scripts/runtime-health-behavior-check.mjs
           node scripts/runtime-license-behavior-check.mjs
           node scripts/runtime-client-state-check.mjs
+          node scripts/release-origin-behavior-check.mjs
           node scripts/payment-contract-check.mjs
           node scripts/production-payment-contract-check.mjs
           node scripts/account-contract-check.mjs
@@ -103,7 +105,7 @@ jobs:
           } >> "$GITHUB_STEP_SUMMARY"
       - name: Stamp tested production revision
         run: |
-          node --input-type=module -e "import fs from 'node:fs'; fs.writeFileSync('src/release-info.js', 'export const releaseInfo = ' + JSON.stringify({commit:process.env.TESTED_SHA,built_at:new Date().toISOString()}) + ';\n');"
+          node scripts/prepare-release.mjs --production
       - name: Apply remote D1 schema
         if: ${{ github.event_name == 'workflow_run' || inputs.apply_schema }}
         uses: cloudflare/wrangler-action@v4

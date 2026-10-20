@@ -31,7 +31,7 @@ const env = { BUILDER_DB: db, USER_CODE_BUCKET: bucket, ACCOUNT_AUTH_SECRET: 'te
   RESEND_API_KEY: 'fake', AUTH_EMAIL_FROM: 'test@example.invalid', OPENAI_API_KEY: 'fake', BUILDER_ACCESS_KEY: 'test-admin-only',
   PAYPAL_CLIENT_ID: 'fake', PAYPAL_CLIENT_SECRET: 'fake', PAYPAL_WEBHOOK_ID: 'fake', PAYPAL_ENVIRONMENT: 'live',
   T5_BUILDER_PASS_PRICE_USD_MINOR: '1490', T5_INDICATOR_MEMBERSHIP_PRICE_USD_MINOR: '1390', T5_PREMIUM_MEMBERSHIP_PRICE_USD_MINOR: '5990' };
-let aiCalls = 0, failAI = false, pauseAI = null;
+let aiCalls = 0, failAI = false, pauseAI = null, captureCalls = 0;
 const ppOrders = new Map();
 const originalFetch = globalThis.fetch;
 globalThis.fetch = async (url, options = {}) => {
@@ -43,6 +43,7 @@ globalThis.fetch = async (url, options = {}) => {
     return Response.json({ id, links: [{ rel: 'approve', href: 'https://example.invalid/approve/' + id }] });
   }
   if (/\/v2\/checkout\/orders\/PP-\d+\/capture$/.test(url)) {
+    captureCalls++;
     const id = url.split('/').at(-2), unit = ppOrders.get(id);
     return Response.json({ id, purchase_units: [{ ...unit, payments: { captures: [{ id: 'CAP-' + id, status: 'COMPLETED', amount: unit.amount }] } }] });
   }
@@ -90,7 +91,60 @@ try {
     const version = match[1].split('/').at(-2);
     await bucket.put(match[1], 'fixture', { customMetadata: { sha256: match[2], version } });
   }
+  // Exercise real routing and SQLite state for payment/account/product isolation.
+  // The provider is stubbed; no real payment or real artifact bytes are involved.
+  let blocked = await call('/api/member/eas/range-aggressive/download');
+  assert.equal(blocked.status, 403);
+  let indicator = await call('/api/orders/create', { product_code: 'indicator_membership', currency: 'USD', terms_accepted: true, terms_version: 'refund-v2-2026-10-20' });
+  assert.equal(indicator.status, 200);
+  const indicatorOrder = indicator.data.order;
+  const indicatorHeaders = { 'X-Order-Token': indicatorOrder.order_token };
+  indicator = await call('/api/payment/paypal/create', { order_id: indicatorOrder.order_id }, indicatorHeaders);
+  assert.equal(indicator.status, 200);
+  const indicatorCapture = { order_id: indicatorOrder.order_id, paypal_order_id: indicator.data.paypal_order_id };
+  const beforeCaptureCalls = captureCalls;
+  session = 'b';
+  blocked = await call('/api/payment/paypal/capture', indicatorCapture, indicatorHeaders);
+  assert.equal(blocked.status, 403, 'another account cannot capture even with the order token');
+  assert.equal(captureCalls, beforeCaptureCalls, 'ownership denial precedes the provider capture');
+  session = 'a';
+  blocked = await call('/api/payment/paypal/capture', { ...indicatorCapture, paypal_order_id: 'UNRELATED' }, indicatorHeaders);
+  assert.equal(blocked.status, 409);
+  assert.equal(captureCalls, beforeCaptureCalls, 'unrelated provider order must not be captured');
+  const unit = ppOrders.get(indicatorCapture.paypal_order_id);
+  const originalAmount = { ...unit.amount };
+  const assertUnfulfilled = async () => {
+    assert.equal((await first('SELECT status FROM orders WHERE order_id=?', indicatorOrder.order_id)).status, 'pending');
+    assert.equal((await first("SELECT COUNT(*) AS n FROM product_entitlements WHERE user_id='a'")).n, 0);
+  };
+  for (const invalidAmount of [
+    { ...originalAmount, value: '0.01' },
+    { ...originalAmount, currency_code: 'EUR' }
+  ]) {
+    unit.amount = invalidAmount;
+    blocked = await call('/api/payment/paypal/capture', indicatorCapture, indicatorHeaders);
+    assert.equal(blocked.status, 502);
+    await assertUnfulfilled();
+  }
+  unit.amount = originalAmount;
+  unit.custom_id = 'UNRELATED';
+  blocked = await call('/api/payment/paypal/capture', indicatorCapture, indicatorHeaders);
+  assert.equal(blocked.status, 502);
+  await assertUnfulfilled();
+  unit.custom_id = indicatorOrder.order_id;
+  indicator = await call('/api/payment/paypal/capture', indicatorCapture, indicatorHeaders);
+  assert.equal(indicator.status, 200);
+  const indicatorEntitlements = (await db.prepare("SELECT product_code FROM product_entitlements WHERE user_id='a'").all()).results;
+  assert.deepEqual(indicatorEntitlements.map(x => x.product_code), ['indicator_membership']);
+  blocked = await call('/api/member/eas/range-aggressive/download');
+  assert.equal(blocked.status, 403, 'indicator purchase must not grant EA downloads');
+  assert.equal(aiCalls, 0, 'payment checks must not execute AI');
   const premium = await purchase('premium_membership');
+  session = 'b';
+  blocked = await call('/api/member/eas/range-aggressive/download');
+  assert.equal(blocked.status, 403, 'paid membership must not leak to another account');
+  session = 'a';
+  assert.equal((await first("SELECT COUNT(*) AS n FROM builder_access_grants")).n, 0, 'membership must not also grant Builder credits');
   let r = await call('/api/orders/refund-eligibility?order_id=' + premium.order.order_id, null, premium.headers);
   assert.equal(r.data.refund_eligible_under_t5_policy, true);
   const entitlement = await first("SELECT entitlement_id FROM product_entitlements WHERE user_id='a' AND product_code='premium_membership'");

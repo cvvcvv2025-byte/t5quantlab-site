@@ -62,7 +62,7 @@ need('account/member-center/index.html',"/api/member/${isEa?'eas':'indicators'}/
 need('account/member-center/index.html','mtf_structure_panel_mt4','member center single-product entitlement support');
 need('account/member-center/index.html','neckline_mtf_mt4','member center neckline entitlement support');
 need('account/member-center/index.html','progress_candle_mt4','member center progress entitlement support');
-need('account/member-center/index.html','5 个正式安装包','member center must disclose the exact current delivery count');
+need('account/member-center/index.html','/assets/delivery-status.js','member center must load actual delivery readiness');
 need('account/member-center/index.html','data-ea-download="attack-completion-c"','member center must expose the released EA through protected download');
 need('account/member-center/index.html','noindex,nofollow','member center must stay out of search results');
 

@@ -79,7 +79,7 @@ CLOUDFLARE_API_TOKEN
 
 Use a Cloudflare API token scoped only to the required account/resources. Never put either value in source files.
 
-The workflow is manual (`workflow_dispatch`) so it does not conflict with an existing Cloudflare Git Integration if one is already configured.
+The workflow deploys the exact tested SHA after a successful main-push Syntax Check. Manual dispatch remains available for controlled recovery; avoid a second independent deployment pipeline.
 
 ## 5. Database schema
 
@@ -261,3 +261,15 @@ https://t5quantlab.com/api/health
 The release fails if the public site or free source inspector is not ready. The same smoke output also prints `account_ready`, `paid_builder_ready`, `checkout_ready`, and `payment_environment` so incomplete commercial configuration is visible in the deployment log rather than hidden.
 
 A successful public smoke check does **not** replace the private `/admin/health/?deep=1` provider verification or the manual real-payment end-to-end test before opening live checkout.
+
+
+## 13. Customer delivery recovery (2026-10-20)
+
+- CI runs delivery-behavior-check.mjs against local SQLite with simulated providers; no live charge or email.
+- The production build stamps release.commit/built_at. Deployment requires account, paid Builder and checkout readiness, live PayPal, and the expected commit in addition to public readiness.
+- /api/products/delivery checks all seven registered object metadata records. Membership checkout fails closed when its promised files are unavailable.
+- /admin/delivery/ reads actual customer package bytes and hashes, runs private provider health, and lists customer support tickets. Check the ticket queue daily; support currently uses on-site replies, not automatic email notifications.
+- Download events retain source_order_id. Existing download records are attributed by purchase timestamp in an idempotent migration, independent of current entitlement renewal state.
+- builder_operations records atomic quota reservations and blocks simultaneous execution per project/action. Explicit failures compensate once; the 15-minute cron reconciles abandoned attempts older than 15 minutes using persisted output. Provider calls time out after 120 seconds. Do not manually add credits until checking this ledger.
+- New projects bind to verified accounts and are listed in My T5. Status, analysis and source downloads are recoverable without charging again. A legacy project may be linked only with its valid capability token.
+- Before acceptance, use an existing authorised order to check seven downloads, native package contents, expired/revoked access and provider health. A successful public deployment alone is not acceptance of a real payment or trading performance.

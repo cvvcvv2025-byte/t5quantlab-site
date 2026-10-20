@@ -198,6 +198,7 @@ function extractOutputText(data) {
 async function openAIJson(env, { model, schemaName, schema, instructions, userText, maxOutputTokens = 8000 }) {
   if (!env.OPENAI_API_KEY) throw new Error("OPENAI_API_KEY is not configured");
   const response = await fetch("https://api.openai.com/v1/responses", {
+    signal: AbortSignal.timeout(120000),
     method: "POST",
     headers: {
       "Authorization": `Bearer ${env.OPENAI_API_KEY}`,
@@ -223,6 +224,7 @@ async function openAIJson(env, { model, schemaName, schema, instructions, userTe
     })
   });
   const data = await response.json();
+  if (data.status && data.status !== "completed") throw new Error("AI_OUTPUT_INCOMPLETE");
   if (!response.ok) {
     const message = data?.error?.message || `OpenAI HTTP ${response.status}`;
     throw new Error(message);
@@ -323,7 +325,8 @@ async function handleAnalyze(request, env) {
   } catch (error) {
     await env.BUILDER_DB.prepare("UPDATE jobs SET status = ?, error = ?, updated_at = ? WHERE job_id = ?")
       .bind("failed", String(error.message || error).slice(0, 2000), nowIso(), jobId).run();
-    return json({ ok: false, error: `AI分析失败：${error.message || error}` }, 502);
+    console.error("AI analysis failed", jobId, error);
+    return json({ ok: false, error: "AI分析暂时未完成，请稍后恢复项目重试；未交付的额度会返还。", code: "AI_ANALYSIS_FAILED" }, 502);
   }
 }
 
@@ -409,7 +412,8 @@ async function handleModify(request, env) {
   } catch (error) {
     await env.BUILDER_DB.prepare("UPDATE jobs SET status = ?, error = ?, updated_at = ? WHERE job_id = ?")
       .bind("failed", String(error.message || error).slice(0, 2000), nowIso(), jobId).run();
-    return json({ ok: false, error: `AI修改失败：${error.message || error}` }, 502);
+    console.error("AI modification failed", jobId, error);
+    return json({ ok: false, error: "AI修改暂时未完成，请恢复项目查看结果后再重试；未交付的额度会返还。", code: "AI_MODIFICATION_FAILED" }, 502);
   }
 }
 
@@ -419,8 +423,11 @@ async function handleStatus(request, env) {
   const token = request.headers.get("X-Project-Token") || "";
   const project = await getProject(env, projectId, token);
   if (!project) return json({ ok: false, error: "项目不存在或访问令牌无效" }, 403);
+  const operations = await env.BUILDER_DB.prepare("SELECT name FROM sqlite_master WHERE type='table' AND name='builder_operations'").first();
+  const pending = operations ? await env.BUILDER_DB.prepare("SELECT operation_id FROM builder_operations WHERE project_id = ? AND state = 'reserved' LIMIT 1").bind(projectId).first() : null;
   return json({
     ok: true,
+    running: Boolean(pending),
     project: {
       projectId: project.project_id,
       filename: project.filename,

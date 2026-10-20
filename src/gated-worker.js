@@ -1,4 +1,5 @@
 import app from "./worker.js";
+import { reserveOperation, settleOperation } from "./builder-lifecycle.js";
 
 const PAID_BUILDER_ROUTES = new Set([
   "/api/builder/upload",
@@ -206,26 +207,6 @@ function quotaRequired(action) {
     code: "PAID_QUOTA_EXHAUSTED",
     action
   }, 402);
-}
-
-async function reserveCredit(env, access, action) {
-  if (access.kind === "admin") return true;
-  const column = action === "modify" ? "modify_remaining" : "analyze_remaining";
-  const now = nowIso();
-  const result = await env.BUILDER_DB.prepare(`UPDATE builder_access_grants
-    SET ${column} = ${column} - 1, updated_at = ?
-    WHERE grant_id = ? AND status = 'active' AND ${column} > 0
-      AND (expires_at IS NULL OR expires_at > ?)`)
-    .bind(now, access.grant_id, now).run();
-  return Number(result?.meta?.changes || 0) === 1;
-}
-
-async function restoreCredit(env, access, action) {
-  if (access.kind === "admin") return;
-  const column = action === "modify" ? "modify_remaining" : "analyze_remaining";
-  await env.BUILDER_DB.prepare(`UPDATE builder_access_grants
-    SET ${column} = ${column} + 1, updated_at = ? WHERE grant_id = ?`)
-    .bind(nowIso(), access.grant_id).run();
 }
 
 async function rejectDuplicateBillableRequest(request, env, action) {
@@ -1183,12 +1164,45 @@ export default {
         const duplicate = await rejectDuplicateBillableRequest(request, env, action);
         if (duplicate) return duplicate;
 
-        const reserved = await reserveCredit(env, access, action);
-        if (!reserved) return quotaRequired(action);
-
-        const response = await app.fetch(request, env, ctx);
-        if (!response.ok) await restoreCredit(env, access, action);
-        return response;
+        let body; try { body = await request.clone().json(); } catch { return json({ ok: false, error: "请求内容无效" }, 400); }
+        const projectId = String(body.projectId || '');
+        const projectToken = request.headers.get('X-Project-Token') || body.projectToken || '';
+        const owned = projectId && projectToken ? await env.BUILDER_DB.prepare(
+          'SELECT project_id FROM projects WHERE project_id = ? AND token_hash = ?'
+        ).bind(projectId, await sha256Hex(projectToken)).first() : null;
+        if (!owned) return json({ ok: false, error: "项目不存在或无权访问", code: "PROJECT_ACCESS_DENIED" }, 403);
+        if (action === 'modify' && body.confirmed !== true) return json({ ok: false, error: "请先确认修改范围" }, 400);
+        const operation = access.kind === 'admin' ? null : await reserveOperation(env, access, projectId, action);
+        if (operation?.blocked) return operation.blocked === 'quota' ? quotaRequired(action) : json({
+          ok: false, code: operation.blocked === 'completed' ? 'BUILDER_ALREADY_COMPLETED' : 'BUILDER_IN_PROGRESS',
+          error: operation.blocked === 'completed' ? '结果已生成，请恢复项目查看。' : '项目正在处理，请勿重复提交。'
+        }, 409);
+        try {
+          const response = await app.fetch(request, { ...env, T5_BUILDER_OPERATION_ID: operation?.id }, ctx);
+          let success = response.ok;
+          if (success && action === 'modify') {
+            const payload = await response.clone().json();
+            success = payload.result?.status === 'success';
+          }
+          if (operation && !success) {
+            const saved = await env.BUILDER_DB.prepare('SELECT r2_analysis_key, r2_modified_key FROM projects WHERE project_id = ?').bind(projectId).first();
+            success = Boolean(action === 'analyze' ? saved?.r2_analysis_key : saved?.r2_modified_key);
+          }
+          if (operation) await settleOperation(env, operation, success);
+          return response;
+        } catch (error) {
+          // If output was already saved, leave the reservation for reconciliation;
+          // otherwise compensate exactly once, even when the inner worker throws.
+          if (operation) {
+            try {
+              const saved = await env.BUILDER_DB.prepare('SELECT r2_analysis_key, r2_modified_key FROM projects WHERE project_id = ?').bind(projectId).first();
+              const key = action === 'analyze' ? saved?.r2_analysis_key : saved?.r2_modified_key;
+              await settleOperation(env, operation, Boolean(key));
+            } catch (settlementError) { console.error('Builder settlement deferred', operation.id, settlementError); }
+          }
+          console.error('Builder attempt failed', error);
+          return json({ ok: false, error: '处理暂时中断，请恢复项目查看结果；未交付的额度会自动退回。', code: 'BUILDER_RETRYABLE_ERROR' }, 503);
+        }
       }
     }
 

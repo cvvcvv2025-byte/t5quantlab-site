@@ -122,6 +122,7 @@ CREATE TABLE IF NOT EXISTS member_download_events (
   event_id TEXT PRIMARY KEY,
   user_id TEXT NOT NULL,
   entitlement_id TEXT NOT NULL,
+  source_order_id TEXT,
   artifact_code TEXT NOT NULL,
   artifact_version TEXT NOT NULL,
   ip_hash TEXT,
@@ -272,3 +273,21 @@ CREATE TABLE IF NOT EXISTS payment_disputes (
   resolved_at TEXT
 );
 CREATE INDEX IF NOT EXISTS idx_payment_disputes_order ON payment_disputes(order_id);
+
+-- Durable billable attempts and account recovery; additive to existing installations.
+CREATE TABLE IF NOT EXISTS builder_operations (
+  operation_id TEXT PRIMARY KEY, project_id TEXT NOT NULL, action TEXT NOT NULL,
+  grant_id TEXT NOT NULL, state TEXT NOT NULL, created_at TEXT NOT NULL, updated_at TEXT NOT NULL
+);
+CREATE UNIQUE INDEX IF NOT EXISTS idx_builder_operation_running
+  ON builder_operations(project_id, action) WHERE state = 'reserved';
+CREATE TABLE IF NOT EXISTS builder_project_owners (
+  project_id TEXT PRIMARY KEY, user_id TEXT NOT NULL, created_at TEXT NOT NULL
+);
+
+CREATE TABLE IF NOT EXISTS schema_migrations (migration_id TEXT PRIMARY KEY, applied_at TEXT NOT NULL);
+CREATE TABLE IF NOT EXISTS support_tickets (
+  ticket_id TEXT PRIMARY KEY, token_hash TEXT NOT NULL, email TEXT NOT NULL, order_id TEXT,
+  message TEXT NOT NULL, reply TEXT, status TEXT NOT NULL DEFAULT 'open', ip_hash TEXT NOT NULL,
+  created_at TEXT NOT NULL, updated_at TEXT NOT NULL
+);

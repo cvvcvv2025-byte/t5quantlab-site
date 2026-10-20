@@ -20,7 +20,7 @@ need(membership.includes('3 个 MT4 指标安装包'), 'Membership page must dis
 need(membership.includes('T5 MTF Structure Panel v0.1.1'), 'Membership page must list the released structure panel');
 need(membership.includes('T5 Neckline MTF v0.1.2'), 'Membership page must list the released neckline indicator');
 need(membership.includes('T5 Progress Candle v0.1.2'), 'Membership page must list the released progress candle indicator');
-need(account.includes('3 个正式 MT4 指标安装包'), 'Account page must disclose the exact current delivery count');
+need(account.includes('以会员中心核验为准'), 'Account page must direct customers to actual delivery readiness');
 need(membership.includes('T5 Attack Completion C v6.10.8'), 'Membership page must list the released MT5 EA');
 need(['T5 Attack Completion C', 'T5 Trend Capture', 'T5 Range Boundary'].every(name => eaMatrix.includes(name)), 'EA hub must expose the three-product matrix');
 need(eaMatrix.includes('+7.84%') && eaMatrix.includes('1.41') && eaMatrix.includes('3.42%'), 'EA hub must publish the frozen 6108 verification snapshot');

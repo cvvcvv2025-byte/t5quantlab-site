@@ -41,6 +41,7 @@ jobs:
         run: |
           node scripts/delivery-behavior-check.mjs
           node scripts/builder-recovery-behavior-check.mjs
+          node scripts/runtime-health-behavior-check.mjs
       - name: Check payment contract
         run: node scripts/payment-contract-check.mjs
       - name: Check production payment ownership contract

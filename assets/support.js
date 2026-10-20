@@ -1,4 +1,13 @@
 (() => {
+  document.getElementById('copyWechat')?.addEventListener('click', async () => {
+    const copyStatus = document.getElementById('contactCopyStatus');
+    try {
+      await navigator.clipboard.writeText('T5quantlab');
+      copyStatus.textContent = '已复制微信号，请在微信中搜索添加。';
+    } catch {
+      copyStatus.textContent = '请长按或选中微信号 T5quantlab 手动复制。';
+    }
+  });
   const form = document.getElementById('supportForm'), status = document.getElementById('supportStatus');
   const receipt = document.getElementById('supportReceipt'), query = document.getElementById('queryToken');
   const show = text => { status.textContent = text; };

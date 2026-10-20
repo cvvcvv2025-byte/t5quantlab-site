@@ -1,5 +1,15 @@
 const menu=document.getElementById('menu');const nav=document.getElementById('navlinks');if(menu&&nav){menu.addEventListener('click',()=>nav.classList.toggle('open'));nav.querySelectorAll('a').forEach(a=>a.addEventListener('click',()=>nav.classList.remove('open')));}
 
+// Keep contact details available across pages using the shared footer.
+const contactFooter=document.querySelector('footer.footer');
+if(contactFooter&&!contactFooter.querySelector('[data-t5-contact]')){
+  const contacts=document.createElement('div');
+  contacts.className='container contact-footer';
+  contacts.setAttribute('data-t5-contact','');
+  contacts.innerHTML='<a href="/support/">联系与支持</a><a href="mailto:t5quantlab@gmail.com">t5quantlab@gmail.com</a><span>微信：T5quantlab</span>';
+  contactFooter.appendChild(contacts);
+}
+
 /* Make the Classic TA core questions genuine lesson links. */
 (function wireClassicCoreLinks(){
   if(location.pathname!=='/library/classic-technical-analysis/')return;

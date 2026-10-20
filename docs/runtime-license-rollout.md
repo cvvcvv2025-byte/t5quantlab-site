@@ -43,9 +43,10 @@ MetaTrader forbids WebRequest inside indicators. Do not copy the EA include into
 an indicator, or accept an unsigned plaintext file / terminal global as license
 proof. A production indicator requires an independently verified signed offline
 license or a separate trusted authorization assistant with signature verification.
-No indicator code is enabled in this rollout. Exact v0.1.2 Neckline and Progress
-Candle source files have not been recovered from Library; only older v0.1.0
-sources were found. Never silently downgrade their logic to add licensing.
+No indicator code is enabled in this rollout. The exact v0.1.2 Neckline and
+Progress Candle source files were subsequently recovered from the combined
+T5_Indicators_2_3_MT4_v0_1_2_Source_Handoff.zip. Neither contains runtime
+membership licensing. Never silently downgrade their logic to add licensing.
 
 Official references:
 - https://www.mql5.com/en/docs/network/webrequest

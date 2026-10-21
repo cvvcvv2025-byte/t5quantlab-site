@@ -1,4 +1,4 @@
-const menu=document.getElementById('menu');const nav=document.getElementById('navlinks');if(menu&&nav){menu.addEventListener('click',()=>nav.classList.toggle('open'));nav.querySelectorAll('a').forEach(a=>a.addEventListener('click',()=>nav.classList.remove('open')));}
+const menu=document.getElementById('menu');const nav=document.getElementById('navlinks');if(menu&&nav){menu.addEventListener('click',()=>{const open=nav.classList.toggle('open');menu.setAttribute('aria-expanded',String(open))});nav.querySelectorAll('a').forEach(a=>a.addEventListener('click',()=>{nav.classList.remove('open');menu.setAttribute('aria-expanded','false')}));}
 
 // Keep contact details available across pages using the shared footer.
 const contactFooter=document.querySelector('footer.footer');
@@ -34,7 +34,7 @@ if(contactFooter&&!contactFooter.querySelector('[data-t5-contact]')){
 })();
 
 /* Load the shared teaching-visual layer only on educational pages. */
-if(/^\/(library|research|verification|tools\/guides|tools\/source-code-audit-guide|market-lab)\//.test(location.pathname)){
+if(/^\/(library|research|verification|tools\/guides|tools\/source-code-audit-guide|market-lab)\//.test(location.pathname)&&!['/market-lab/practice/trainer/','/market-lab/review/'].includes(location.pathname)){
   const visualCss=document.createElement('link');
   visualCss.rel='stylesheet';
   visualCss.href='/assets/visual-learning.css';

@@ -2,6 +2,7 @@
   const nav=document.getElementById('navlinks')||document.querySelector('.navlinks');
   if(!nav||nav.querySelector('[data-t5-account-nav]'))return;
 
+  if(!nav.hasAttribute('data-learning-nav')){
   const membership=document.createElement('a');
   membership.href='/membership/';
   membership.textContent='会员计划';
@@ -18,6 +19,8 @@
   start.setAttribute('aria-label','打开 T5 学习导航器');
   if(location.pathname==='/start/'||location.pathname.startsWith('/start/'))start.classList.add('is-current');
   nav.appendChild(start);
+
+  }
 
   const link=document.createElement('a');
   link.href='/account/login/';

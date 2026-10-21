@@ -429,7 +429,7 @@ async function deliveryState(request, env, ctx) {
 async function membershipDeliveryReady(request, env, ctx, product) {
   if (!['indicator_membership', 'premium_membership'].includes(product)) return true;
   try {
-    const items = (await deliveryState(request, env, ctx)).filter(x => product === 'premium_membership' || x.kind === 'indicator');
+    const items = (await deliveryState(request, env, ctx)).filter(x => x.membership_required !== false && (product === 'premium_membership' || x.kind === 'indicator'));
     return items.length >= (product === 'premium_membership' ? 7 : 3) && items.every(x => x.ready === true);
   } catch { return false; }
 }

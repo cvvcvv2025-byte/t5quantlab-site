@@ -6,6 +6,16 @@ const SESSION_DAYS = 30;
 const CODE_TTL_MINUTES = 10;
 const MAX_CODE_ATTEMPTS = 6;
 const INDICATOR_ARTIFACTS = {
+  "structure-decision-map": {
+    membershipRequired: false, // staged addition; existing membership delivery remains unchanged
+    code: "structure_decision_map_mt4",
+    version: "0.2.3",
+    filename: "T5_Structure_Decision_Map_v0_2_3_MT4_Customer_Pack.zip",
+    r2Key: "member-artifacts/structure-decision-map/0.2.3/T5_Structure_Decision_Map_v0_2_3_MT4_Customer_Pack.zip",
+    releaseStatus: "awaiting_upload",
+    sha256: "dde54e1d9c196dde95d0db9b7ef4354a398fc22ee786f616c0a1291cdd74485b",
+    maxBytes: 1024 * 1024
+  },
   "mtf-structure-panel": {
     code: "mtf_structure_panel_mt4",
     version: "0.1.1",
@@ -467,6 +477,7 @@ async function deliveryCatalog(env, verify = false) {
   const artifacts = await Promise.all(items.map(async ([slug, artifact, kind]) => {
     const state = await artifactState(env, artifact);
     const out = { slug, kind, version: artifact.version, filename: artifact.filename, ...state };
+    if (artifact.membershipRequired === false) out.membership_required = false;
     if (verify) {
       const object = env.USER_CODE_BUCKET ? await env.USER_CODE_BUCKET.get(artifact.r2Key) : null;
       const bytes = object ? await object.arrayBuffer() : null;

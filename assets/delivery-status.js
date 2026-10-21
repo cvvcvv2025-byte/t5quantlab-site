@@ -16,6 +16,7 @@
       }
     }
   } catch {
+    for (const state of document.querySelectorAll('[data-artifact-state]')) state.textContent = 'Installation status unavailable. Please refresh or check the member center.';
     const node = document.getElementById('deliveryCount');
     if (node) node.textContent = '暂时无法核对安装包，请刷新重试';
     for (const node of document.querySelectorAll('[data-delivery-count]')) node.textContent = '安装包状态以会员中心核验为准';

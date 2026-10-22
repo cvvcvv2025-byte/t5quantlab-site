@@ -1,3 +1,4 @@
+import { trainingCheckoutOpen } from './training-product.js';
 import app from "./worker.js";
 import { reserveOperation, settleOperation } from "./builder-lifecycle.js";
 
@@ -13,6 +14,7 @@ const BILLABLE_ACTION = new Map([
 ]);
 
 const PRODUCT_CATALOG = {
+  training_breakout_v1: { name: "突破确认训练 · 30天", analyzeCredits: 0, modifyCredits: 0, expiresDays: 30, fulfillment: "membership" },
   code_workshop_single: {
     name: "T5 Code Workshop · 单次完整处理",
     analyzeCredits: 1,
@@ -257,7 +259,9 @@ function accessStatus(access) {
 function priceFor(env, productCode, currency) {
   const c = String(currency || "").toUpperCase();
   let raw = null;
-  if (productCode === "code_workshop_single") {
+  if (productCode === "training_breakout_v1") {
+    raw = c === "USD" && ((env.T5_TRAINING_SANDBOX_CHECKOUT === "true" && env.PAYPAL_ENVIRONMENT === "sandbox") || (env.T5_TRAINING_LIVE_CHECKOUT === "true" && env.PAYPAL_ENVIRONMENT === "live")) ? "1200" : null;
+  } else if (productCode === "code_workshop_single") {
     raw = c === "CNY" ? env.CODE_WORKSHOP_PRICE_CNY_MINOR : c === "USD" ? env.CODE_WORKSHOP_PRICE_USD_MINOR : null;
   } else if (productCode === "indicator_membership") {
     raw = c === "USD" ? env.INDICATOR_MEMBERSHIP_PRICE_USD_MINOR : null;
@@ -406,6 +410,14 @@ async function recordPaymentEvent(env, { provider, eventId, eventType, orderId =
   return Number(result?.meta?.changes || 0) === 1;
 }
 
+async function recordTrainingSandboxWebhook(env, orderId, eventId, eventType) {
+  if (env.PAYPAL_ENVIRONMENT !== 'sandbox' || !eventId) return;
+  const order=await env.BUILDER_DB.prepare('SELECT product_code FROM orders WHERE order_id=?').bind(orderId).first();
+  if(order?.product_code !== 'training_breakout_v1')return;
+  await env.BUILDER_DB.prepare(`CREATE TABLE IF NOT EXISTS training_sandbox_webhook_events (event_id TEXT PRIMARY KEY,order_id TEXT NOT NULL,event_type TEXT NOT NULL,verified_at TEXT NOT NULL)`).run();
+  await env.BUILDER_DB.prepare(`INSERT INTO training_sandbox_webhook_events (event_id,order_id,event_type,verified_at) VALUES (?,?,?,?) ON CONFLICT DO NOTHING`).bind(eventId,orderId,eventType,nowIso()).run();
+}
+
 async function completePaidOrder(env, { orderId, provider, providerTradeId, paidAmountMinor, currency, eventId = null }) {
   await ensureAccessDb(env);
   const order = await env.BUILDER_DB.prepare(`SELECT order_id, user_id, builder_token_hash, product_code, amount_minor, currency, status, grant_id
@@ -530,7 +542,7 @@ async function revokePaidOrder(env, { orderId, provider, eventId = null, provide
     statements.push(env.BUILDER_DB.prepare("UPDATE builder_access_grants SET status = 'revoked', updated_at = ? WHERE grant_id = ?")
       .bind(updated, order.grant_id));
   }
-  if (["indicator_membership", "premium_membership"].includes(order.product_code) && order.user_id) {
+  if (["indicator_membership", "premium_membership", "training_breakout_v1"].includes(order.product_code) && order.user_id) {
     statements.push(env.BUILDER_DB.prepare(`UPDATE product_entitlements SET status = 'revoked', updated_at = ?
       WHERE user_id = ? AND product_code = ? AND source_order_id = ?`)
       .bind(updated, order.user_id, order.product_code, orderId));
@@ -572,6 +584,7 @@ function paypalSandboxEnv(env) {
     PAYPAL_CLIENT_SECRET: String(env.PAYPAL_SANDBOX_CLIENT_SECRET || "").trim(),
     PAYPAL_WEBHOOK_ID: String(env.PAYPAL_SANDBOX_WEBHOOK_ID || "").trim(),
     PAYPAL_ENVIRONMENT: "sandbox",
+    T5_TRAINING_SANDBOX_CHECKOUT: "true",
     ENABLE_PAYMENT_TEST_MODE: "true"
   };
 }
@@ -644,6 +657,7 @@ async function handlePayPalCreate(request, env, { callbackPath = "/checkout/", c
   const orderId = String(body.order_id || "");
   const order = await getAuthorizedOrder(request, env, orderId);
   if (!order) return json({ ok: false, error: "订单不存在或订单令牌无效" }, 403);
+  if (order.product_code === "training_breakout_v1" && !(await trainingCheckoutOpen(env))) return json({ ok: false, code: "TRAINING_CHECKOUT_CLOSED" }, 503);
   if (order.status === "granted") return json({ ok: true, already_paid: true, order_id: orderId });
   if (order.status !== "pending") return json({ ok: false, error: "该订单当前不能发起付款" }, 409);
   if (order.currency !== "USD") return json({ ok: false, error: "PayPal 订单必须使用 USD" }, 400);
@@ -661,7 +675,9 @@ async function handlePayPalCreate(request, env, { callbackPath = "/checkout/", c
   }
 
   const origin = new URL(request.url).origin;
-  const effectiveCallbackPath = callbackPath === "/checkout/" && order.product_code === "premium_membership"
+  const effectiveCallbackPath = callbackPath === "/checkout/" && order.product_code === "training_breakout_v1"
+    ? "/training/breakout-confirmation/checkout/"
+    : callbackPath === "/checkout/" && order.product_code === "premium_membership"
     ? "/membership/automation-checkout/"
     : callbackPath === "/checkout/" && ["indicator_membership", "premium_membership"].includes(order.product_code)
       ? "/membership/checkout/" : callbackPath;
@@ -743,6 +759,7 @@ async function handlePayPalCapture(request, env, { adminAuthorized = false } = {
       FROM orders WHERE order_id = ?`).bind(orderId).first()
     : await getAuthorizedOrder(request, env, orderId);
   if (!order) return json({ ok: false, error: "订单不存在或订单令牌无效" }, 403);
+  if (order.product_code === "training_breakout_v1" && !(await trainingCheckoutOpen(env))) return json({ ok: false, code: "TRAINING_CHECKOUT_CLOSED" }, 503);
   if (order.status === "granted") return json({ ok: true, order_id: orderId, status: "granted", duplicate: true });
   if (order.status !== "pending" && order.status !== "paid") return json({ ok: false, error: "该订单当前不能完成付款" }, 409);
   if (!paypalOrderId) return json({ ok: false, error: "缺少 PayPal order id" }, 400);
@@ -865,6 +882,7 @@ async function handlePayPalWebhook(request, env) {
         currency,
         eventId: eventId || `capture:${resource.id}`
       });
+      await recordTrainingSandboxWebhook(env,local.orderId,eventId,eventType);
       if (local.providerOrderId) {
         await env.BUILDER_DB.prepare(`UPDATE payment_intents SET status = 'captured', updated_at = ?
           WHERE provider = 'paypal' AND provider_order_id = ?`).bind(nowIso(), local.providerOrderId).run();
@@ -885,6 +903,7 @@ async function handlePayPalWebhook(request, env) {
           providerTradeId: String(resource.id || ""),
           eventId: eventId || `refund:${resource.id}`
         });
+        await recordTrainingSandboxWebhook(env,local.orderId,eventId,eventType);
       } else {
         await recordPaymentEvent(env, {
           provider: "paypal",
@@ -986,26 +1005,28 @@ async function sandboxAdminReady(request, env) {
 async function handleAdminSandboxOrder(request, env) {
   const ready = await sandboxAdminReady(request, env);
   if (ready.response) return ready.response;
+  let requested = {}; try { requested = await request.clone().json(); } catch {}
+  const training = requested.product_code === 'training_breakout_v1';
   const body = JSON.stringify({
-    product_code: "code_workshop_single",
-    currency: "USD",
-    email: "sandbox-e2e@t5quantlab.invalid"
+    product_code: training ? 'training_breakout_v1' : 'code_workshop_single',
+    currency: 'USD', email: training ? requested.email : 'sandbox-e2e@t5quantlab.invalid'
   });
   const internal = new Request(request.url, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body
   });
-  return handleCreateOrder(internal, env);
+  return handleCreateOrder(internal, ready.sandboxEnv);
 }
 
 async function handleAdminSandboxCreate(request, env) {
   const ready = await sandboxAdminReady(request, env);
   if (ready.response) return ready.response;
-  return handlePayPalCreate(request, ready.sandboxEnv, {
-    callbackPath: "/admin/paypal-sandbox/",
-    callbackProvider: "paypal-sandbox"
-  });
+  const body = await request.clone().json();
+  const order = await getAuthorizedOrder(request, env, String(body.order_id || ''));
+  const callback = { callbackPath: "/admin/paypal-sandbox/", callbackProvider: "paypal-sandbox" };
+  if (order?.product_code === 'training_breakout_v1') callback.callbackPath = '/admin/training-sandbox/';
+  return handlePayPalCreate(request, ready.sandboxEnv, callback);
 }
 
 async function handleAdminSandboxCapture(request, env) {
@@ -1020,13 +1041,14 @@ async function handleAdminSandboxStatus(request, env) {
   await ensureAccessDb(env);
   const orderId = String(new URL(request.url).searchParams.get("order_id") || "").trim();
   if (!orderId) return json({ ok: false, error: "缺少 order_id" }, 400);
-  const row = await env.BUILDER_DB.prepare(`SELECT o.order_id, o.status, o.amount_minor, o.currency,
+  const row = await env.BUILDER_DB.prepare(`SELECT o.order_id, o.status, o.amount_minor, o.currency, o.product_code,
       o.payment_provider, o.provider_trade_id, o.grant_id, o.created_at, o.paid_at, o.granted_at,
       p.provider_order_id, p.status AS payment_status,
-      g.status AS grant_status, g.analyze_remaining, g.modify_remaining, g.expires_at
+      COALESCE(e.status, g.status) AS grant_status, g.analyze_remaining, g.modify_remaining, COALESCE(e.expires_at,g.expires_at) AS expires_at
     FROM orders o
     LEFT JOIN payment_intents p ON p.order_id = o.order_id AND p.provider = 'paypal'
     LEFT JOIN builder_access_grants g ON g.grant_id = o.grant_id
+    LEFT JOIN product_entitlements e ON e.source_order_id = o.order_id AND e.product_code = o.product_code
     WHERE o.order_id = ?`).bind(orderId).first();
   if (!row) return json({ ok: false, error: "ORDER_NOT_FOUND" }, 404);
   if (row.status === "refunded" && row.payment_status !== "refunded") {
@@ -1034,7 +1056,12 @@ async function handleAdminSandboxStatus(request, env) {
       .bind(nowIso(), orderId).run();
     row.payment_status = "refunded";
   }
-  return json({ ok: true, environment: "sandbox", result: row });
+  let webhookEvents=[];
+  if(row.product_code==='training_breakout_v1') {
+    await env.BUILDER_DB.prepare(`CREATE TABLE IF NOT EXISTS training_sandbox_webhook_events (event_id TEXT PRIMARY KEY,order_id TEXT NOT NULL,event_type TEXT NOT NULL,verified_at TEXT NOT NULL)`).run();
+    webhookEvents=(await env.BUILDER_DB.prepare('SELECT event_id,event_type,verified_at FROM training_sandbox_webhook_events WHERE order_id=? ORDER BY verified_at').bind(orderId).all()).results || [];
+  }
+  return json({ ok: true, environment: "sandbox", result: row, verified_webhooks: webhookEvents });
 }
 
 async function handleAdminSandboxRefund(request, env) {

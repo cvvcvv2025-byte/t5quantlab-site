@@ -291,3 +291,25 @@ CREATE TABLE IF NOT EXISTS support_tickets (
   message TEXT NOT NULL, reply TEXT, status TEXT NOT NULL DEFAULT 'open', ip_hash TEXT NOT NULL,
   created_at TEXT NOT NULL, updated_at TEXT NOT NULL
 );
+
+-- Account-bound training attempts are append-only; first attempt is minimum seq per case/version.
+CREATE TABLE IF NOT EXISTS training_attempts (
+  seq INTEGER PRIMARY KEY AUTOINCREMENT,
+  user_id TEXT NOT NULL,
+  content_version TEXT NOT NULL,
+  case_id TEXT NOT NULL,
+  request_id TEXT NOT NULL,
+  choices TEXT NOT NULL,
+  grade TEXT NOT NULL,
+  created_at TEXT NOT NULL,
+  UNIQUE(user_id, content_version, request_id)
+);
+CREATE INDEX IF NOT EXISTS idx_training_attempts_user ON training_attempts(user_id, content_version, case_id, seq);
+
+CREATE TABLE IF NOT EXISTS training_sandbox_webhook_events (
+  event_id TEXT PRIMARY KEY, order_id TEXT NOT NULL, event_type TEXT NOT NULL, verified_at TEXT NOT NULL
+);
+
+CREATE TABLE IF NOT EXISTS training_sandbox_test_orders (
+  order_id TEXT PRIMARY KEY, content_sha256 TEXT NOT NULL, created_at TEXT NOT NULL
+);

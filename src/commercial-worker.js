@@ -1,3 +1,4 @@
+import { TRAINING_TERMS, trainingCheckoutOpen } from './training-product.js';
 import core from "./gated-worker.js";
 
 const PASS_PRODUCT_CODE = "code_workshop_single";
@@ -220,15 +221,17 @@ async function handleCreateOrder(request, env, ctx) {
   try { body = await request.clone().json(); } catch { return json({ ok: false, error: "订单参数无效" }, 400); }
 
   const productCode = String(body?.product_code || PASS_PRODUCT_CODE);
-  if (![PASS_PRODUCT_CODE, INDICATOR_PRODUCT_CODE, PREMIUM_PRODUCT_CODE].includes(productCode)) {
+  if (![PASS_PRODUCT_CODE, INDICATOR_PRODUCT_CODE, PREMIUM_PRODUCT_CODE, "training_breakout_v1"].includes(productCode)) {
     return json({ ok: false, error: "产品不存在", code: "PRODUCT_NOT_FOUND" }, 400);
   }
-  if (body?.terms_accepted !== true || String(body?.terms_version || "") !== TERMS_VERSION) {
+  if (productCode === "training_breakout_v1" && !(await trainingCheckoutOpen(env))) return json({ ok: false, code: "TRAINING_CHECKOUT_CLOSED", error: "训练产品尚未开放购买" }, 503);
+  const acceptedTermsVersion = productCode === "training_breakout_v1" ? TRAINING_TERMS : TERMS_VERSION;
+  if (body?.terms_accepted !== true || String(body?.terms_version || "") !== acceptedTermsVersion) {
     return json({
       ok: false,
       error: "请先阅读并确认数字服务退款与交付条款。",
       code: "TERMS_ACCEPTANCE_REQUIRED",
-      terms_version: TERMS_VERSION
+      terms_version: acceptedTermsVersion
     }, 400);
   }
   if (String(body?.currency || "USD").toUpperCase() !== "USD") {
@@ -254,9 +257,9 @@ async function handleCreateOrder(request, env, ctx) {
       (order_id, terms_version, accepted_at, accepted_ip_hash, user_agent, created_at)
       VALUES (?, ?, ?, ?, ?, ?)
       ON CONFLICT(order_id) DO NOTHING`)
-      .bind(orderId, TERMS_VERSION, acceptedAt, ipHash, ua, acceptedAt),
+      .bind(orderId, acceptedTermsVersion, acceptedAt, ipHash, ua, acceptedAt),
     env.BUILDER_DB.prepare(`UPDATE orders SET product_name = ?, updated_at = ? WHERE order_id = ?`)
-      .bind(productCode === PREMIUM_PRODUCT_CODE ? PREMIUM_NAME : productCode === INDICATOR_PRODUCT_CODE ? INDICATOR_NAME : PASS_NAME, acceptedAt, orderId)
+      .bind(productCode === "training_breakout_v1" ? "突破确认训练 · 30天" : productCode === PREMIUM_PRODUCT_CODE ? PREMIUM_NAME : productCode === INDICATOR_PRODUCT_CODE ? INDICATOR_NAME : PASS_NAME, acceptedAt, orderId)
   ]);
   return response;
 }
@@ -349,7 +352,7 @@ async function setGrantStatus(env, orderId, status) {
     await env.BUILDER_DB.prepare(`UPDATE builder_access_grants SET status = ?, updated_at = ? WHERE grant_id = ?`)
       .bind(status, nowIso(), order.grant_id).run();
   }
-  if ([INDICATOR_PRODUCT_CODE, PREMIUM_PRODUCT_CODE].includes(order.product_code) && order.user_id) {
+  if ([INDICATOR_PRODUCT_CODE, PREMIUM_PRODUCT_CODE, "training_breakout_v1"].includes(order.product_code) && order.user_id) {
     await env.BUILDER_DB.prepare(`UPDATE product_entitlements SET status = ?, updated_at = ?
       WHERE user_id = ? AND product_code = ? AND source_order_id = ?`)
       .bind(status, nowIso(), order.user_id, order.product_code, orderId).run();

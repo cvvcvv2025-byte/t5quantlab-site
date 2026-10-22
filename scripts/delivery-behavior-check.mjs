@@ -93,10 +93,14 @@ try {
   const stagedKey = [...objects.keys()].find(key => key.includes('/structure-decision-map/'));
   assert.ok(stagedKey, 'staged Decision Map must be registered');
   objects.delete(stagedKey);
+  const mt5Key = [...objects.keys()].find(key => key.includes('/structure-decision-map-mt5/'));
+  assert.ok(mt5Key);
+  objects.delete(mt5Key);
   const stagedCatalog = await call('/api/products/delivery');
   const staged = stagedCatalog.data.artifacts.find(item => item.slug === 'structure-decision-map');
   assert.equal(staged.ready, false, 'unuploaded package must stay unavailable');
   assert.equal(staged.membership_required, false, 'staged package is not yet a promised membership delivery');
+  assert.equal(stagedCatalog.data.artifacts.find(item => item.slug === 'structure-decision-map-mt5').ready, false);
   const premium = await purchase('premium_membership');
   let r = await call('/api/orders/refund-eligibility?order_id=' + premium.order.order_id, null, premium.headers);
   assert.equal(r.data.refund_eligible_under_t5_policy, true);
@@ -140,7 +144,7 @@ try {
   db.batch = async items => { if (items.some(x => x.sql.includes('CREATE TABLE IF NOT EXISTS projects'))) throw new Error('simulated schema outage'); return originalBatch(items); };
   r = await call('/api/builder/analyze', { projectId: brokenId }); db.batch = originalBatch;
   assert.equal(r.status, 503); assert.equal((await call('/api/account/summary')).data.builder.analyze_remaining, 2);
-  r = await call('/api/products/delivery'); assert.equal(r.data.ready_count, 7); assert.equal(r.data.total_count, 8);
+  r = await call('/api/products/delivery'); assert.equal(r.data.ready_count, 7); assert.equal(r.data.total_count, 9);
   // Customer support is usable without login and protects each private reply by its receipt token.
   session = '';
   r = await call('/api/support/tickets', { email: 'customer@example.invalid', message: 'I cannot download the purchased product.', consent: true });

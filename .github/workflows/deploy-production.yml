@@ -37,6 +37,7 @@ jobs:
           node scripts/prepare-release.mjs --ci
           node --check src/runtime-worker.js
           node scripts/delivery-behavior-check.mjs
+          node scripts/training-behavior-check.mjs
           node scripts/builder-recovery-behavior-check.mjs
           node scripts/runtime-health-behavior-check.mjs
           node scripts/runtime-license-behavior-check.mjs

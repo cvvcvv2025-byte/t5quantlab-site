@@ -1,3 +1,5 @@
+import { TRAINING_TERMS } from '../src/training-product.js';
+import { trainingResponse, TRAINING_CONTENT_KEY } from '../src/training-worker.js';
 import { runtimeLicenseResponse, adminRuntimeLicenseQa } from '../src/runtime-license.js';
 import fs from 'node:fs';
 import vm from 'node:vm';
@@ -7,8 +9,9 @@ import {webcrypto} from 'node:crypto';
 const source=fs.readFileSync('src/account-worker.js','utf8')
  .replace('import app from "./final-worker.js";','const app={fetch:()=>new Response("unused",{status:404})};')
  .replace("import { runtimeLicenseResponse, adminRuntimeLicenseQa } from './runtime-license.js';",'')
+ .replace(/^import .*from '.\/training-(?:product|worker)\.js';$/gm,'')
  .replace('export default {','globalThis.worker = {');
-const context=vm.createContext({Request,Response,Headers,URL,TextEncoder,crypto:webcrypto,console,runtimeLicenseResponse,adminRuntimeLicenseQa});
+const context=vm.createContext({Request,Response,Headers,URL,TextEncoder,crypto:webcrypto,console,runtimeLicenseResponse,adminRuntimeLicenseQa,TRAINING_TERMS,trainingResponse,TRAINING_CONTENT_KEY});
 vm.runInContext(source+'\nensureAccountDb=async()=>{};',context);
 let grants=[],gets=0,puts=0,downloads=0,stored=null,corruptReadback=false;
 const env={ACCOUNT_AUTH_SECRET:'test-secret',BUILDER_ACCESS_KEY:'test-admin-only',

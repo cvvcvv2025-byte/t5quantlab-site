@@ -1,3 +1,4 @@
+import { summarizeFeedback, summaryMarkup } from './feedback-summary.js';
 (() => {
   'use strict';
   const sandbox = location.pathname.startsWith('/admin/training-sandbox/');
@@ -17,6 +18,7 @@
     $('chart').innerHTML = svg + '<details><summary>放大K线（可左右滑动）</summary><div class="zoom-chart">' + svg + '</div></details>';
   }
   function records() {
+    if ($('dimensionFeedback')) $('dimensionFeedback').innerHTML = summaryMarkup(summarizeFeedback(Object.entries(report.records || {}).map(([id,r]) => ({id,firstGrade:r.first?.grade,latestGrade:r.latest?.grade}))));
     $('records').innerHTML = Object.entries(report.records || {}).map(([id,r]) => { const score = v => v?.grade ? ['action','reason','condition'].map((k,i)=>['状态','依据','边界'][i]+(v.grade[k]?'✓':'×')).join(' / ') : '待整组完成'; return `<p>${esc(id)} · 首次 ${score(r.first)} · 最近 ${score(r.latest)} · ${r.attempts} 次作答</p>`; }).join('') || '<p>尚无本期作答记录。</p>';
     $('export').hidden = false;
   }
@@ -25,6 +27,11 @@
     try {
       const data = await api('case/' + course.cases[i].id); index = i; current = data; futureOpen = false; requestId = null;
       const c = data.case, prior = report.records?.[c.id];
+      if ($('continueTraining')) {
+        const target = course.cases.findIndex(c => !report.records?.[c.id]);
+        $('continueTraining').textContent = target < 0 ? '本期已作答完毕，可回看下方记录或补练。' : `下次练习：${course.cases[target].title}`;
+        if (target >= 0) { const b = document.createElement('button'); b.type='button'; b.textContent='继续未完成情境 →'; b.onclick=()=>open(target); $('continueTraining').append(' ',b); }
+      }
       $('position').textContent = `第${c.day}天 · ${c.group} · ${index+1}/16`;
       $('title').textContent = c.title; $('context').textContent = c.context; draw(c);
       const groups = [['action','1. 当前状态',[{id:'WAIT',text:'等待：证据仍不足'},{id:'CANCEL',text:'取消：当前候选或计划不合格'},{id:'READY',text:'条件满足：仅指符合本题规则'}]],['reason','2. 判断依据',c.reasonOptions],['condition','3. 失效或重建边界',c.conditionOptions]];

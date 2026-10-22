@@ -32,6 +32,8 @@ jobs:
           node --check src/audit-guard-worker.js
           node --check src/final-worker.js
           node --check src/account-worker.js
+          node --check src/training-worker.js
+          node --check src/training-product.js
           node --check src/marketing-worker.js
           node --check src/runtime-worker.js
       - name: Check external JavaScript assets
@@ -42,6 +44,7 @@ jobs:
       - name: Exercise customer delivery against local SQLite
         run: |
           node scripts/delivery-behavior-check.mjs
+          node scripts/training-behavior-check.mjs
           node scripts/builder-recovery-behavior-check.mjs
           node scripts/runtime-health-behavior-check.mjs
           node scripts/runtime-license-behavior-check.mjs

@@ -1,4 +1,6 @@
 import app from "./final-worker.js";
+import { TRAINING_TERMS } from './training-product.js';
+import { trainingResponse, TRAINING_CONTENT_KEY } from './training-worker.js';
 import { runtimeLicenseResponse, adminRuntimeLicenseQa } from './runtime-license.js';
 
 const SESSION_COOKIE = "t5_session";
@@ -806,6 +808,55 @@ export default {
   async fetch(request, env, ctx) {
     try {
       const url = new URL(request.url), p = url.pathname;
+      if (p.startsWith('/api/training/breakout/')) return trainingResponse(request, env, resolveSession);
+      if (p.startsWith('/api/admin/training-sandbox/')) {
+        if (!(await isAdmin(request, env))) return json({ok:false,code:'UNAUTHORIZED'},403);
+        if (env.ENABLE_PAYPAL_SANDBOX_E2E !== 'true') return json({ok:false,code:'SANDBOX_DISABLED'},503);
+        if (p === '/api/admin/training-sandbox/content' && request.method === 'GET') {
+          const head=await env.USER_CODE_BUCKET?.head(TRAINING_CONTENT_KEY);
+          return json({ok:true,ready:!!head,sha256:head?.customMetadata?.sha256 || null});
+        }
+        if (p === '/api/admin/training-sandbox/content' && request.method === 'PUT') {
+          if (request.headers.get('Origin') !== url.origin) return json({ok:false,code:'SAME_ORIGIN_REQUIRED'},403);
+          const body = await request.text(); if (body.length > 300000) return json({ok:false,code:'TOO_LARGE'},413);
+          let content; try { content=JSON.parse(body); } catch {return json({ok:false,code:'INVALID_JSON'},400);}
+          const ids=['PRE01','PRE02','PRE03','D2A','D2B','D3A','D3B','D4A','D4B','D5A','D5B','D6A','D6B','POST01','POST02','POST03'];
+          if (content.contentVersion !== 'pilot-2026-10-22' || content.cases?.length !== 16 || !ids.every(id=>content.cases.some(c=>c.id===id && c.bars?.length===12 && c.answer && c.future?.length===4)) || !Array.isArray(content.policy)) return json({ok:false,code:'INVALID_CONTENT'},400);
+          if (!env.USER_CODE_BUCKET) return json({ok:false,code:'STORAGE_UNAVAILABLE'},503);
+          const checksum=await sha256Hex(body);
+          const old=await env.USER_CODE_BUCKET.head(TRAINING_CONTENT_KEY);
+          if (old) return json({ok:false,code:'CONTENT_ALREADY_PINNED',error:'已有固定版本内容，请勿覆盖。'},409);
+          await env.USER_CODE_BUCKET.put(TRAINING_CONTENT_KEY,body,{httpMetadata:{contentType:'application/json'},customMetadata:{sha256:checksum,version:content.contentVersion}});
+          return json({ok:true,sha256:checksum});
+        }
+        if (p.startsWith('/api/admin/training-sandbox/learning/')) {
+          const target=new URL(request.url); target.pathname=p.replace('/api/admin/training-sandbox/learning/','/api/training/breakout/');
+          return trainingResponse(new Request(target,request),{...env,T5_TRAINING_DELIVERY_ENABLED:'true'},resolveSession);
+        }
+      }
+      if (p === '/api/admin/paypal-sandbox/order' && request.method === 'POST') {
+        let body={};try{body=await request.clone().json();}catch{}
+        if (body.product_code === 'training_breakout_v1') {
+          if (!(await isAdmin(request,env))) return json({ok:false,code:'UNAUTHORIZED'},403);
+          const user=await resolveSession(request,env);
+          if(!user)return json({ok:false,code:'ACCOUNT_REQUIRED',error:'请先登录测试T5账户'},401);
+          if(body.terms_accepted!==true || body.terms_version!==TRAINING_TERMS)return json({ok:false,code:'TERMS_ACCEPTANCE_REQUIRED'},400);
+          if(!await env.USER_CODE_BUCKET?.head(TRAINING_CONTENT_KEY))return json({ok:false,code:'TRAINING_CONTENT_NOT_READY'},503);
+          const headers=new Headers(request.headers);headers.set('Content-Type','application/json');
+          const response=await app.fetch(new Request(request.url,{method:'POST',headers,body:JSON.stringify({...body,email:user.email})}),env,ctx);
+          if(!response.ok)return response;
+          const data=await response.clone().json();const orderId=data.order?.order_id;
+          if(orderId){
+            await ensureOrderUserColumn(env);
+            const head=await env.USER_CODE_BUCKET.head(TRAINING_CONTENT_KEY);
+            await env.BUILDER_DB.prepare(`CREATE TABLE IF NOT EXISTS training_sandbox_test_orders (order_id TEXT PRIMARY KEY,content_sha256 TEXT NOT NULL,created_at TEXT NOT NULL)`).run();
+            await env.BUILDER_DB.prepare('INSERT INTO training_sandbox_test_orders (order_id,content_sha256,created_at) VALUES (?,?,?)').bind(orderId,head?.customMetadata?.sha256 || '',nowIso()).run();
+            await env.BUILDER_DB.prepare('UPDATE orders SET user_id=?,customer_email=? WHERE order_id=?').bind(user.user_id,user.email,orderId).run();
+            await env.BUILDER_DB.prepare(`INSERT INTO order_terms (order_id,terms_version,accepted_at,accepted_ip_hash,user_agent,created_at) VALUES (?,?,?,?,?,?)`).bind(orderId,TRAINING_TERMS,nowIso(),await ipHash(request,env),String(request.headers.get('User-Agent')||'').slice(0,500),nowIso()).run();
+          }
+          return response;
+        }
+      }
       if (p === '/api/admin/runtime-license-qa' || p === '/api/admin/runtime-license-qa/update') {
         if (!(await isAdmin(request,env))) return json({ ok: false, error: 'Unauthorized' },403);
         await ensureAccountDb(env);

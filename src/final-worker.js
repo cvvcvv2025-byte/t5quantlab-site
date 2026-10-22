@@ -1,3 +1,4 @@
+import { TRAINING_REFUND_DAYS } from './training-product.js';
 import app from "./audit-guard-worker.js";
 
 function json(data, status = 200) {
@@ -18,7 +19,7 @@ async function authorizedOrder(request, env, orderId) {
   const token = request.headers.get("X-Order-Token") || "";
   if (!token || !orderId || !env.BUILDER_DB) return null;
   const hash = await sha256Hex(token);
-  return env.BUILDER_DB.prepare(`SELECT order_id, product_code, user_id, status, grant_id, payment_provider, provider_trade_id
+  return env.BUILDER_DB.prepare(`SELECT order_id, product_code, user_id, status, grant_id, payment_provider, provider_trade_id, paid_at
     FROM orders WHERE order_id = ? AND order_token_hash = ?`).bind(orderId, hash).first();
 }
 
@@ -27,6 +28,16 @@ async function refundEligibility(request, env) {
   const orderId = url.searchParams.get("order_id") || "";
   const order = await authorizedOrder(request, env, orderId);
   if (!order) return json({ ok: false, error: "订单不存在或订单令牌无效" }, 403);
+  if (order.product_code === 'training_breakout_v1') {
+    const paidAt = Date.parse(order.paid_at || '');
+    const deadline = Number.isFinite(paidAt) ? paidAt + TRAINING_REFUND_DAYS * 86400000 : null;
+    const eligible = ['paid','granted'].includes(order.status) && deadline !== null && Date.now() <= deadline;
+    return json({ ok: true, order_id: orderId, refund_eligible_under_t5_policy: eligible,
+      refund_request_deadline: deadline === null ? null : new Date(deadline).toISOString(),
+      manual_review_required: true,
+      reason: eligible ? '付款成功后7个自然日内可申请本期全额退款，已练习也可申请。请联系支持核对订单；本查询不会自动退款。' : '订单不在本期7日体验退款窗口内，重复扣款、未交付或法定权利等情况仍可联系支持核对。',
+      payment_provider_rules_still_apply: true });
+  }
   let usageCount = 0;
   let usageLabel = "付费 AI 分析或修改";
   const membership = ["indicator_membership", "premium_membership"].includes(order.product_code);

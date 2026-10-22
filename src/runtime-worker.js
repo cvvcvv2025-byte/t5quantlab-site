@@ -1,4 +1,6 @@
 import app from "./marketing-worker.js";
+import { trainingCheckoutOpen } from './training-product.js';
+import { TRAINING_CONTENT_KEY } from './training-worker.js';
 import { releaseInfo } from "./release-info.js";
 
 function json(data, status = 200) {
@@ -463,12 +465,16 @@ function checkoutNotReady() {
   }, 503);
 }
 
+async function trainingCheckoutReady(env) {
+  return env.T5_TRAINING_DELIVERY_ENABLED === 'true' && await trainingCheckoutOpen(env)
+    && configState(env).account_ready && configState(env).paypal && configState(env).audit_salt;
+}
 async function guardedCreateOrder(request, env, ctx) {
   const state = configState(env);
   const productCode = await requestedProduct(request);
-  const ready = productCode === "premium_membership" ? state.membership_checkout_ready
+  const ready = productCode === "training_breakout_v1" ? await trainingCheckoutReady(env) && Boolean(await env.USER_CODE_BUCKET?.head(TRAINING_CONTENT_KEY)) : productCode === "premium_membership" ? state.membership_checkout_ready
     : productCode === "indicator_membership" ? state.indicator_checkout_ready : state.checkout_ready;
-  if (!ready) return checkoutNotReady();
+  if (!ready) return productCode === 'training_breakout_v1' ? json({ok:false,code:'TRAINING_CHECKOUT_CLOSED'},503) : checkoutNotReady();
 
   const precheck = await accountSummaryPrecheck(request, env, ctx);
   if (precheck.status === 401) return app.fetch(request, env, ctx);
@@ -480,6 +486,7 @@ async function guardedCreateOrder(request, env, ctx) {
     }, 503);
   }
   const summary = precheck.data;
+  if (productCode === 'training_breakout_v1' && summary.entitlements?.some(e => e.product_code === productCode)) return json({ok:false,code:'ACTIVE_TRAINING_REMAINS'},409);
   if (!(await membershipDeliveryReady(request, env, ctx, productCode))) return deliveryUnavailable();
   if ((productCode === "indicator_membership" && indicatorMembershipStillActive(summary.entitlements))
     || (productCode === "premium_membership" && premiumMembershipStillActive(summary.entitlements))) {
@@ -507,9 +514,9 @@ async function guardedCreateOrder(request, env, ctx) {
 async function guardedPayPalCreate(request, env, ctx) {
   const state = configState(env);
   const productCode = await requestedOrderProduct(request, env);
-  const ready = productCode === "premium_membership" ? state.membership_checkout_ready
+  const ready = productCode === "training_breakout_v1" ? await trainingCheckoutReady(env) && Boolean(await env.USER_CODE_BUCKET?.head(TRAINING_CONTENT_KEY)) : productCode === "premium_membership" ? state.membership_checkout_ready
     : productCode === "indicator_membership" ? state.indicator_checkout_ready : state.checkout_ready;
-  if (!ready) return checkoutNotReady();
+  if (!ready) return productCode === 'training_breakout_v1' ? json({ok:false,code:'TRAINING_CHECKOUT_CLOSED'},503) : checkoutNotReady();
   if (!(await membershipDeliveryReady(request, env, ctx, productCode))) return deliveryUnavailable();
   return app.fetch(request, env, ctx);
 }
@@ -517,7 +524,7 @@ async function guardedPayPalCreate(request, env, ctx) {
 async function guardedPayPalCapture(request, env, ctx) {
   const state = configState(env);
   const productCode = await requestedOrderProduct(request, env);
-  const ready = productCode === "premium_membership" ? state.membership_checkout_ready
+  const ready = productCode === "training_breakout_v1" ? await trainingCheckoutReady(env) && Boolean(await env.USER_CODE_BUCKET?.head(TRAINING_CONTENT_KEY)) : productCode === "premium_membership" ? state.membership_checkout_ready
     : productCode === "indicator_membership" ? state.indicator_checkout_ready : state.paid_builder_ready;
   if (!ready) {
     return json({

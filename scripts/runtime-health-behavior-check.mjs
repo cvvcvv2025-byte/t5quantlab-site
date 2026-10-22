@@ -1,3 +1,5 @@
+import { trainingCheckoutOpen } from '../src/training-product.js';
+import { TRAINING_CONTENT_KEY } from '../src/training-worker.js';
 import fs from 'node:fs';
 import vm from 'node:vm';
 import assert from 'node:assert/strict';
@@ -7,9 +9,10 @@ let resendMode = 'restricted';
 const source = fs.readFileSync('src/runtime-worker.js', 'utf8')
   .replace('import app from "./marketing-worker.js";', 'const app={};')
   .replace('import { releaseInfo } from "./release-info.js";', 'const releaseInfo={commit:"test"};')
+  .replace(/^import .*from '.\/training-(?:product|worker)\.js';$/gm, '')
   .replace('export default {', 'globalThis.worker={');
 const context = vm.createContext({ Request, Response, URL, Headers, TextEncoder, crypto: webcrypto,
-  AbortController, setTimeout, clearTimeout, btoa, console,
+  AbortController, setTimeout, clearTimeout, btoa, console, trainingCheckoutOpen, TRAINING_CONTENT_KEY,
   async fetch(url) {
     if (url.includes('/v1/models/')) return Response.json({ id: 'test' });
     if (url.endsWith('/v1/oauth2/token')) return Response.json({ access_token: 'test-token' });

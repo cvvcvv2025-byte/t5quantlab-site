@@ -167,6 +167,18 @@ try {
   assert.equal((await call('/api/payment/paypal-sandbox/webhook',verifiedRefund,webhookHeaders)).status,200);
   r=await call('/api/admin/paypal-sandbox/status?order_id='+testOrder.order_id,null,admin);
   assert.equal(r.data.result.grant_status,'revoked');assert.equal(r.data.verified_webhooks.length,2);
+  // Real providers can deliver a capture after its refund. It must be recorded
+  // without resurrecting access, and a different capture must be rejected.
+  await run('DELETE FROM training_sandbox_webhook_events WHERE event_id=?',verifiedCapture.id);
+  assert.equal((await call('/api/payment/paypal-sandbox/webhook',verifiedCapture,webhookHeaders)).status,200);
+  r=await call('/api/admin/paypal-sandbox/status?order_id='+testOrder.order_id,null,admin);
+  assert.equal(r.data.result.status,'refunded');assert.equal(r.data.result.payment_status,'refunded');
+  assert.equal(r.data.result.grant_status,'revoked');assert.equal(r.data.verified_webhooks.length,2);
+  for (const change of [{id:'OTHER-CAPTURE'}, {amount:{value:'1.00',currency_code:'USD'}}, {amount:{value:'12.00',currency_code:'EUR'}}]) {
+    const bad={...verifiedCapture,id:'WH-bad-late-capture',resource:{...verifiedCapture.resource,...change}};
+    assert.equal((await call('/api/payment/paypal-sandbox/webhook',bad,webhookHeaders)).status,500);
+  }
+  assert.equal((await first('SELECT COUNT(*) AS n FROM training_sandbox_webhook_events WHERE event_id=?','WH-bad-late-capture')).n,0);
   assert.equal((await call('/api/admin/training-sandbox/learning/case/PRE01',null,admin)).status,403);
   assert.equal((await call('/api/admin/training-sandbox/learning/report',null,admin)).status,200);
   // Live flag alone, missing evidence, or evidence for different content must all remain closed.

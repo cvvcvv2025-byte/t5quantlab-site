@@ -874,6 +874,18 @@ async function handlePayPalWebhook(request, env) {
       if (!local?.orderId) throw new Error("PAYPAL_LOCAL_ORDER_NOT_FOUND");
       const paidMinor = paypalMinor(resource?.amount?.value);
       const currency = String(resource?.amount?.currency_code || "").toUpperCase();
+      // A verified capture may arrive after its refund. Acknowledge the original
+      // payment without granting access again or changing the refunded intent.
+      const settled = await env.BUILDER_DB.prepare(`SELECT status, payment_provider, provider_trade_id, amount_minor, currency FROM orders WHERE order_id = ?`).bind(local.orderId).first();
+      if (settled?.status === 'refunded') {
+        if (settled.payment_provider !== 'paypal' || String(settled.provider_trade_id || '') !== String(resource.id || '')
+          || paidMinor !== Number(settled.amount_minor) || currency !== String(settled.currency).toUpperCase()) {
+          throw new Error('PAYPAL_REFUNDED_CAPTURE_MISMATCH');
+        }
+        await recordPaymentEvent(env, { provider: 'paypal', eventId: eventId || `capture:${resource.id}`, eventType, orderId: local.orderId, providerTradeId: String(resource.id) });
+        await recordTrainingSandboxWebhook(env, local.orderId, eventId, eventType);
+        return json({ ok: true, already_refunded: true });
+      }
       await completePaidOrder(env, {
         orderId: local.orderId,
         provider: "paypal",

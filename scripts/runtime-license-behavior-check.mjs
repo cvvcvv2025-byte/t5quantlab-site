@@ -107,9 +107,55 @@ try {
   session='a';r=await call('/api/account/runtime-licenses',binding);assert.equal(r.status,409,'QA never opens customer activation');
   const indicatorQa={...qaBody,bindings:[{...binding,product_code:'mtf_structure_panel_mt4',platform:'MT4'}]};
   r=await call('/api/admin/runtime-license-qa',indicatorQa,admin);assert.equal(r.status,400);
+  // Opt-in v2: policy acknowledgement, bounded installation leases, downgrade
+  // resistance, migration, owner isolation and non-resettable rebind cooldown.
+  env.RUNTIME_LICENSE_PRODUCTS = 'trend_capture_mt5_v2';
+  env.RUNTIME_LICENSE_V2_PRODUCTS = 'trend_capture_mt5_v2';
+  const hardenedBinding = {...binding,product_code:'trend_capture_mt5_v2'};
+  await grant('trend_capture_mt5',null);
+  r=await call('/api/account/runtime-licenses',hardenedBinding);assert.equal(r.data.code,'LICENSE_POLICY_REQUIRED');
+  r=await call('/api/account/runtime-licenses',{...hardenedBinding,license_policy_version:'terminal-v2-20261023'});assert.equal(r.status,200);
+  token=r.data.license_key;const hardenedId=r.data.license_id;
+  assert.equal(r.data.offline_grace_seconds,300);
+  r=await verify({product_code:'trend_capture_mt5_v2'});assert.equal(r.data.code,'CLIENT_UPGRADE_REQUIRED');
+  const terminalA='1'.repeat(64),terminalB='2'.repeat(64);
+  const v2=(terminal_id=terminalA,patch={},headers={})=>verify({...hardenedBinding,protocol_version:2,terminal_id,...patch},headers);
+  r=await v2('bad');assert.equal(r.status,403);
+  r=await v2(terminalA,{account_login:'888888'});assert.equal(r.status,403);
+  const winners=await Promise.all([v2(terminalA),v2(terminalB)]);
+  assert.deepEqual(winners.map(x=>x.status),[200,409],'two different installations cannot both acquire the slot');
+  r=await v2();assert.equal(r.status,200,'multiple charts in the same installation allowed');
+  assert.equal(r.data.lease_until-r.data.server_time,300);
+  r=await v2(terminalA,{}, {Accept:'text/plain'});assert.match(r.text,new RegExp('^T5L2\\|a{32}\\|trend_capture_mt5_v2\\|MT5\\|123456\\|\\d+\\|0\\|\\d+\\|active\\|'+terminalA+'$'));
+  const slot=await db.prepare("SELECT * FROM runtime_license_terminals WHERE user_id='a' AND product_code='trend_capture_mt5_v2'").first();
+  assert.notEqual(slot.terminal_hash,terminalA,'only salted hashes stored');
+  const originalNow=Date.now;
+  try {
+    Date.now=()=>originalNow()+301000;
+    r=await v2(terminalB);assert.equal(r.status,200,'migration only after previously issued lease elapses');
+    r=await v2(terminalA);assert.equal(r.data.code,'TERMINAL_IN_USE');assert.equal(r.data.manage_existing_positions,true);
+  } finally { Date.now=originalNow; }
+  session='b';r=await call('/api/account/runtime-licenses/revoke',{license_id:hardenedId});assert.equal(r.status,404);
+  session='a';r=await call('/api/account/runtime-licenses/revoke',{license_id:hardenedId});assert.equal(r.status,200);
+  const revoked=await db.prepare('SELECT updated_at FROM runtime_licenses WHERE license_id=?').bind(hardenedId).first();
+  r=await call('/api/account/runtime-licenses/revoke',{license_id:hardenedId});assert.equal(r.status,404);
+  assert.equal((await db.prepare('SELECT updated_at FROM runtime_licenses WHERE license_id=?').bind(hardenedId).first()).updated_at,revoked.updated_at);
+  r=await call('/api/account/runtime-licenses',{...hardenedBinding,license_policy_version:'terminal-v2-20261023'});assert.equal(r.data.code,'REBIND_COOLDOWN');assert.ok(r.data.retry_at);
+  r=await v2(terminalB);assert.equal(r.status,403,'revoked key cannot renew its lease');
+  await run('UPDATE runtime_licenses SET updated_at=? WHERE license_id=?',new Date(Date.now()-7*86400000-1000).toISOString(),hardenedId);
+  r=await call('/api/account/runtime-licenses',{...hardenedBinding,account_login:'999888',license_policy_version:'terminal-v2-20261023'});assert.equal(r.status,200);
+  assert.notEqual(r.data.license_key,token);r=await v2(terminalB);assert.equal(r.status,403,'old token invalid after cooldown/rebinding');
+  // Independent QA grants can test v2 while every customer release stays closed.
+  env.RUNTIME_LICENSE_PRODUCTS='';env.RUNTIME_LICENSE_V2_PRODUCTS='';
+  r=await call('/api/admin/runtime-license-qa',qaBody,admin);token=r.data.tests[0].license_key;
+  r=await verify({protocol_version:2,terminal_id:terminalA});assert.equal(r.status,200);assert.equal(r.data.lease_until-r.data.server_time,300);
+  r=await verify({protocol_version:2,terminal_id:terminalB});assert.equal(r.status,409);
+  assert.equal((await call('/api/account/runtime-licenses',binding)).status,409);
   // Fill local rate bucket without making external calls.
   await run('DELETE FROM runtime_license_requests');
-  for (let i = 0; i < 60; i++) r = await verify();
+  await run(`WITH RECURSIVE n(x) AS (VALUES(1) UNION ALL SELECT x+1 FROM n WHERE x<60)
+    INSERT INTO runtime_license_requests(ip_hash,created_at) SELECT ?,? FROM n`,hash(env.ACCOUNT_AUTH_SECRET+':license:192.0.2.10'),new Date().toISOString());
   r = await verify(); assert.equal(r.status, 429);
-  console.log('Runtime licensing and admin QA: tier/account isolation, expiry, renewal, revocation, capped leases, private handshake evidence, production-disabled QA and rate limits passed.');
+  r = await verify({}, {'CF-Connecting-IP':'192.0.2.11'});assert.equal(r.status,200,'rate buckets isolate unrelated clients');
+  console.log('Runtime licensing v1/v2: isolation, expiry, revocation, atomic terminal leases, migration, policy consent, 7-day rebind cooldown, closed-production QA and rate limits passed.');
 } finally { fs.rmSync(dir, { recursive: true, force: true }); }

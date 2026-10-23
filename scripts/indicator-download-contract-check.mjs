@@ -15,10 +15,16 @@ const hub = read('admin/index.html');
 for (const route of ['/api/admin/indicator-artifacts/upload', '/api/admin/member-entitlements']) {
   need(worker, route, `worker route ${route}`);
 }
-for (const slug of ['mtf-structure-panel', 'neckline-mtf', 'progress-candle']) {
+for (const slug of ['mtf-structure-panel', 'neckline-mtf', 'progress-candle', 'mtf-structure-panel-mt5', 'neckline-mtf-mt5', 'progress-candle-mt5']) {
   need(worker, `"${slug}": {`, `artifact catalog ${slug}`);
   need(member, `data-download="${slug}"`, `member download control ${slug}`);
 }
+need(worker, '5c2e1a0532171206de52194cca6fbd765402d84f61429981d50e96d7e761b458', 'mtf-structure-panel-mt5 pinned hash');
+need(admin, 'value="mtf-structure-panel-mt5"', 'mtf-structure-panel-mt5 admin upload option');
+need(worker, 'f853277884d3bf90b37d7380c0db5f77b65df9f259955b3acef0db0bdd0ca276', 'neckline-mtf-mt5 pinned hash');
+need(admin, 'value="neckline-mtf-mt5"', 'neckline-mtf-mt5 admin upload option');
+need(worker, '4130a5e4d0d5b3c39dcb373f4452f5f6dbabb3a77fcb985a69ca5aa606d62c7e', 'progress-candle-mt5 pinned hash');
+need(admin, 'value="progress-candle-mt5"', 'progress-candle-mt5 admin upload option');
 need(worker, 'const indicatorRoute = p.match', 'generic protected indicator route');
 
 need(worker, 'const INDICATOR_MEMBERSHIP_PRODUCTS = ["indicator_membership", "premium_membership"]', 'tier allowlist');
@@ -52,7 +58,7 @@ for (const text of ['CREATE TABLE IF NOT EXISTS product_entitlements', 'UNIQUE(u
 }
 need(member, "/api/member/${isEa?'eas':'indicators'}/${encodeURIComponent(slug)}/download", 'generic member download client');
 need(member, '检查权限并下载', 'download control');
-forbid(member, /href=["'][^"']+\.(?:zip|ex4)(?:[?#][^"']*)?["']/i, 'public binary link');
+forbid(member, /href=["'][^"']+\.(?:zip|ex4|ex5|mq4|mq5)(?:[?#][^"']*)?["']/i, 'public binary link');
 need(admin, 'noindex,nofollow', 'admin indexing boundary');
 need(admin, 'sessionStorage', 'tab-scoped admin key');
 need(admin, '/api/admin/indicator-artifacts/upload', 'admin artifact upload');
@@ -67,7 +73,7 @@ for (const root of ['tools', 'assets', 'membership', 'account']) {
     for (const entry of fs.readdirSync(dir, { withFileTypes: true })) {
       const path = `${dir}/${entry.name}`;
       if (entry.isDirectory()) walk(path);
-      else if (/\.(?:zip|ex4)$/i.test(entry.name)) publicBinaryFiles.push(path);
+      else if (/\.(?:zip|ex4|ex5|mq4|mq5)$/i.test(entry.name)) publicBinaryFiles.push(path);
     }
   };
   walk(root);

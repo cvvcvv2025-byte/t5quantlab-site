@@ -12,7 +12,7 @@
       if (button) {
         button.disabled = !a.ready;
         const state = button.closest('article')?.querySelector('.member-state');
-        if (state) { state.textContent = a.ready ? '安装包已就绪' : '安装包暂不可下载'; state.classList.toggle('ready', a.ready); }
+        if (state && button.closest('article').querySelectorAll('[data-download],[data-ea-download]').length === 1) { state.textContent = a.ready ? '安装包已就绪' : '安装包暂不可下载'; state.classList.toggle('ready', a.ready); }
       }
     }
   } catch {

@@ -118,12 +118,13 @@ try {
   token=r.data.license_key;const hardenedId=r.data.license_id;
   assert.equal(r.data.offline_grace_seconds,300);
   r=await verify({product_code:'trend_capture_mt5_v2'});assert.equal(r.data.code,'CLIENT_UPGRADE_REQUIRED');
-  const terminalA='1'.repeat(64),terminalB='2'.repeat(64);
+  let terminalA='1'.repeat(64),terminalB='2'.repeat(64);
   const v2=(terminal_id=terminalA,patch={},headers={})=>verify({...hardenedBinding,protocol_version:2,terminal_id,...patch},headers);
   r=await v2('bad');assert.equal(r.status,403);
   r=await v2(terminalA,{account_login:'888888'});assert.equal(r.status,403);
   const winners=await Promise.all([v2(terminalA),v2(terminalB)]);
-  assert.deepEqual(winners.map(x=>x.status),[200,409],'two different installations cannot both acquire the slot');
+  assert.deepEqual(winners.map(x=>x.status).sort((a,b)=>a-b),[200,409],'two different installations cannot both acquire the slot');
+  if (winners[0].status !== 200) [terminalA,terminalB]=[terminalB,terminalA];
   r=await v2();assert.equal(r.status,200,'multiple charts in the same installation allowed');
   assert.equal(r.data.lease_until-r.data.server_time,300);
   r=await v2(terminalA,{}, {Accept:'text/plain'});assert.match(r.text,new RegExp('^T5L2\\|a{32}\\|trend_capture_mt5_v2\\|MT5\\|123456\\|\\d+\\|0\\|\\d+\\|active\\|'+terminalA+'$'));

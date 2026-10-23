@@ -43,6 +43,7 @@ jobs:
         run: node scripts/check-inline-js.mjs
       - name: Exercise customer delivery against local SQLite
         run: |
+          node scripts/account-session-behavior-check.mjs
           node scripts/delivery-behavior-check.mjs
           node scripts/training-behavior-check.mjs
           node scripts/training-feedback-behavior-check.mjs

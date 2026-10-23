@@ -540,6 +540,17 @@ async function guardedPayPalCapture(request, env, ctx) {
 export default {
   async fetch(request, env, ctx) {
     const url = new URL(request.url);
+    // Keep host-only session cookies on one production origin; never widen Domain.
+    if (url.hostname === 'www.t5quantlab.com') {
+      url.hostname = 't5quantlab.com'; url.protocol = 'https:'; url.port = '';
+      return new Response(null, { status: 307, headers: { Location: url.href, 'Cache-Control': 'no-store' } });
+    }
+    if (url.pathname === '/account' || url.pathname.startsWith('/account/')) {
+      const response = await app.fetch(request, env, ctx);
+      const headers = new Headers(response.headers);
+      headers.set('Cache-Control', 'private, no-store, max-age=0');
+      return new Response(response.body, { status: response.status, statusText: response.statusText, headers });
+    }
     if (url.pathname === "/api/health" && request.method === "GET") return publicHealth(env);
     if (url.pathname === "/api/admin/runtime-health" && request.method === "GET") return adminHealth(request, env);
     if (url.pathname === "/api/payments/catalog" && request.method === "GET") return guardedCatalog(request, env, ctx);

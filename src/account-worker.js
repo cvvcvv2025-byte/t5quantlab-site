@@ -8,6 +8,36 @@ const SESSION_DAYS = 30;
 const CODE_TTL_MINUTES = 10;
 const MAX_CODE_ATTEMPTS = 6;
 const INDICATOR_ARTIFACTS = {
+  "mtf-structure-panel-mt5": {
+    membershipRequired: false, // optional platform addition; preserve existing checkout readiness
+    code: "mtf_structure_panel_mt4",
+    version: "0.1.1",
+    filename: "T5_MTF_Structure_Panel_v0_1_1_MT5_Customer_Pack.zip",
+    r2Key: "member-artifacts/mtf-structure-panel-mt5/0.1.1/T5_MTF_Structure_Panel_v0_1_1_MT5_Customer_Pack.zip",
+    releaseStatus: "awaiting_upload",
+    sha256: "5c2e1a0532171206de52194cca6fbd765402d84f61429981d50e96d7e761b458",
+    maxBytes: 1024 * 1024
+  },
+  "neckline-mtf-mt5": {
+    membershipRequired: false, // optional platform addition; preserve existing checkout readiness
+    code: "neckline_mtf_mt4",
+    version: "0.1.2",
+    filename: "T5_Neckline_MTF_v0_1_2_MT5_Customer_Pack.zip",
+    r2Key: "member-artifacts/neckline-mtf-mt5/0.1.2/T5_Neckline_MTF_v0_1_2_MT5_Customer_Pack.zip",
+    releaseStatus: "awaiting_upload",
+    sha256: "f853277884d3bf90b37d7380c0db5f77b65df9f259955b3acef0db0bdd0ca276",
+    maxBytes: 1024 * 1024
+  },
+  "progress-candle-mt5": {
+    membershipRequired: false, // optional platform addition; preserve existing checkout readiness
+    code: "progress_candle_mt4",
+    version: "0.1.2",
+    filename: "T5_Progress_Candle_v0_1_2_MT5_Customer_Pack.zip",
+    r2Key: "member-artifacts/progress-candle-mt5/0.1.2/T5_Progress_Candle_v0_1_2_MT5_Customer_Pack.zip",
+    releaseStatus: "awaiting_upload",
+    sha256: "4130a5e4d0d5b3c39dcb373f4452f5f6dbabb3a77fcb985a69ca5aa606d62c7e",
+    maxBytes: 1024 * 1024
+  },
   "structure-decision-map-mt5": {
     membershipRequired: false,
     // Same product entitlement as MT4; keep existing single-product customers authorised.

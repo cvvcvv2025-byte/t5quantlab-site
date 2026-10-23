@@ -18,6 +18,7 @@
 <div id="codeField" class="account-field account-hidden"><label for="code">6位验证码</label><input id="code" class="account-code" inputmode="numeric" autocomplete="one-time-code" maxlength="6" placeholder="000000"></div>
 <label class="account-consent"><input id="marketingOptIn" type="checkbox"><span>接收 T5 产品更新、研究内容和优惠信息。此项为可选，默认不勾选；你可以随时在 My T5 中关闭。</span></label>
 <div class="account-actions"><button class="btn primary" id="sendCode" type="button">获取验证码</button><button class="btn primary account-hidden" id="verifyCode" type="button">验证并继续</button><button class="btn account-hidden" id="resendCode" type="button">重新发送</button></div>
+<button class="btn account-hidden" id="checkSession" type="button">重新检查登录状态</button>
 <div id="status" class="account-status account-hidden"></div>
 </div>
 <div class="account-card">
@@ -31,15 +32,17 @@
 </div></div></section></main>
 <footer class="footer"><div class="container"><div class="risk">T5账户用于产品权限、订单与用户自行选择的邮件订阅管理。</div></div><div class="container" style="padding-bottom:20px"><a href="/support/">客户支持</a> · <a href="/privacy/">隐私说明</a></div></footer>
 <script src="/assets/main.js"></script>
+<script src="/assets/account-session.js"></script>
 <script>
-const $=id=>document.getElementById(id);let challengeId='';
-function nextPath(){const n=new URLSearchParams(location.search).get('next')||'/account/';return n.startsWith('/')&&!n.startsWith('//')?n:'/account/'}
+const $=id=>document.getElementById(id);let challengeId='',emailVerified=false;
+function nextPath(){return T5AccountSession.safeNext(new URLSearchParams(location.search).get('next')||'/account/')}
 function status(msg,type=''){const x=$('status');x.textContent=msg;x.className='account-status'+(type?' '+type:'');x.classList.remove('account-hidden')}
-async function api(url,opt={}){const r=await fetch(url,{credentials:'same-origin',...opt});let d={};try{d=await r.json()}catch{}if(!r.ok||!d.ok){const e=new Error(d.error||('HTTP '+r.status));e.code=d.code||'';throw e}return d}
-async function boot(){try{const me=await api('/api/auth/me');if(me.authenticated){location.replace(nextPath());return}const cfg=await api('/api/auth/config');if(!cfg.email_login_ready){status('邮箱登录后端已经完成，但邮件发送参数尚未配置。需要先配置 Resend 与账户密钥后才能正式发送验证码。','account-warn');$('sendCode').disabled=true}}catch(e){status(e.message,'account-warn')}}
+async function api(url,opt={}){const r=await fetch(url,{credentials:'same-origin',cache:'no-store',...opt});let d={};try{d=await r.json()}catch{}if(!r.ok||!d.ok){const e=new Error(d.error||('HTTP '+r.status));e.code=d.code||'';throw e}return d}
+async function boot(){try{const me=await T5AccountSession.readSession();if(me.authenticated){if(new URLSearchParams(location.search).get('session')==='missing'){status('当前登录已恢复，请点击重新检查登录状态后继续。','account-good');$('checkSession').classList.remove('account-hidden')}else location.replace(nextPath());return}const cfg=await api('/api/auth/config');if(!cfg.email_login_ready){status('邮箱登录后端已经完成，但邮件发送参数尚未配置。需要先配置 Resend 与账户密钥后才能正式发送验证码。','account-warn');$('sendCode').disabled=true}}catch(e){status(e.message,'account-warn')}}
 $('sendCode').addEventListener('click',async()=>{const email=$('email').value.trim();if(!email){status('请输入邮箱。','account-warn');return}const btn=$('sendCode');btn.disabled=true;try{const d=await api('/api/auth/request-code',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({email})});challengeId=d.challenge_id;$('email').disabled=true;$('codeField').classList.remove('account-hidden');$('verifyCode').classList.remove('account-hidden');$('resendCode').classList.remove('account-hidden');$('sendCode').classList.add('account-hidden');status('验证码已发送。请检查邮箱，10分钟内有效。','account-good');$('code').focus()}catch(e){status(e.message,'account-warn');btn.disabled=false}});
-$('verifyCode').addEventListener('click',async()=>{const code=$('code').value.trim();if(!/^\d{6}$/.test(code)){status('请输入6位验证码。','account-warn');return}const btn=$('verifyCode');btn.disabled=true;try{await api('/api/auth/verify-code',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({email:$('email').value.trim(),challenge_id:challengeId,code,marketing_opt_in:$('marketingOptIn').checked})});status('登录成功，正在进入 My T5…','account-good');location.replace(nextPath())}catch(e){status(e.message,'account-warn');btn.disabled=false}});
-$('resendCode').addEventListener('click',()=>{challengeId='';$('email').disabled=false;$('codeField').classList.add('account-hidden');$('verifyCode').classList.add('account-hidden');$('resendCode').classList.add('account-hidden');$('sendCode').classList.remove('account-hidden');$('sendCode').disabled=false;$('code').value='';status('可以重新发送验证码。')});
+$('verifyCode').addEventListener('click',async()=>{const code=$('code').value.trim();if(!/^\d{6}$/.test(code)){status('请输入6位验证码。','account-warn');return}const btn=$('verifyCode');btn.disabled=true;try{if(!emailVerified){await api('/api/auth/verify-code',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({email:$('email').value.trim(),challenge_id:challengeId,code,marketing_opt_in:$('marketingOptIn').checked})});emailVerified=true}await T5AccountSession.confirmSession($('email').value.trim());status('登录状态已确认，正在继续…','account-good');location.replace(nextPath())}catch(e){status(e.message,'account-warn');$('checkSession').classList.remove('account-hidden');btn.disabled=false}});
+$('checkSession').addEventListener('click',async()=>{const btn=$('checkSession');btn.disabled=true;try{await T5AccountSession.confirmSession($('email').value.trim());location.replace(nextPath())}catch(e){status(e.message,'account-warn')}finally{btn.disabled=false}});
+$('resendCode').addEventListener('click',()=>{challengeId='';emailVerified=false;$('email').disabled=false;$('codeField').classList.add('account-hidden');$('verifyCode').classList.add('account-hidden');$('resendCode').classList.add('account-hidden');$('sendCode').classList.remove('account-hidden');$('sendCode').disabled=false;$('code').value='';status('可以重新发送验证码。')});
 boot();
 </script>
 </body></html>

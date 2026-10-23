@@ -30,7 +30,7 @@
   link.setAttribute('aria-label','登录或注册 T5 Quant Lab');
   nav.appendChild(link);
 
-  fetch('/api/auth/me',{credentials:'same-origin',headers:{Accept:'application/json'}})
+  fetch('/api/auth/me',{credentials:'same-origin',cache:'no-store',headers:{Accept:'application/json'}})
     .then(async r=>{
       const type=(r.headers.get('content-type')||'').toLowerCase();
       if(!type.includes('application/json'))return null;

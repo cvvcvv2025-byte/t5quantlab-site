@@ -15,6 +15,6 @@ for(const text of ['次级暴力EA','建议测试资金2000—5000美元','100%�
 assert(!/href=["'][^"']*\.(?:mq4|mq5|ex4|ex5|zip)["']/i.test(html));
 const center=fs.readFileSync('account/member-center/index.html','utf8');
 const pending=center.match(/<article class="member-product" id="range-aggressive">([\s\S]*?)<\/article>/)?.[1];assert(pending);
-assert(pending.includes('尚未完成原生或真实tick回测'));assert(pending.includes('安装包可用状态在本页自动核对'));assert(pending.includes('data-ea-download="range-aggressive"'));
+assert(pending.includes('/tools/ea/range-boundary-aggressive/#installation'));assert(pending.includes('可能损失全部本金'));assert(html.includes('id="installation"'));assert(html.includes('不能代替完整券商模拟账户持仓生命周期验收'));assert(pending.includes('data-ea-download="range-aggressive"'));
 for(const file of ['tools/ea/index.html','tools/ea/range-boundary/index.html','account/member-center/index.html','sitemap.xml'])assert(fs.readFileSync(file,'utf8').includes('/tools/ea/range-boundary-aggressive/'));
 console.log('Aggressive publication: exact three-capital research values, full long-run loss disclosure, native-test limits and protected delivery passed.');

@@ -51,7 +51,7 @@ const fixture=new Uint8Array([80,75,3,4,7,8,9]);
 r=await call('/api/admin/ea-artifacts/upload?artifact=range-martingale',admin,'PUT',fixture);
 assert.equal(r.status,400);assert.equal(r.data.code,'ARTIFACT_HASH_MISMATCH');assert.equal(puts,0);
 const artifact=vm.runInContext('EA_ARTIFACTS["range-martingale"]',context);
-assert.equal(artifact.sha256,'76a6c84c9c3d7e3def09bc3df87e730240ff607d76e6534d6f12bb6df939bfaf');
+assert.equal(artifact.sha256,'b47afcfb8a17f6c6c09a9ef4c0d31b71b7183eb468cfcbd563739f69dc3fd8fe');
 // Isolated test fixture only: exercise real hashing without committing paid binaries.
 artifact.sha256=Buffer.from(await webcrypto.subtle.digest('SHA-256',fixture)).toString('hex');
 r=await call('/api/admin/ea-artifacts/upload?artifact=range-martingale',admin,'PUT',fixture);
@@ -61,7 +61,7 @@ r=await call('/api/member/eas/range-martingale/download',signed);
 assert.equal(r.status,200);assert.deepEqual(Array.from(r.data),Array.from(fixture));assert.equal(downloads,1);
 assert.equal(r.headers.get('X-T5-Artifact-SHA256'),artifact.sha256);
 assert(r.headers.get('Cache-Control').includes('private'));
-assert(r.headers.get('Content-Disposition').includes('MT4_MT5_Customer_Pack.zip'));
+assert(r.headers.get('Content-Disposition').includes('LicenseV2_Customer_Pack.zip'));
 corruptReadback=true;
 r=await call('/api/member/eas/range-martingale/download',signed);
 assert.equal(r.status,503);assert.equal(r.data.code,'ARTIFACT_CONTENT_MISMATCH');assert.equal(downloads,1);

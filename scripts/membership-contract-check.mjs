@@ -12,8 +12,8 @@ for (const html of [membership, account]) need(html.includes('不自动续费'),
 need(/\$13\.90(?:\s|<[^>]+>)*\/ 90天/.test(membership), 'Indicator Member launch price must be $13.90 / 90 days');
 need(account.includes('$13.90 / 90天'), 'Account must show the Indicator Member checkout price');
 
-need(membership.includes('<span class="plan-state ready">现在可购买</span>'), 'Indicator membership must be visibly open');
-need((membership.match(/<span class="plan-state ready">现在可购买<\/span>/g) || []).length >= 2, 'Indicator and automation memberships must be visibly open');
+need(membership.includes('审计暂停 · 不开放付款'), 'Indicator membership must visibly pause new purchase during failed audit');
+need((membership.match(/<span class="plan-state ready">现在可购买<\/span>/g) || []).length === 1, 'Only existing automation membership remains open while indicators are on audit hold');
 need(membership.includes('href="/membership/checkout/"'), 'Indicator membership must link to checkout');
 need(membership.includes('.ex4 / .ex5'), 'Membership page must disclose downloadable MT4/MT5 file formats');
 need(membership.includes('4 款指标，MT4／MT5 按包核验') && membership.includes('T5 Structure Decision Map v0.2.3'), 'Membership page must disclose the exact current delivery count');

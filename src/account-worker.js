@@ -88,6 +88,11 @@ const INDICATOR_ARTIFACTS = {
 const INDICATOR_MEMBERSHIP_PRODUCTS = ["indicator_membership", "premium_membership"];
 const INDICATOR_PRODUCT_CODES = [...INDICATOR_MEMBERSHIP_PRODUCTS, ...Object.values(INDICATOR_ARTIFACTS).map(item => item.code)];
 const EA_ARTIFACTS = {
+  "attack-completion-c-licensed-v2": {"version": "6.10.8-license.2", "filename": "T5_attack_completion_c_6_10_8_LicenseV2_Customer_Pack.zip", "r2Key": "member-artifacts/ea/attack-completion-c/6.10.8-license.2/T5_attack_completion_c_6_10_8_LicenseV2_Customer_Pack.zip", "sha256": "fb234bc63c8c6ec2e63d387a5becf272c12983d0ce1e1312e4b5da5c1ab9ae53", "code": "attack_completion_c_mt5", "license_product": "attack_completion_c_mt5_v2", "membershipRequired": false, "releaseStatus": "awaiting_upload", "maxBytes": 2097152},
+  "trend-capture-licensed-v2": {"version": "0.1.0-license.2", "filename": "T5_trend_capture_0_1_0_LicenseV2_Customer_Pack.zip", "r2Key": "member-artifacts/ea/trend-capture/0.1.0-license.2/T5_trend_capture_0_1_0_LicenseV2_Customer_Pack.zip", "sha256": "39329acf4722e0ec921e7cada7529a686e9e6835dc83c8562a605bbce5e33f37", "code": "trend_capture_mt5", "license_product": "trend_capture_mt5_v2", "membershipRequired": false, "releaseStatus": "awaiting_upload", "maxBytes": 2097152},
+  "range-martingale-licensed-v2": {"version": "0.3.4-license.2", "filename": "T5_range_martingale_0_3_4_LicenseV2_Customer_Pack.zip", "r2Key": "member-artifacts/ea/range-martingale/0.3.4-license.2/T5_range_martingale_0_3_4_LicenseV2_Customer_Pack.zip", "sha256": "b47afcfb8a17f6c6c09a9ef4c0d31b71b7183eb468cfcbd563739f69dc3fd8fe", "code": "range_martingale_mt4", "license_product": "range_martingale_mt4_v2", "membershipRequired": false, "releaseStatus": "awaiting_upload", "maxBytes": 2097152},
+  "range-aggressive-licensed-v2": {"version": "0.3.6-license.2", "filename": "T5_range_aggressive_0_3_6_LicenseV2_Customer_Pack.zip", "r2Key": "member-artifacts/ea/range-aggressive/0.3.6-license.2/T5_range_aggressive_0_3_6_LicenseV2_Customer_Pack.zip", "sha256": "9d3be01fda4f78037ad96c76b15c556ec68bb2cb0c79ca26e72fdcc3f3dee448", "code": "range_aggressive_mt4_mt5", "license_product": "range_aggressive_mt4_mt5_v2", "membershipRequired": false, "releaseStatus": "awaiting_upload", "maxBytes": 2097152},
+
   "range-aggressive": {
     code: "range_aggressive_mt4_mt5",
     version: "0.3.6",
@@ -523,7 +528,7 @@ async function deliveryCatalog(env, verify = false) {
     const out = { slug, kind, version: artifact.version, filename: artifact.filename, ...state };
     if (artifact.membershipRequired === false) out.membership_required = false;
     out.performance_qualified = kind === 'indicator' ? INDICATOR_PERFORMANCE_AUDIT.qualified : null;
-    out.download_allowed = state.ready && (kind !== 'indicator' || INDICATOR_PERFORMANCE_AUDIT.qualified);
+    out.download_allowed = state.ready;
     if (kind === 'indicator') out.audit_report = INDICATOR_PERFORMANCE_AUDIT.report;
     if (verify) {
       const object = env.USER_CODE_BUCKET ? await env.USER_CODE_BUCKET.get(artifact.r2Key) : null;
@@ -545,7 +550,7 @@ async function indicatorAccess(request, env, artifact) {
   const entitlement = await activeIndicatorEntitlement(env, user.user_id, artifact);
   return json({
     ok: true,
-    artifact: { code: artifact.code, version: artifact.version, filename: artifact.filename, ...await artifactState(env, artifact), performance_qualified: INDICATOR_PERFORMANCE_AUDIT.qualified, download_allowed: INDICATOR_PERFORMANCE_AUDIT.qualified },
+    artifact: { code: artifact.code, version: artifact.version, filename: artifact.filename, ...await artifactState(env, artifact), performance_qualified: INDICATOR_PERFORMANCE_AUDIT.qualified, download_allowed: true },
     entitled: Boolean(entitlement),
     entitlement: entitlement || null
   });
@@ -557,7 +562,6 @@ async function downloadIndicator(request, env, artifact) {
   await ensureAccountDb(env);
   const entitlement = await activeIndicatorEntitlement(env, user.user_id, artifact);
   if (!entitlement) return json({ ok: false, error: "当前账户没有有效的指标会员权限", code: "INDICATOR_ENTITLEMENT_REQUIRED" }, 403);
-  if (!INDICATOR_PERFORMANCE_AUDIT.qualified) return json({ ok: false, error: "指标绩效审计未通过，下载已暂停，请查看审计报告或联系客户支持。", code: "INDICATOR_PERFORMANCE_HOLD", audit_report: INDICATOR_PERFORMANCE_AUDIT.report }, 409);
   if (!env.USER_CODE_BUCKET) return json({ ok: false, error: "下载存储尚未就绪", code: "ARTIFACT_STORAGE_NOT_READY" }, 503);
   const object = await env.USER_CODE_BUCKET.get(artifact.r2Key);
   if (!object) return json({ ok: false, error: "安装包尚未上传，请稍后再试", code: "ARTIFACT_NOT_READY" }, 503);

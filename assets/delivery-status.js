@@ -7,9 +7,9 @@
     const centerCount = document.getElementById('deliveryCount');
     if (centerCount) centerCount.textContent = (d.downloadable_count ?? d.ready_count) + ' 个可下载安装包';
     for (const a of d.artifacts) {
-      const held = a.performance_qualified === false;
+      const held = a.performance_qualified === false && a.download_allowed === false;
       const allowed = a.ready && a.download_allowed !== false;
-      for (const node of document.querySelectorAll('[data-artifact-state="' + a.slug + '"]')) node.textContent = held ? '绩效审计未通过 · 下载暂停' : allowed ? '安装包已就绪 · v' + a.version : '安装包暂不可下载，请稍后重试';
+      for (const node of document.querySelectorAll('[data-artifact-state="' + a.slug + '"]')) node.textContent = held ? '绩效审计未通过 · 下载暂停' : allowed ? '安装包已就绪 · v' + a.version + (a.performance_qualified === false ? ' · 历史绩效审计未通过' : '') : '安装包暂不可下载，请稍后重试';
       const button = document.querySelector('[data-' + (a.kind === 'ea' ? 'ea-download' : 'download') + '="' + a.slug + '"]');
       if (button) {
         button.disabled = !allowed;

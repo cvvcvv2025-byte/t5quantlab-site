@@ -110,8 +110,8 @@ try {
     assert.equal(port.ready, false); assert.equal(port.membership_required, false);
   }
   const heldIndicatorOrder = await call('/api/orders/create', { product_code: 'indicator_membership', currency: 'USD', terms_accepted: true, terms_version: 'refund-v2-2026-10-20' });
-  assert.equal(heldIndicatorOrder.status,503);assert.equal(heldIndicatorOrder.data.code,'DELIVERY_NOT_READY');
-  assert(stagedCatalog.data.artifacts.filter(x=>x.kind==='indicator').every(x=>x.performance_qualified===false && x.download_allowed===false));
+  assert.equal(heldIndicatorOrder.status,200,'restored base indicators allow membership; missing optional MT5 packages do not block');
+  assert(stagedCatalog.data.artifacts.filter(x=>x.kind==='indicator').every(x=>x.performance_qualified===false && x.download_allowed===x.ready));
   const premium = await purchase('premium_membership');
   let r = await call('/api/orders/refund-eligibility?order_id=' + premium.order.order_id, null, premium.headers);
   assert.equal(r.data.refund_eligible_under_t5_policy, true);

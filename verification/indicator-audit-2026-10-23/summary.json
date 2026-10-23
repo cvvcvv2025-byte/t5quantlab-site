@@ -1,0 +1,939 @@
+{
+  "date": "2026-10-23",
+  "qualification": "not_qualified",
+  "scope": "XAUUSD only; explicit evaluation wrappers, not intrinsic accuracy of information panels",
+  "data": {
+    "source": "User-provided HISTDATA M1 archives, provenance manifests pinned; not broker ticks",
+    "first_source_wall_time": "2020-01-01T18:00:00+00:00",
+    "last_source_wall_time": "2026-09-04T16:58:00+00:00",
+    "bars": {
+      "1": 2320943,
+      "5": 464318,
+      "15": 154780,
+      "60": 38712
+    },
+    "out_of_order_or_duplicates_skipped": 780,
+    "invalid_rows": 0,
+    "minute_gaps_including_session_closes": 2707,
+    "time_zone": "source wall-clock retained without claiming broker time alignment"
+  },
+  "protocol": {
+    "frozen_before_performance_run": true,
+    "universe": "XAUUSD; other markets not certified",
+    "baseline": "Three newly ported read-only indicators: MTF aligned execution evidence; Neckline closed break or newly observed retest; Progress live closed-bar displacement+takeover BEFORE later FollowThrough redraw",
+    "success": "Next M5 bar open entry, SL=1 M5 ATR14, TP=2 initial R, maximum24 M5 bars. No overlapping position per indicator. SL first if same M5 bar spans both. Gap stop filled at worse open. Timeout marked at close and included. Win=net R>0; report TP hit rate separately. Secondary1R descriptive only, not selection.",
+    "cost_price_per_unit_round_trip": 0.6,
+    "stress_cost": 1.2,
+    "chronological_splits": {
+      "development": "2020-2023",
+      "validation": "2024-2025",
+      "locked_holdout": "2026-01 through 2026-09"
+    },
+    "purge": "Exclude trades crossing split boundary; one-day embargo at each split boundary.",
+    "gates": {
+      "native_engineering": "compile + real terminal causal signal comparison and load test required",
+      "minimum_oos_trades": 200,
+      "minimum_oos_months": 6,
+      "net_oos_profit_factor": 1.2,
+      "net_oos_mean_R": 0.1,
+      "block_bootstrap_expectancy_95pct_lower_bound": 0.0,
+      "stress_oos_profit_factor": 1.0,
+      "positive_oos_quarters_fraction": 0.6,
+      "max_oos_drawdown_R": 20,
+      "improvement_search": "At most3 predefined context/hold variants per indicator on development/validation only; no parameter search on locked2026. Failed holdout cannot be reused as fresh proof.",
+      "qualification": "All gates required for performance-qualified release; insufficient data=not certified, not pass. No profitability promises."
+    },
+    "limitations": "These indicators do not supply complete trade plans; this is an explicitly added evaluation wrapper, not intrinsic indicator accuracy. Bid OHLC + cost proxy is screening only; final tick/Ask/commission test required. Never use the known synthetic OHLC model CSV as market evidence.",
+    "decision_map": "Native frozen SL/TP2 after confirmed stage4; next-open execution, no artificial24-bar expiry. Outcomes are separately marked from reference-price hits. OHLC ambiguity pessimistically SL first; end-of-data unresolved excluded and counted.",
+    "bounded_variants": {
+      "baseline": "original live-available evidence + frozen wrapper",
+      "aligned": "H1+M15 aligned in signal direction; for already-aligned MTF additionally require contextStrong",
+      "hold_one": "original evidence plus one full additional M5 bar holding beyond signal close and directional body; enter following open"
+    },
+    "selection": "Before opening2026 results, choose at most one candidate per product on2020-23 train and2024-25 validation: min200 validation trades and max rank validation mean netR, PF>=1.2 and train expectancy>0. If none, no candidate; still report baselineholdout descriptive."
+  },
+  "results": {
+    "selection_sha256": "fdcad035951695241bf2dd80efab34090e5e39bcccad63fcf38b5ce44389276a",
+    "selection": {
+      "mtf-structure-panel": null,
+      "neckline-mtf": null,
+      "progress-candle": null,
+      "decision-map": null
+    },
+    "products": {
+      "mtf-structure-panel": {
+        "baseline": {
+          "holdout": {
+            "n": 1543,
+            "net_win_rate": 0.3376539209332469,
+            "tp_hit_rate": 0.3208036292935839,
+            "net_mean_R": -0.12755193474804846,
+            "net_pf": 0.8289208824543451,
+            "gross_pf": 0.9792206251376621,
+            "stress_pf": 0.70631037573463,
+            "max_drawdown_R": 204.6364835037456,
+            "net_total_R": -196.81263531623875,
+            "months": 9,
+            "positive_quarters_fraction": 0.0,
+            "quarter_net_R": {
+              "2026-Q1": -71.13014318322479,
+              "2026-Q2": -41.65636170938053,
+              "2026-Q3": -84.02613042363352
+            },
+            "same_bar_ambiguity_count": 7,
+            "timeouts": 45,
+            "month_block_bootstrap_mean_R_95pct": [
+              -0.19837726009087583,
+              -0.05918691283003841
+            ]
+          },
+          "gates": {
+            "selected_without_holdout": false,
+            "sample_count": true,
+            "sample_months": true,
+            "net_pf": false,
+            "net_expectancy": false,
+            "bootstrap_lower_positive": false,
+            "stress_nonnegative": false,
+            "quarter_stability": false,
+            "drawdown": false,
+            "native_terminal_and_real_tick_acceptance": false
+          },
+          "passed": false,
+          "skips": {
+            "overlap": 10620,
+            "partial_bar_entry": 29,
+            "split_boundary_purge": 3
+          }
+        }
+      },
+      "neckline-mtf": {
+        "baseline": {
+          "holdout": {
+            "n": 536,
+            "net_win_rate": 0.33955223880597013,
+            "tp_hit_rate": 0.31343283582089554,
+            "net_mean_R": -0.12259735355650515,
+            "net_pf": 0.832782509565343,
+            "gross_pf": 0.9898257965877674,
+            "stress_pf": 0.7054312274172139,
+            "max_drawdown_R": 68.66176808249439,
+            "net_total_R": -65.71218150628674,
+            "months": 9,
+            "positive_quarters_fraction": 0.0,
+            "quarter_net_R": {
+              "2026-Q1": -21.821526269256932,
+              "2026-Q2": -31.423017528676684,
+              "2026-Q3": -12.467637708353115
+            },
+            "same_bar_ambiguity_count": 0,
+            "timeouts": 18,
+            "month_block_bootstrap_mean_R_95pct": [
+              -0.22331939444442256,
+              -0.01760238344964447
+            ]
+          },
+          "gates": {
+            "selected_without_holdout": false,
+            "sample_count": true,
+            "sample_months": true,
+            "net_pf": false,
+            "net_expectancy": false,
+            "bootstrap_lower_positive": false,
+            "stress_nonnegative": false,
+            "quarter_stability": false,
+            "drawdown": false,
+            "native_terminal_and_real_tick_acceptance": false
+          },
+          "passed": false,
+          "skips": {
+            "overlap": 944,
+            "partial_bar_entry": 7,
+            "split_boundary_purge": 3
+          }
+        }
+      },
+      "progress-candle": {
+        "baseline": {
+          "holdout": {
+            "n": 2516,
+            "net_win_rate": 0.3239268680445151,
+            "tp_hit_rate": 0.30127186009538953,
+            "net_mean_R": -0.16922038982334303,
+            "net_pf": 0.7747963686632963,
+            "gross_pf": 0.9273107207949116,
+            "stress_pf": 0.652109294694711,
+            "max_drawdown_R": 428.3591550145566,
+            "net_total_R": -425.75850079553095,
+            "months": 9,
+            "positive_quarters_fraction": 0.0,
+            "quarter_net_R": {
+              "2026-Q1": -155.26448900717045,
+              "2026-Q2": -104.8878370190133,
+              "2026-Q3": -165.60617476934755
+            },
+            "same_bar_ambiguity_count": 11,
+            "timeouts": 78,
+            "month_block_bootstrap_mean_R_95pct": [
+              -0.22982040773703377,
+              -0.11437203488849935
+            ]
+          },
+          "gates": {
+            "selected_without_holdout": false,
+            "sample_count": true,
+            "sample_months": true,
+            "net_pf": false,
+            "net_expectancy": false,
+            "bootstrap_lower_positive": false,
+            "stress_nonnegative": false,
+            "quarter_stability": false,
+            "drawdown": false,
+            "native_terminal_and_real_tick_acceptance": false
+          },
+          "passed": false,
+          "skips": {
+            "overlap": 3317,
+            "partial_bar_entry": 38,
+            "split_boundary_purge": 12
+          }
+        }
+      },
+      "decision-map": {
+        "baseline": {
+          "holdout": {
+            "n": 91,
+            "net_win_rate": 0.43956043956043955,
+            "tp_hit_rate": 0.43956043956043955,
+            "net_mean_R": 0.15317114481961558,
+            "net_pf": 1.2634083338953337,
+            "gross_pf": 1.3378151261109505,
+            "stress_pf": 1.193820445506547,
+            "max_drawdown_R": 7.539305718814974,
+            "net_total_R": 13.938574178585023,
+            "months": 9,
+            "positive_quarters_fraction": 0.6666666666666666,
+            "quarter_net_R": {
+              "2026-Q1": 5.178775527468369,
+              "2026-Q2": 13.26509664778711,
+              "2026-Q3": -4.50529799667046
+            },
+            "same_bar_ambiguity_count": 0,
+            "timeouts": 0,
+            "month_block_bootstrap_mean_R_95pct": [
+              -0.12939372316181227,
+              0.4285669147066064
+            ]
+          },
+          "gates": {
+            "selected_without_holdout": false,
+            "sample_count": false,
+            "sample_months": true,
+            "net_pf": true,
+            "net_expectancy": true,
+            "bootstrap_lower_positive": false,
+            "stress_nonnegative": true,
+            "quarter_stability": true,
+            "drawdown": true,
+            "native_terminal_and_real_tick_acceptance": false
+          },
+          "passed": false,
+          "skips": {
+            "split_boundary_purge": 2,
+            "nonpositive_risk": 1,
+            "unresolved_end_of_data": 1
+          }
+        }
+      }
+    }
+  },
+  "development_validation": {
+    "mtf-structure-panel": {
+      "baseline": {
+        "train": {
+          "n": 8914,
+          "net_win_rate": 0.31859995512676687,
+          "tp_hit_rate": 0.30289432353601076,
+          "net_mean_R": -0.6162900368419558,
+          "net_pf": 0.4178132074416347,
+          "gross_pf": 0.9268370114578709,
+          "stress_pf": 0.190497712216517,
+          "max_drawdown_R": 5496.55231219901,
+          "net_total_R": -5493.609388409206,
+          "months": 48,
+          "positive_quarters_fraction": 0.0,
+          "quarter_net_R": {
+            "2020-Q1": -312.29549574009565,
+            "2020-Q2": -327.0405432682358,
+            "2020-Q3": -284.77337453735134,
+            "2020-Q4": -282.200473312267,
+            "2021-Q1": -312.17592423651604,
+            "2021-Q2": -415.59088295114407,
+            "2021-Q3": -427.39849425002575,
+            "2021-Q4": -384.97691934386114,
+            "2022-Q1": -384.81438227231854,
+            "2022-Q2": -350.69302984332467,
+            "2022-Q3": -387.5697295447761,
+            "2022-Q4": -306.72384319428903,
+            "2023-Q1": -281.5123214219277,
+            "2023-Q2": -222.45201438421418,
+            "2023-Q3": -491.17653667869286,
+            "2023-Q4": -322.2154234301543
+          },
+          "same_bar_ambiguity_count": 25,
+          "timeouts": 298
+        },
+        "validation": {
+          "n": 4764,
+          "net_win_rate": 0.34739714525608734,
+          "tp_hit_rate": 0.32766582703610414,
+          "net_mean_R": -0.3162068117986496,
+          "net_pf": 0.6366381854601332,
+          "gross_pf": 1.0424764901559573,
+          "stress_pf": 0.3993594934493882,
+          "max_drawdown_R": 1521.1928625463174,
+          "net_total_R": -1506.409251408773,
+          "months": 24,
+          "positive_quarters_fraction": 0.0,
+          "quarter_net_R": {
+            "2024-Q1": -370.50874434409315,
+            "2024-Q2": -220.38807295352953,
+            "2024-Q3": -202.40757094530593,
+            "2024-Q4": -212.03061952123943,
+            "2025-Q1": -176.92431457206655,
+            "2025-Q2": -80.21558900186844,
+            "2025-Q3": -179.80797930636598,
+            "2025-Q4": -64.12636076429789
+          },
+          "same_bar_ambiguity_count": 6,
+          "timeouts": 151
+        },
+        "skips": {
+          "overlap": 9494,
+          "partial_bar_entry": 26,
+          "split_boundary_purge": 3
+        }
+      },
+      "aligned": {
+        "train": {
+          "n": 3899,
+          "net_win_rate": 0.31751731213131573,
+          "tp_hit_rate": 0.3021287509617851,
+          "net_mean_R": -0.6095106449068857,
+          "net_pf": 0.42060739653581924,
+          "gross_pf": 0.9280336394450875,
+          "stress_pf": 0.19442984711697134,
+          "max_drawdown_R": 2379.4249282817514,
+          "net_total_R": -2376.4820044919475,
+          "months": 48,
+          "positive_quarters_fraction": 0.0,
+          "quarter_net_R": {
+            "2020-Q1": -162.99465706266167,
+            "2020-Q2": -188.8811918820633,
+            "2020-Q3": -38.18814779394346,
+            "2020-Q4": -134.52159054036352,
+            "2021-Q1": -162.58462993803067,
+            "2021-Q2": -154.17459977518254,
+            "2021-Q3": -216.45419070832656,
+            "2021-Q4": -156.47555663552427,
+            "2022-Q1": -142.57123713498905,
+            "2022-Q2": -195.99673831303068,
+            "2022-Q3": -168.8002422486149,
+            "2022-Q4": -145.1358669097929,
+            "2023-Q1": -89.7869757846033,
+            "2023-Q2": -114.11193330002932,
+            "2023-Q3": -179.30628484822046,
+            "2023-Q4": -126.49816161657172
+          },
+          "same_bar_ambiguity_count": 9,
+          "timeouts": 130
+        },
+        "validation": {
+          "n": 2137,
+          "net_win_rate": 0.3523631258773982,
+          "tp_hit_rate": 0.33036967711745435,
+          "net_mean_R": -0.28812479179909345,
+          "net_pf": 0.6629266505091145,
+          "gross_pf": 1.0618892462465839,
+          "stress_pf": 0.42520176517914354,
+          "max_drawdown_R": 632.337421959083,
+          "net_total_R": -615.7226800746628,
+          "months": 24,
+          "positive_quarters_fraction": 0.0,
+          "quarter_net_R": {
+            "2024-Q1": -128.61950398812814,
+            "2024-Q2": -81.61430811975939,
+            "2024-Q3": -76.187984992696,
+            "2024-Q4": -105.96987882779644,
+            "2025-Q1": -99.57142608509734,
+            "2025-Q2": -27.694767916344254,
+            "2025-Q3": -74.17074445656625,
+            "2025-Q4": -21.894065688274818
+          },
+          "same_bar_ambiguity_count": 1,
+          "timeouts": 72
+        },
+        "skips": {
+          "overlap": 4179,
+          "partial_bar_entry": 6,
+          "split_boundary_purge": 2
+        }
+      },
+      "hold_one": {
+        "train": {
+          "n": 4689,
+          "net_win_rate": 0.3145660055448923,
+          "tp_hit_rate": 0.2960119428449563,
+          "net_mean_R": -0.6305187147309617,
+          "net_pf": 0.40628443264254954,
+          "gross_pf": 0.8984912443680431,
+          "stress_pf": 0.1851321515963644,
+          "max_drawdown_R": 2958.3818326486553,
+          "net_total_R": -2956.5022533734805,
+          "months": 48,
+          "positive_quarters_fraction": 0.0,
+          "quarter_net_R": {
+            "2020-Q1": -175.49111298569727,
+            "2020-Q2": -151.25353264446127,
+            "2020-Q3": -165.62288152854885,
+            "2020-Q4": -186.3224478163258,
+            "2021-Q1": -183.67517717509946,
+            "2021-Q2": -237.07399503622227,
+            "2021-Q3": -172.3240112426463,
+            "2021-Q4": -189.90447729974372,
+            "2022-Q1": -189.31161525261027,
+            "2022-Q2": -138.6744566260268,
+            "2022-Q3": -199.96074333597807,
+            "2022-Q4": -236.5056912913286,
+            "2023-Q1": -140.9570626411544,
+            "2023-Q2": -136.8451817993631,
+            "2023-Q3": -248.59097285372928,
+            "2023-Q4": -203.98889384454355
+          },
+          "same_bar_ambiguity_count": 16,
+          "timeouts": 167
+        },
+        "validation": {
+          "n": 2574,
+          "net_win_rate": 0.34965034965034963,
+          "tp_hit_rate": 0.32867132867132864,
+          "net_mean_R": -0.3103442984758499,
+          "net_pf": 0.6421283071572282,
+          "gross_pf": 1.0529350942854363,
+          "stress_pf": 0.40281499108957797,
+          "max_drawdown_R": 808.3634288980181,
+          "net_total_R": -798.8262242768357,
+          "months": 24,
+          "positive_quarters_fraction": 0.0,
+          "quarter_net_R": {
+            "2024-Q1": -156.07812226579455,
+            "2024-Q2": -135.61045508895992,
+            "2024-Q3": -127.81666132912595,
+            "2024-Q4": -114.6273484578767,
+            "2025-Q1": -85.18070675460191,
+            "2025-Q2": -47.74513032494883,
+            "2025-Q3": -97.74677500641599,
+            "2025-Q4": -34.021025049113746
+          },
+          "same_bar_ambiguity_count": 5,
+          "timeouts": 89
+        },
+        "skips": {
+          "overlap": 7911,
+          "partial_bar_entry": 13,
+          "split_boundary_purge": 2
+        }
+      }
+    },
+    "neckline-mtf": {
+      "baseline": {
+        "train": {
+          "n": 3107,
+          "net_win_rate": 0.32281943997425167,
+          "tp_hit_rate": 0.31123270035403927,
+          "net_mean_R": -0.6114888231592773,
+          "net_pf": 0.4230136956863393,
+          "gross_pf": 0.9516162255639061,
+          "stress_pf": 0.18742246159803705,
+          "max_drawdown_R": 1902.4379959192756,
+          "net_total_R": -1899.895773555874,
+          "months": 48,
+          "positive_quarters_fraction": 0.0,
+          "quarter_net_R": {
+            "2020-Q1": -105.9488332069796,
+            "2020-Q2": -115.09207575576228,
+            "2020-Q3": -146.99409724567366,
+            "2020-Q4": -119.70939405521244,
+            "2021-Q1": -132.6312392449003,
+            "2021-Q2": -102.64719892418765,
+            "2021-Q3": -127.8757499605155,
+            "2021-Q4": -140.19447006693406,
+            "2022-Q1": -154.51191864932133,
+            "2022-Q2": -105.82638678450643,
+            "2022-Q3": -74.28241437731018,
+            "2022-Q4": -88.10756789460855,
+            "2023-Q1": -114.72247161163666,
+            "2023-Q2": -79.61274131549354,
+            "2023-Q3": -171.22096885371948,
+            "2023-Q4": -120.51824560911312
+          },
+          "same_bar_ambiguity_count": 13,
+          "timeouts": 75
+        },
+        "validation": {
+          "n": 1586,
+          "net_win_rate": 0.349936948297604,
+          "tp_hit_rate": 0.3360655737704918,
+          "net_mean_R": -0.30934505332119444,
+          "net_pf": 0.6449780957429747,
+          "gross_pf": 1.063284367058728,
+          "stress_pf": 0.401994476775463,
+          "max_drawdown_R": 499.3992115435451,
+          "net_total_R": -490.62125456741506,
+          "months": 24,
+          "positive_quarters_fraction": 0.0,
+          "quarter_net_R": {
+            "2024-Q1": -68.14426879927493,
+            "2024-Q2": -72.24691795785411,
+            "2024-Q3": -96.98875586559103,
+            "2024-Q4": -81.00411273774961,
+            "2025-Q1": -69.86006805520984,
+            "2025-Q2": -9.246680191743884,
+            "2025-Q3": -46.698032513271976,
+            "2025-Q4": -46.43241844671903
+          },
+          "same_bar_ambiguity_count": 12,
+          "timeouts": 38
+        },
+        "skips": {
+          "overlap": 834,
+          "partial_bar_entry": 6,
+          "split_boundary_purge": 2
+        }
+      },
+      "aligned": {
+        "train": {
+          "n": 465,
+          "net_win_rate": 0.3655913978494624,
+          "tp_hit_rate": 0.35268817204301073,
+          "net_mean_R": -0.42415987060638927,
+          "net_pf": 0.5508333841658439,
+          "gross_pf": 1.154996847169956,
+          "stress_pf": 0.26667805688997015,
+          "max_drawdown_R": 199.56733436400205,
+          "net_total_R": -197.23433983197089,
+          "months": 48,
+          "positive_quarters_fraction": 0.0,
+          "quarter_net_R": {
+            "2020-Q1": -1.6782173495926875,
+            "2020-Q2": -12.841554785556216,
+            "2020-Q3": -10.069902223803773,
+            "2020-Q4": -26.76329671839568,
+            "2021-Q1": -14.424561848950363,
+            "2021-Q2": -5.1027295522764735,
+            "2021-Q3": -9.8563118134275,
+            "2021-Q4": -11.226690682671506,
+            "2022-Q1": -23.648308995573554,
+            "2022-Q2": -20.466882448539767,
+            "2022-Q3": -5.65367718074001,
+            "2022-Q4": -5.984192176921084,
+            "2023-Q1": -4.592169396725455,
+            "2023-Q2": -14.140004433651576,
+            "2023-Q3": -14.33559437558964,
+            "2023-Q4": -16.450245849555735
+          },
+          "same_bar_ambiguity_count": 4,
+          "timeouts": 14
+        },
+        "validation": {
+          "n": 235,
+          "net_win_rate": 0.40425531914893614,
+          "tp_hit_rate": 0.39574468085106385,
+          "net_mean_R": -0.1128409943434279,
+          "net_pf": 0.8559525526587464,
+          "gross_pf": 1.35392259856294,
+          "stress_pf": 0.5568138013185284,
+          "max_drawdown_R": 40.06913499535378,
+          "net_total_R": -26.517633670705536,
+          "months": 24,
+          "positive_quarters_fraction": 0.125,
+          "quarter_net_R": {
+            "2024-Q1": -17.15934750333258,
+            "2024-Q2": -3.8578596771321783,
+            "2024-Q3": -12.109373455959714,
+            "2024-Q4": -3.3392776590541495,
+            "2025-Q1": -1.9721646697984256,
+            "2025-Q2": 14.129904356271066,
+            "2025-Q3": -1.3800424986341873,
+            "2025-Q4": -0.8294725630653859
+          },
+          "same_bar_ambiguity_count": 0,
+          "timeouts": 4
+        },
+        "skips": {
+          "overlap": 110,
+          "partial_bar_entry": 2
+        }
+      },
+      "hold_one": {
+        "train": {
+          "n": 1577,
+          "net_win_rate": 0.3278376664552949,
+          "tp_hit_rate": 0.31705770450221943,
+          "net_mean_R": -0.59053793846928,
+          "net_pf": 0.4389460004274128,
+          "gross_pf": 0.9762145548201674,
+          "stress_pf": 0.19803080055355265,
+          "max_drawdown_R": 931.2783289660557,
+          "net_total_R": -931.2783289660557,
+          "months": 48,
+          "positive_quarters_fraction": 0.0,
+          "quarter_net_R": {
+            "2020-Q1": -62.84040772741794,
+            "2020-Q2": -47.25481078196131,
+            "2020-Q3": -50.69255715135841,
+            "2020-Q4": -52.815531402161184,
+            "2021-Q1": -50.70101134110325,
+            "2021-Q2": -47.49516617054555,
+            "2021-Q3": -76.68189210235889,
+            "2021-Q4": -56.415315006455856,
+            "2022-Q1": -82.8178462386313,
+            "2022-Q2": -48.68879305472972,
+            "2022-Q3": -60.445660479842864,
+            "2022-Q4": -81.90582126271492,
+            "2023-Q1": -63.70403174336999,
+            "2023-Q2": -41.158665437794,
+            "2023-Q3": -71.07349399937654,
+            "2023-Q4": -36.587325066232935
+          },
+          "same_bar_ambiguity_count": 1,
+          "timeouts": 42
+        },
+        "validation": {
+          "n": 822,
+          "net_win_rate": 0.36496350364963503,
+          "tp_hit_rate": 0.3442822384428224,
+          "net_mean_R": -0.26349374592469943,
+          "net_pf": 0.6892511544453204,
+          "gross_pf": 1.1238727628406195,
+          "stress_pf": 0.4351414958904496,
+          "max_drawdown_R": 223.64066529332663,
+          "net_total_R": -216.59185915010332,
+          "months": 24,
+          "positive_quarters_fraction": 0.25,
+          "quarter_net_R": {
+            "2024-Q1": -50.5062898909961,
+            "2024-Q2": -15.166569195140314,
+            "2024-Q3": -49.055674855388496,
+            "2024-Q4": 0.2506384964449129,
+            "2025-Q1": -30.807474242289814,
+            "2025-Q2": 5.31488344179511,
+            "2025-Q3": -52.68804277400673,
+            "2025-Q4": -23.933330130521536
+          },
+          "same_bar_ambiguity_count": 1,
+          "timeouts": 25
+        },
+        "skips": {
+          "overlap": 454,
+          "partial_bar_entry": 1,
+          "split_boundary_purge": 1
+        }
+      }
+    },
+    "progress-candle": {
+      "baseline": {
+        "train": {
+          "n": 14559,
+          "net_win_rate": 0.31547496393983104,
+          "tp_hit_rate": 0.303180163472766,
+          "net_mean_R": -0.6598783955601025,
+          "net_pf": 0.39392035638931167,
+          "gross_pf": 0.9141501604377549,
+          "stress_pf": 0.16959075870973495,
+          "max_drawdown_R": 9611.76722955674,
+          "net_total_R": -9607.169560959543,
+          "months": 48,
+          "positive_quarters_fraction": 0.0,
+          "quarter_net_R": {
+            "2020-Q1": -535.6095614996896,
+            "2020-Q2": -561.6783802536662,
+            "2020-Q3": -511.4574546782427,
+            "2020-Q4": -626.3749693666097,
+            "2021-Q1": -512.019074666507,
+            "2021-Q2": -638.1243772629085,
+            "2021-Q3": -687.3919325732245,
+            "2021-Q4": -722.1220714769051,
+            "2022-Q1": -640.7375018418846,
+            "2022-Q2": -546.4488917889848,
+            "2022-Q3": -649.6440315071046,
+            "2022-Q4": -594.1582408751585,
+            "2023-Q1": -415.15921634914434,
+            "2023-Q2": -406.5849942703052,
+            "2023-Q3": -852.9853989038854,
+            "2023-Q4": -706.6734636453155
+          },
+          "same_bar_ambiguity_count": 59,
+          "timeouts": 371
+        },
+        "validation": {
+          "n": 7469,
+          "net_win_rate": 0.34515999464453073,
+          "tp_hit_rate": 0.32762083277547194,
+          "net_mean_R": -0.34797036684202964,
+          "net_pf": 0.6103404558341848,
+          "gross_pf": 1.0312108984791868,
+          "stress_pf": 0.372069540849468,
+          "max_drawdown_R": 2605.437267186543,
+          "net_total_R": -2598.990669943121,
+          "months": 24,
+          "positive_quarters_fraction": 0.0,
+          "quarter_net_R": {
+            "2024-Q1": -612.871382509779,
+            "2024-Q2": -364.316400647094,
+            "2024-Q3": -391.9549306610148,
+            "2024-Q4": -371.8917415256383,
+            "2025-Q1": -255.85365540189534,
+            "2025-Q2": -195.03387070140175,
+            "2025-Q3": -279.06106384139764,
+            "2025-Q4": -128.00762465489845
+          },
+          "same_bar_ambiguity_count": 24,
+          "timeouts": 199
+        },
+        "skips": {
+          "overlap": 2975,
+          "partial_bar_entry": 36,
+          "split_boundary_purge": 9
+        }
+      },
+      "aligned": {
+        "train": {
+          "n": 2090,
+          "net_win_rate": 0.3215311004784689,
+          "tp_hit_rate": 0.31100478468899523,
+          "net_mean_R": -0.6125216002089833,
+          "net_pf": 0.42141018485590664,
+          "gross_pf": 0.9416252218715225,
+          "stress_pf": 0.19019400442641066,
+          "max_drawdown_R": 1282.9483334024885,
+          "net_total_R": -1280.1701444367745,
+          "months": 48,
+          "positive_quarters_fraction": 0.0,
+          "quarter_net_R": {
+            "2020-Q1": -77.49036171510461,
+            "2020-Q2": -48.42293625372467,
+            "2020-Q3": -57.18496926075321,
+            "2020-Q4": -92.06670538343131,
+            "2021-Q1": -85.128851116097,
+            "2021-Q2": -56.752526042221064,
+            "2021-Q3": -101.14603077758699,
+            "2021-Q4": -100.71865921076461,
+            "2022-Q1": -114.16396339932035,
+            "2022-Q2": -48.190873037839594,
+            "2022-Q3": -104.71771060762276,
+            "2022-Q4": -95.16011288522193,
+            "2023-Q1": -59.656051081533455,
+            "2023-Q2": -47.440442017576466,
+            "2023-Q3": -116.00941688674514,
+            "2023-Q4": -75.92053476123192
+          },
+          "same_bar_ambiguity_count": 4,
+          "timeouts": 48
+        },
+        "validation": {
+          "n": 1129,
+          "net_win_rate": 0.36049601417183347,
+          "tp_hit_rate": 0.34278122232063774,
+          "net_mean_R": -0.28354040066952296,
+          "net_pf": 0.6714084890072266,
+          "gross_pf": 1.0964131071648873,
+          "stress_pf": 0.4230443732438102,
+          "max_drawdown_R": 352.31971828516555,
+          "net_total_R": -320.1171123558914,
+          "months": 24,
+          "positive_quarters_fraction": 0.125,
+          "quarter_net_R": {
+            "2024-Q1": -82.4676951240248,
+            "2024-Q2": -54.27267986950112,
+            "2024-Q3": -48.22100555597037,
+            "2024-Q4": -61.78391135450714,
+            "2025-Q1": -31.728905960451463,
+            "2025-Q2": -41.37037554200608,
+            "2025-Q3": -22.963084305870606,
+            "2025-Q4": 22.690545356440097
+          },
+          "same_bar_ambiguity_count": 3,
+          "timeouts": 27
+        },
+        "skips": {
+          "overlap": 385,
+          "partial_bar_entry": 5,
+          "split_boundary_purge": 1
+        }
+      },
+      "hold_one": {
+        "train": {
+          "n": 7140,
+          "net_win_rate": 0.31624649859943976,
+          "tp_hit_rate": 0.303781512605042,
+          "net_mean_R": -0.6536374307710456,
+          "net_pf": 0.39735702125876055,
+          "gross_pf": 0.9183358968444341,
+          "stress_pf": 0.17183450590644128,
+          "max_drawdown_R": 4666.9712557052535,
+          "net_total_R": -4666.9712557052535,
+          "months": 48,
+          "positive_quarters_fraction": 0.0,
+          "quarter_net_R": {
+            "2020-Q1": -246.8155335117972,
+            "2020-Q2": -240.83059064658326,
+            "2020-Q3": -281.5180195618364,
+            "2020-Q4": -283.98332386914853,
+            "2021-Q1": -286.3492728013205,
+            "2021-Q2": -334.79847410910315,
+            "2021-Q3": -381.8802637755741,
+            "2021-Q4": -391.0672699246659,
+            "2022-Q1": -329.3929160448874,
+            "2022-Q2": -265.36249005068424,
+            "2022-Q3": -240.9813258180062,
+            "2022-Q4": -304.6531156781445,
+            "2023-Q1": -168.96184009577138,
+            "2023-Q2": -197.21692141218043,
+            "2023-Q3": -405.68801251624194,
+            "2023-Q4": -307.47188588932056
+          },
+          "same_bar_ambiguity_count": 19,
+          "timeouts": 188
+        },
+        "validation": {
+          "n": 3757,
+          "net_win_rate": 0.35027947830715994,
+          "tp_hit_rate": 0.3332446100612191,
+          "net_mean_R": -0.3229386424161258,
+          "net_pf": 0.6338482277287777,
+          "gross_pf": 1.0573572228746118,
+          "stress_pf": 0.3914368681899448,
+          "max_drawdown_R": 1222.7342653607957,
+          "net_total_R": -1213.2804795573827,
+          "months": 24,
+          "positive_quarters_fraction": 0.0,
+          "quarter_net_R": {
+            "2024-Q1": -236.40335539328052,
+            "2024-Q2": -133.37682514948136,
+            "2024-Q3": -266.17502002368263,
+            "2024-Q4": -138.1671401975581,
+            "2025-Q1": -163.05598332341862,
+            "2025-Q2": -57.56176614066466,
+            "2025-Q3": -178.08931507982817,
+            "2025-Q4": -40.45107424947056
+          },
+          "same_bar_ambiguity_count": 10,
+          "timeouts": 100
+        },
+        "skips": {
+          "overlap": 1351,
+          "partial_bar_entry": 14,
+          "split_boundary_purge": 3
+        }
+      }
+    },
+    "decision-map": {
+      "baseline": {
+        "train": {
+          "n": 489,
+          "net_win_rate": 0.3476482617586912,
+          "tp_hit_rate": 0.3476482617586912,
+          "net_mean_R": -0.23300737691820195,
+          "net_pf": 0.6997454973603716,
+          "gross_pf": 0.9360605858784141,
+          "stress_pf": 0.5280044944237638,
+          "max_drawdown_R": 126.49436115803567,
+          "net_total_R": -113.94060731300064,
+          "months": 48,
+          "positive_quarters_fraction": 0.1875,
+          "quarter_net_R": {
+            "2020-Q1": 10.340262986488039,
+            "2020-Q2": -9.665001695221997,
+            "2020-Q3": 2.1805032595967218,
+            "2020-Q4": -5.142619802115627,
+            "2021-Q1": -20.665249252759683,
+            "2021-Q2": -0.8783564669098802,
+            "2021-Q3": -19.711417347480666,
+            "2021-Q4": -10.908097425578497,
+            "2022-Q1": -9.35363879090133,
+            "2022-Q2": -0.7687873216462358,
+            "2022-Q3": -26.014074857000992,
+            "2022-Q4": 3.3878402856684775,
+            "2023-Q1": -2.1544144976347788,
+            "2023-Q2": -5.4279849763998715,
+            "2023-Q3": -0.5389361334428453,
+            "2023-Q4": -18.620635277661577
+          },
+          "same_bar_ambiguity_count": 1,
+          "timeouts": 0
+        },
+        "validation": {
+          "n": 292,
+          "net_win_rate": 0.3287671232876712,
+          "tp_hit_rate": 0.3287671232876712,
+          "net_mean_R": -0.2052936516360577,
+          "net_pf": 0.7290339088387576,
+          "gross_pf": 0.8708444746717067,
+          "stress_pf": 0.6144437004682526,
+          "max_drawdown_R": 77.03775483471055,
+          "net_total_R": -59.94574627772891,
+          "months": 24,
+          "positive_quarters_fraction": 0.25,
+          "quarter_net_R": {
+            "2024-Q1": -23.206153736478264,
+            "2024-Q2": -2.498957774403973,
+            "2024-Q3": -25.543535626438764,
+            "2024-Q4": -7.154919526322338,
+            "2025-Q1": 0.3434792922927319,
+            "2025-Q2": -12.64267136317654,
+            "2025-Q3": -0.4092655748106362,
+            "2025-Q4": 11.16627803160894
+          },
+          "same_bar_ambiguity_count": 3,
+          "timeouts": 0
+        },
+        "skips": {
+          "split_boundary_purge": 2,
+          "nonpositive_risk": 1
+        }
+      }
+    }
+  },
+  "progress_redraw_by_year": {
+    "2020": [
+      4203,
+      1041
+    ],
+    "2021": [
+      4335,
+      1087
+    ],
+    "2022": [
+      4402,
+      1118
+    ],
+    "2023": [
+      3598,
+      918
+    ],
+    "2024": [
+      4250,
+      1089
+    ],
+    "2025": [
+      4260,
+      1027
+    ],
+    "2026": [
+      2863,
+      726
+    ]
+  },
+  "engineering": "Three MT5 EX5s loaded, added to custom-symbol charts and calculated48089 bars in isolated terminal. Host-chart label objects observed; separate-chart visual binding not fully accepted. Runtime smoke is not order-execution/tick performance validation. Progress0.1.3 MT4/MT5 history-preservation candidates compiled0errors0warnings; not released."
+}

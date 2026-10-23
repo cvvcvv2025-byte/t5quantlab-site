@@ -37,6 +37,17 @@ async function call(path,headers={},method='GET',body){
  return {status:response.status,headers:response.headers,data:response.headers.get('Content-Type')==='application/zip'?new Uint8Array(await response.arrayBuffer()):await response.json()};
 }
 
+const performanceAudit = vm.runInContext('INDICATOR_PERFORMANCE_AUDIT', context);
+assert.equal(performanceAudit.qualified, false);
+grants=['indicator_membership'];
+for (const slug of vm.runInContext('Object.keys(INDICATOR_ARTIFACTS)', context)) {
+ const r=await call('/api/member/indicators/'+slug+'/download',signed);
+ assert.equal(r.status,409);assert.equal(r.data.code,'INDICATOR_PERFORMANCE_HOLD');assert.equal(gets,0);assert.equal(downloads,0);
+}
+let heldCatalog=await call('/api/products/delivery');
+for(const a of heldCatalog.data.artifacts.filter(a=>a.kind==='indicator')){assert.equal(a.performance_qualified,false);assert.equal(a.download_allowed,false);}
+// Test-only in-memory qualification permits existing upload/download integrity regression checks.
+performanceAudit.qualified=true;
 for (const [slug,code] of [['mtf-structure-panel-mt5','mtf_structure_panel_mt4'],['neckline-mtf-mt5','neckline_mtf_mt4'],['progress-candle-mt5','progress_candle_mt4']]) {
   stored=null;grants=[];gets=0;puts=0;downloads=0;
   const route='/api/member/indicators/'+slug+'/download';

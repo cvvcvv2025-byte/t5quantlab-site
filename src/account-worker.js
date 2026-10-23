@@ -7,6 +7,7 @@ const SESSION_COOKIE = "t5_session";
 const SESSION_DAYS = 30;
 const CODE_TTL_MINUTES = 10;
 const MAX_CODE_ATTEMPTS = 6;
+const INDICATOR_PERFORMANCE_AUDIT = { qualified: false, report: "/verification/indicator-audit-2026-10-23/", date: "2026-10-23" };
 const INDICATOR_ARTIFACTS = {
   "mtf-structure-panel-mt5": {
     membershipRequired: false, // optional platform addition; preserve existing checkout readiness
@@ -521,6 +522,9 @@ async function deliveryCatalog(env, verify = false) {
     const state = await artifactState(env, artifact);
     const out = { slug, kind, version: artifact.version, filename: artifact.filename, ...state };
     if (artifact.membershipRequired === false) out.membership_required = false;
+    out.performance_qualified = kind === 'indicator' ? INDICATOR_PERFORMANCE_AUDIT.qualified : null;
+    out.download_allowed = state.ready && (kind !== 'indicator' || INDICATOR_PERFORMANCE_AUDIT.qualified);
+    if (kind === 'indicator') out.audit_report = INDICATOR_PERFORMANCE_AUDIT.report;
     if (verify) {
       const object = env.USER_CODE_BUCKET ? await env.USER_CODE_BUCKET.get(artifact.r2Key) : null;
       const bytes = object ? await object.arrayBuffer() : null;
@@ -531,7 +535,7 @@ async function deliveryCatalog(env, verify = false) {
     }
     return out;
   }));
-  return json({ ok: true, artifacts, ready_count: artifacts.filter(x => x.ready).length, total_count: artifacts.length });
+  return json({ ok: true, artifacts, ready_count: artifacts.filter(x => x.ready).length, downloadable_count: artifacts.filter(x => x.download_allowed).length, total_count: artifacts.length });
 }
 
 async function indicatorAccess(request, env, artifact) {
@@ -541,7 +545,7 @@ async function indicatorAccess(request, env, artifact) {
   const entitlement = await activeIndicatorEntitlement(env, user.user_id, artifact);
   return json({
     ok: true,
-    artifact: { code: artifact.code, version: artifact.version, filename: artifact.filename, ...await artifactState(env, artifact) },
+    artifact: { code: artifact.code, version: artifact.version, filename: artifact.filename, ...await artifactState(env, artifact), performance_qualified: INDICATOR_PERFORMANCE_AUDIT.qualified, download_allowed: INDICATOR_PERFORMANCE_AUDIT.qualified },
     entitled: Boolean(entitlement),
     entitlement: entitlement || null
   });
@@ -553,6 +557,7 @@ async function downloadIndicator(request, env, artifact) {
   await ensureAccountDb(env);
   const entitlement = await activeIndicatorEntitlement(env, user.user_id, artifact);
   if (!entitlement) return json({ ok: false, error: "当前账户没有有效的指标会员权限", code: "INDICATOR_ENTITLEMENT_REQUIRED" }, 403);
+  if (!INDICATOR_PERFORMANCE_AUDIT.qualified) return json({ ok: false, error: "指标绩效审计未通过，下载已暂停，请查看审计报告或联系客户支持。", code: "INDICATOR_PERFORMANCE_HOLD", audit_report: INDICATOR_PERFORMANCE_AUDIT.report }, 409);
   if (!env.USER_CODE_BUCKET) return json({ ok: false, error: "下载存储尚未就绪", code: "ARTIFACT_STORAGE_NOT_READY" }, 503);
   const object = await env.USER_CODE_BUCKET.get(artifact.r2Key);
   if (!object) return json({ ok: false, error: "安装包尚未上传，请稍后再试", code: "ARTIFACT_NOT_READY" }, 503);

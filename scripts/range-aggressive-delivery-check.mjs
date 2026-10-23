@@ -51,7 +51,7 @@ const fixture=new Uint8Array([80,75,3,4,7,8,9]);
 r=await call('/api/admin/ea-artifacts/upload?artifact=range-aggressive',admin,'PUT',fixture);
 assert.equal(r.status,400);assert.equal(r.data.code,'ARTIFACT_HASH_MISMATCH');assert.equal(puts,0);
 const artifact=vm.runInContext('EA_ARTIFACTS["range-aggressive"]',context);
-assert.equal(artifact.sha256,'ddba5758b7c9d2a899cb4efd6578d8b58e4437fded0592a202667a013fa84e89');
+assert.equal(artifact.sha256,'9d3be01fda4f78037ad96c76b15c556ec68bb2cb0c79ca26e72fdcc3f3dee448');
 // Isolated test fixture only: exercise real hashing without committing paid binaries.
 artifact.sha256=Buffer.from(await webcrypto.subtle.digest('SHA-256',fixture)).toString('hex');
 r=await call('/api/admin/ea-artifacts/upload?artifact=range-aggressive',admin,'PUT',fixture);
@@ -61,7 +61,7 @@ r=await call('/api/member/eas/range-aggressive/download',signed);
 assert.equal(r.status,200);assert.deepEqual(Array.from(r.data),Array.from(fixture));assert.equal(downloads,1);
 assert.equal(r.headers.get('X-T5-Artifact-SHA256'),artifact.sha256);
 assert(r.headers.get('Cache-Control').includes('private'));
-assert(r.headers.get('Content-Disposition').includes('MT4_MT5_Customer_Pack.zip'));
+assert(r.headers.get('Content-Disposition').includes('LicenseV2_Customer_Pack.zip'));
 corruptReadback=true;
 r=await call('/api/member/eas/range-aggressive/download',signed);
 assert.equal(r.status,503);assert.equal(r.data.code,'ARTIFACT_CONTENT_MISMATCH');assert.equal(downloads,1);

@@ -88,44 +88,46 @@ const INDICATOR_ARTIFACTS = {
 const INDICATOR_MEMBERSHIP_PRODUCTS = ["indicator_membership", "premium_membership"];
 const INDICATOR_PRODUCT_CODES = [...INDICATOR_MEMBERSHIP_PRODUCTS, ...Object.values(INDICATOR_ARTIFACTS).map(item => item.code)];
 const EA_ARTIFACTS = {
-  "attack-completion-c-licensed-v2": {"version": "6.10.8-license.2", "filename": "T5_attack_completion_c_6_10_8_LicenseV2_Customer_Pack.zip", "r2Key": "member-artifacts/ea/attack-completion-c/6.10.8-license.2/T5_attack_completion_c_6_10_8_LicenseV2_Customer_Pack.zip", "sha256": "fb234bc63c8c6ec2e63d387a5becf272c12983d0ce1e1312e4b5da5c1ab9ae53", "code": "attack_completion_c_mt5", "license_product": "attack_completion_c_mt5_v2", "membershipRequired": false, "releaseStatus": "awaiting_upload", "maxBytes": 2097152},
-  "trend-capture-licensed-v2": {"version": "0.1.0-license.2", "filename": "T5_trend_capture_0_1_0_LicenseV2_Customer_Pack.zip", "r2Key": "member-artifacts/ea/trend-capture/0.1.0-license.2/T5_trend_capture_0_1_0_LicenseV2_Customer_Pack.zip", "sha256": "39329acf4722e0ec921e7cada7529a686e9e6835dc83c8562a605bbce5e33f37", "code": "trend_capture_mt5", "license_product": "trend_capture_mt5_v2", "membershipRequired": false, "releaseStatus": "awaiting_upload", "maxBytes": 2097152},
-  "range-martingale-licensed-v2": {"version": "0.3.4-license.2", "filename": "T5_range_martingale_0_3_4_LicenseV2_Customer_Pack.zip", "r2Key": "member-artifacts/ea/range-martingale/0.3.4-license.2/T5_range_martingale_0_3_4_LicenseV2_Customer_Pack.zip", "sha256": "b47afcfb8a17f6c6c09a9ef4c0d31b71b7183eb468cfcbd563739f69dc3fd8fe", "code": "range_martingale_mt4", "license_product": "range_martingale_mt4_v2", "membershipRequired": false, "releaseStatus": "awaiting_upload", "maxBytes": 2097152},
-  "range-aggressive-licensed-v2": {"version": "0.3.6-license.2", "filename": "T5_range_aggressive_0_3_6_LicenseV2_Customer_Pack.zip", "r2Key": "member-artifacts/ea/range-aggressive/0.3.6-license.2/T5_range_aggressive_0_3_6_LicenseV2_Customer_Pack.zip", "sha256": "9d3be01fda4f78037ad96c76b15c556ec68bb2cb0c79ca26e72fdcc3f3dee448", "code": "range_aggressive_mt4_mt5", "license_product": "range_aggressive_mt4_mt5_v2", "membershipRequired": false, "releaseStatus": "awaiting_upload", "maxBytes": 2097152},
 
   "range-aggressive": {
+    version: "0.3.6-license.2",
+    filename: "T5_range_aggressive_0_3_6_LicenseV2_Customer_Pack.zip",
+    r2Key: "member-artifacts/ea/range-aggressive/0.3.6-license.2/T5_range_aggressive_0_3_6_LicenseV2_Customer_Pack.zip",
+    sha256: "9d3be01fda4f78037ad96c76b15c556ec68bb2cb0c79ca26e72fdcc3f3dee448",
+    license_product: "range_aggressive_mt4_mt5_v2",
     code: "range_aggressive_mt4_mt5",
-    version: "0.3.6",
-    filename: "T5_Range_Boundary_Aggressive_v0_3_6_MT4_MT5_Customer_Pack.zip",
-    r2Key: "member-artifacts/ea/range-aggressive/0.3.6/T5_Range_Boundary_Aggressive_v0_3_6_MT4_MT5_Customer_Pack.zip",
     releaseStatus: "awaiting_upload",
-    sha256: "ddba5758b7c9d2a899cb4efd6578d8b58e4437fded0592a202667a013fa84e89",
-    maxBytes: 2 * 1024 * 1024
+    maxBytes: 2097152,
   },
   "range-martingale": {
+    version: "0.3.4-license.2",
+    filename: "T5_range_martingale_0_3_4_LicenseV2_Customer_Pack.zip",
+    r2Key: "member-artifacts/ea/range-martingale/0.3.4-license.2/T5_range_martingale_0_3_4_LicenseV2_Customer_Pack.zip",
+    sha256: "b47afcfb8a17f6c6c09a9ef4c0d31b71b7183eb468cfcbd563739f69dc3fd8fe",
+    license_product: "range_martingale_mt4_v2",
     code: "range_martingale_mt4",
-    version: "0.3.4",
-    filename: "T5_Range_Martingale_v0_3_4_MT4_MT5_Customer_Pack.zip",
-    r2Key: "member-artifacts/ea/range-martingale/0.3.4/T5_Range_Martingale_v0_3_4_MT4_MT5_Customer_Pack.zip",
     releaseStatus: "awaiting_upload",
-    sha256: "76a6c84c9c3d7e3def09bc3df87e730240ff607d76e6534d6f12bb6df939bfaf",
-    maxBytes: 2 * 1024 * 1024
+    maxBytes: 2097152,
   },
   "attack-completion-c": {
+    version: "6.10.8-license.2",
+    filename: "T5_attack_completion_c_6_10_8_LicenseV2_Customer_Pack.zip",
+    r2Key: "member-artifacts/ea/attack-completion-c/6.10.8-license.2/T5_attack_completion_c_6_10_8_LicenseV2_Customer_Pack.zip",
+    sha256: "fb234bc63c8c6ec2e63d387a5becf272c12983d0ce1e1312e4b5da5c1ab9ae53",
+    license_product: "attack_completion_c_mt5_v2",
     code: "attack_completion_c_mt5",
-    version: "6.10.8",
-    filename: "T5_Attack_Completion_C_v6_10_8_MT5_Customer_Pack.zip",
-    r2Key: "member-artifacts/ea/attack-completion-c/6.10.8/T5_Attack_Completion_C_v6_10_8_MT5_Customer_Pack.zip",
-    sha256: "ffc33da4245c135aa2f00eef1a9fc17fe5b6c4eb7aa722e76289f8fffcc65521",
-    maxBytes: 2 * 1024 * 1024
+    releaseStatus: "awaiting_upload",
+    maxBytes: 2097152,
   },
   "trend-capture": {
+    version: "0.1.0-license.2",
+    filename: "T5_trend_capture_0_1_0_LicenseV2_Customer_Pack.zip",
+    r2Key: "member-artifacts/ea/trend-capture/0.1.0-license.2/T5_trend_capture_0_1_0_LicenseV2_Customer_Pack.zip",
+    sha256: "39329acf4722e0ec921e7cada7529a686e9e6835dc83c8562a605bbce5e33f37",
+    license_product: "trend_capture_mt5_v2",
     code: "trend_capture_mt5",
-    version: "0.1.0",
-    filename: "T5_Trend_Capture_v0_1_0_MT5_Customer_Pack.zip",
-    r2Key: "member-artifacts/ea/trend-capture/0.1.0/T5_Trend_Capture_v0_1_0_MT5_Customer_Pack.zip",
-    sha256: "0577e6a43b5e1bb36d9ab71c80b8602884d2e7f5e74a5b0d1415dd7ecb800b37",
-    maxBytes: 2 * 1024 * 1024
+    releaseStatus: "awaiting_upload",
+    maxBytes: 2097152,
   }
 };
 const EA_MEMBERSHIP_PRODUCTS = ["premium_membership"];

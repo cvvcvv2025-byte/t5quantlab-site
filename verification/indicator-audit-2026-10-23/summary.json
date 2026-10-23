@@ -935,5 +935,23 @@
       726
     ]
   },
-  "engineering": "Three MT5 EX5s loaded, added to custom-symbol charts and calculated48089 bars in isolated terminal. Host-chart label objects observed; separate-chart visual binding not fully accepted. Runtime smoke is not order-execution/tick performance validation. Progress0.1.3 MT4/MT5 history-preservation candidates compiled0errors0warnings; not released."
+  "engineering": "Three MT5 EX5s loaded, added to custom-symbol charts and calculated48089 bars in isolated terminal. Host-chart label objects observed; separate-chart visual binding not fully accepted. Runtime smoke is not order-execution/tick performance validation. Progress0.1.3 MT4/MT5 history-preservation candidates compiled0errors0warnings; not released.",
+  "data_conflict_followup": {
+    "skipped_records": 780,
+    "conflicting_OHLC_with_retained_record": 420,
+    "identical_OHLC": 360
+  },
+  "phase2": {
+    "candidates_tested": 84,
+    "development_validation_passed": 0,
+    "reserved_new_quotes_evaluated": false,
+    "new_quotes_status": "Broker cache afterSep5 frozen separately, source provenance and native server access not yet certified. Isolated MT5 read-only exporter selectedXAUUSD but CopyRates returned-1/error4401; no authenticated terminal MCP connection yet.",
+    "families": [
+      "original continuation with structural stops",
+      "separately named failed-break reclaim models",
+      "Decision Map native-level filters"
+    ],
+    "selection": "none",
+    "data_quality": "420 skipped overlap records conflict with retained OHLC;360 match. Original first-retained policy unchanged; no full feed certification."
+  }
 }

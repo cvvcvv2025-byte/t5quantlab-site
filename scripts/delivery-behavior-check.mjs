@@ -90,15 +90,28 @@ try {
     const version = match[1].split('/').at(-2);
     await bucket.put(match[1], 'fixture', { customMetadata: { sha256: match[2], version } });
   }
+  for (const match of catalogSource.matchAll(/previous: (\{[^\n]+\})/g)) {
+    const old = JSON.parse(match[1]);
+    await bucket.put(old.r2Key, 'fixture', { customMetadata: { sha256: old.sha256, version: old.version } });
+  }
+  const newMapKey = [...objects.keys()].find(key => key.includes('/structure-decision-map-mt5/') && key.includes('-display.1/'));
+  const newMapObject = objects.get(newMapKey); objects.delete(newMapKey);
+  const duringUpload = await call('/api/products/delivery');
+  const oldMap = duringUpload.data.artifacts.find(item => item.slug === 'structure-decision-map-mt5');
+  assert.equal(oldMap.ready, true, 'verified previous package stays available during upload');
+  assert.equal(oldMap.version, '0.2.3');
+  objects.set(newMapKey, newMapObject);
+  const afterUpload = await call('/api/products/delivery');
+  assert.equal(afterUpload.data.artifacts.find(item => item.slug === 'structure-decision-map-mt5').version, '0.2.3-display.1');
   const stagedKey = [...objects.keys()].find(key => key.includes('/structure-decision-map/'));
   assert.ok(stagedKey, 'staged Decision Map must be registered');
   objects.delete(stagedKey);
   const mt5Key = [...objects.keys()].find(key => key.includes('/structure-decision-map-mt5/'));
   assert.ok(mt5Key);
-  objects.delete(mt5Key);
+  for (const key of [...objects.keys()].filter(key => key.includes('/structure-decision-map-mt5/'))) objects.delete(key);
   for (const slug of ['mtf-structure-panel-mt5', 'neckline-mtf-mt5', 'progress-candle-mt5']) {
     const key = [...objects.keys()].find(key => key.includes('/' + slug + '/'));
-    assert.ok(key, 'MT5 artifact registered: ' + slug); objects.delete(key);
+    assert.ok(key, 'MT5 artifact registered: ' + slug); for (const candidate of [...objects.keys()].filter(candidate => candidate.includes('/' + slug + '/'))) objects.delete(candidate);
   }
   const stagedCatalog = await call('/api/products/delivery');
   const staged = stagedCatalog.data.artifacts.find(item => item.slug === 'structure-decision-map');

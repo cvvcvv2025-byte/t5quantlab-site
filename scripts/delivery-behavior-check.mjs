@@ -155,7 +155,7 @@ try {
   db.batch = async items => { if (items.some(x => x.sql.includes('CREATE TABLE IF NOT EXISTS projects'))) throw new Error('simulated schema outage'); return originalBatch(items); };
   r = await call('/api/builder/analyze', { projectId: brokenId }); db.batch = originalBatch;
   assert.equal(r.status, 503); assert.equal((await call('/api/account/summary')).data.builder.analyze_remaining, 2);
-  r = await call('/api/products/delivery'); assert.equal(r.data.ready_count, 7); assert.equal(r.data.total_count, 12);
+  r = await call('/api/products/delivery'); assert.equal(r.data.ready_count, 7); assert.equal(r.data.total_count, 16);
   // Customer support is usable without login and protects each private reply by its receipt token.
   session = '';
   r = await call('/api/support/tickets', { email: 'customer@example.invalid', message: 'I cannot download the purchased product.', consent: true });

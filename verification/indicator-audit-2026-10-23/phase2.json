@@ -1,0 +1,2737 @@
+{
+  "date": "2026-10-23",
+  "status": "not_qualified",
+  "count": 84,
+  "passed": 0,
+  "selection": {},
+  "results": [
+    {
+      "id": 0,
+      "product": "mtf-structure-panel",
+      "family": "structural",
+      "configuration": {
+        "rr": 2,
+        "horizon": 48,
+        "filter": "none"
+      },
+      "train": {
+        "n": 7077,
+        "net_mean_R": -0.5390092782213808,
+        "net_pf": 0.4658221970165166,
+        "net_win_rate": 0.32725731242051714,
+        "max_drawdown_R": 3814.6272546656505,
+        "months": 48,
+        "net_total_R": -3814.5686619727117,
+        "stress_pf": 0.23641901104658347,
+        "positive_quarters_fraction": 0.0
+      },
+      "validation": {
+        "n": 3748,
+        "net_mean_R": -0.2679523239764798,
+        "net_pf": 0.6808539811643377,
+        "net_win_rate": 0.3508537886872999,
+        "max_drawdown_R": 1017.453515589245,
+        "months": 24,
+        "net_total_R": -1004.2853102638462,
+        "stress_pf": 0.45197549010689886,
+        "positive_quarters_fraction": 0.0
+      },
+      "development_gate_pass": false,
+      "skips": {}
+    },
+    {
+      "id": 1,
+      "product": "mtf-structure-panel",
+      "family": "structural",
+      "configuration": {
+        "rr": 2,
+        "horizon": 48,
+        "filter": "aligned"
+      },
+      "train": {
+        "n": 7077,
+        "net_mean_R": -0.5390092782213808,
+        "net_pf": 0.4658221970165166,
+        "net_win_rate": 0.32725731242051714,
+        "max_drawdown_R": 3814.6272546656505,
+        "months": 48,
+        "net_total_R": -3814.5686619727117,
+        "stress_pf": 0.23641901104658347,
+        "positive_quarters_fraction": 0.0
+      },
+      "validation": {
+        "n": 3748,
+        "net_mean_R": -0.2679523239764798,
+        "net_pf": 0.6808539811643377,
+        "net_win_rate": 0.3508537886872999,
+        "max_drawdown_R": 1017.453515589245,
+        "months": 24,
+        "net_total_R": -1004.2853102638462,
+        "stress_pf": 0.45197549010689886,
+        "positive_quarters_fraction": 0.0
+      },
+      "development_gate_pass": false,
+      "skips": {}
+    },
+    {
+      "id": 2,
+      "product": "mtf-structure-panel",
+      "family": "structural",
+      "configuration": {
+        "rr": 2,
+        "horizon": 48,
+        "filter": "strong"
+      },
+      "train": {
+        "n": 3123,
+        "net_mean_R": -0.5521986709943436,
+        "net_pf": 0.4549174038392815,
+        "net_win_rate": 0.3221261607428754,
+        "max_drawdown_R": 1726.184148365837,
+        "months": 48,
+        "net_total_R": -1724.5164495153351,
+        "stress_pf": 0.23026107732087106,
+        "positive_quarters_fraction": 0.0
+      },
+      "validation": {
+        "n": 1695,
+        "net_mean_R": -0.2550021887294591,
+        "net_pf": 0.6941364594360138,
+        "net_win_rate": 0.34926253687315634,
+        "max_drawdown_R": 444.32054315193415,
+        "months": 24,
+        "net_total_R": -432.2287098964332,
+        "stress_pf": 0.4703856311451046,
+        "positive_quarters_fraction": 0.0
+      },
+      "development_gate_pass": false,
+      "skips": {}
+    },
+    {
+      "id": 3,
+      "product": "mtf-structure-panel",
+      "family": "structural",
+      "configuration": {
+        "rr": 2,
+        "horizon": 96,
+        "filter": "none"
+      },
+      "train": {
+        "n": 6855,
+        "net_mean_R": -0.53284689750993,
+        "net_pf": 0.47472664945193,
+        "net_win_rate": 0.32545587162655,
+        "max_drawdown_R": 3652.724075123509,
+        "months": 48,
+        "net_total_R": -3652.66548243057,
+        "stress_pf": 0.2450775993205323,
+        "positive_quarters_fraction": 0.0
+      },
+      "validation": {
+        "n": 3647,
+        "net_mean_R": -0.26493369717040904,
+        "net_pf": 0.6875884545753647,
+        "net_win_rate": 0.34658623526185905,
+        "max_drawdown_R": 978.2710410604789,
+        "months": 24,
+        "net_total_R": -966.2131935804819,
+        "stress_pf": 0.46256849712011605,
+        "positive_quarters_fraction": 0.0
+      },
+      "development_gate_pass": false,
+      "skips": {}
+    },
+    {
+      "id": 4,
+      "product": "mtf-structure-panel",
+      "family": "structural",
+      "configuration": {
+        "rr": 2,
+        "horizon": 96,
+        "filter": "aligned"
+      },
+      "train": {
+        "n": 6855,
+        "net_mean_R": -0.53284689750993,
+        "net_pf": 0.47472664945193,
+        "net_win_rate": 0.32545587162655,
+        "max_drawdown_R": 3652.724075123509,
+        "months": 48,
+        "net_total_R": -3652.66548243057,
+        "stress_pf": 0.2450775993205323,
+        "positive_quarters_fraction": 0.0
+      },
+      "validation": {
+        "n": 3647,
+        "net_mean_R": -0.26493369717040904,
+        "net_pf": 0.6875884545753647,
+        "net_win_rate": 0.34658623526185905,
+        "max_drawdown_R": 978.2710410604789,
+        "months": 24,
+        "net_total_R": -966.2131935804819,
+        "stress_pf": 0.46256849712011605,
+        "positive_quarters_fraction": 0.0
+      },
+      "development_gate_pass": false,
+      "skips": {}
+    },
+    {
+      "id": 5,
+      "product": "mtf-structure-panel",
+      "family": "structural",
+      "configuration": {
+        "rr": 2,
+        "horizon": 96,
+        "filter": "strong"
+      },
+      "train": {
+        "n": 3060,
+        "net_mean_R": -0.5454645684048162,
+        "net_pf": 0.4639021039917724,
+        "net_win_rate": 0.31895424836601305,
+        "max_drawdown_R": 1670.7892781692394,
+        "months": 48,
+        "net_total_R": -1669.1215793187375,
+        "stress_pf": 0.23837750541216057,
+        "positive_quarters_fraction": 0.0
+      },
+      "validation": {
+        "n": 1659,
+        "net_mean_R": -0.2541886448587344,
+        "net_pf": 0.6988532114115134,
+        "net_win_rate": 0.3459915611814346,
+        "max_drawdown_R": 432.43156593720124,
+        "months": 24,
+        "net_total_R": -421.69896182064036,
+        "stress_pf": 0.47872787265106626,
+        "positive_quarters_fraction": 0.0
+      },
+      "development_gate_pass": false,
+      "skips": {}
+    },
+    {
+      "id": 6,
+      "product": "mtf-structure-panel",
+      "family": "structural",
+      "configuration": {
+        "rr": 3,
+        "horizon": 48,
+        "filter": "none"
+      },
+      "train": {
+        "n": 6039,
+        "net_mean_R": -0.541807670027989,
+        "net_pf": 0.5137499040120467,
+        "net_win_rate": 0.26179831097863887,
+        "max_drawdown_R": 3275.4975410104867,
+        "months": 48,
+        "net_total_R": -3271.9765192990258,
+        "stress_pf": 0.30047167066912206,
+        "positive_quarters_fraction": 0.0
+      },
+      "validation": {
+        "n": 3224,
+        "net_mean_R": -0.2633102246746269,
+        "net_pf": 0.7171719062898521,
+        "net_win_rate": 0.28101736972704716,
+        "max_drawdown_R": 870.8813087550162,
+        "months": 24,
+        "net_total_R": -848.912164350997,
+        "stress_pf": 0.5073429176937015,
+        "positive_quarters_fraction": 0.0
+      },
+      "development_gate_pass": false,
+      "skips": {}
+    },
+    {
+      "id": 7,
+      "product": "mtf-structure-panel",
+      "family": "structural",
+      "configuration": {
+        "rr": 3,
+        "horizon": 48,
+        "filter": "aligned"
+      },
+      "train": {
+        "n": 6039,
+        "net_mean_R": -0.541807670027989,
+        "net_pf": 0.5137499040120467,
+        "net_win_rate": 0.26179831097863887,
+        "max_drawdown_R": 3275.4975410104867,
+        "months": 48,
+        "net_total_R": -3271.9765192990258,
+        "stress_pf": 0.30047167066912206,
+        "positive_quarters_fraction": 0.0
+      },
+      "validation": {
+        "n": 3224,
+        "net_mean_R": -0.2633102246746269,
+        "net_pf": 0.7171719062898521,
+        "net_win_rate": 0.28101736972704716,
+        "max_drawdown_R": 870.8813087550162,
+        "months": 24,
+        "net_total_R": -848.912164350997,
+        "stress_pf": 0.5073429176937015,
+        "positive_quarters_fraction": 0.0
+      },
+      "development_gate_pass": false,
+      "skips": {}
+    },
+    {
+      "id": 8,
+      "product": "mtf-structure-panel",
+      "family": "structural",
+      "configuration": {
+        "rr": 3,
+        "horizon": 48,
+        "filter": "strong"
+      },
+      "train": {
+        "n": 2669,
+        "net_mean_R": -0.5708360559434497,
+        "net_pf": 0.4914841059413849,
+        "net_win_rate": 0.25327838141626074,
+        "max_drawdown_R": 1529.601546950521,
+        "months": 48,
+        "net_total_R": -1523.561433313067,
+        "stress_pf": 0.2866639706875514,
+        "positive_quarters_fraction": 0.0
+      },
+      "validation": {
+        "n": 1479,
+        "net_mean_R": -0.24890882955938545,
+        "net_pf": 0.730690670506738,
+        "net_win_rate": 0.27856659905341447,
+        "max_drawdown_R": 382.270102560941,
+        "months": 24,
+        "net_total_R": -368.1361589183311,
+        "stress_pf": 0.5262959246819163,
+        "positive_quarters_fraction": 0.125
+      },
+      "development_gate_pass": false,
+      "skips": {}
+    },
+    {
+      "id": 9,
+      "product": "mtf-structure-panel",
+      "family": "structural",
+      "configuration": {
+        "rr": 3,
+        "horizon": 96,
+        "filter": "none"
+      },
+      "train": {
+        "n": 5685,
+        "net_mean_R": -0.5312866888133001,
+        "net_pf": 0.5294283588630119,
+        "net_win_rate": 0.25259454705365,
+        "max_drawdown_R": 3023.8858476150717,
+        "months": 48,
+        "net_total_R": -3020.364825903611,
+        "stress_pf": 0.3177357785116344,
+        "positive_quarters_fraction": 0.0
+      },
+      "validation": {
+        "n": 3025,
+        "net_mean_R": -0.24909697279555598,
+        "net_pf": 0.7369979732441415,
+        "net_win_rate": 0.27206611570247935,
+        "max_drawdown_R": 774.1358298968748,
+        "months": 24,
+        "net_total_R": -753.5183427065568,
+        "stress_pf": 0.5291497754573578,
+        "positive_quarters_fraction": 0.0
+      },
+      "development_gate_pass": false,
+      "skips": {}
+    },
+    {
+      "id": 10,
+      "product": "mtf-structure-panel",
+      "family": "structural",
+      "configuration": {
+        "rr": 3,
+        "horizon": 96,
+        "filter": "aligned"
+      },
+      "train": {
+        "n": 5685,
+        "net_mean_R": -0.5312866888133001,
+        "net_pf": 0.5294283588630119,
+        "net_win_rate": 0.25259454705365,
+        "max_drawdown_R": 3023.8858476150717,
+        "months": 48,
+        "net_total_R": -3020.364825903611,
+        "stress_pf": 0.3177357785116344,
+        "positive_quarters_fraction": 0.0
+      },
+      "validation": {
+        "n": 3025,
+        "net_mean_R": -0.24909697279555598,
+        "net_pf": 0.7369979732441415,
+        "net_win_rate": 0.27206611570247935,
+        "max_drawdown_R": 774.1358298968748,
+        "months": 24,
+        "net_total_R": -753.5183427065568,
+        "stress_pf": 0.5291497754573578,
+        "positive_quarters_fraction": 0.0
+      },
+      "development_gate_pass": false,
+      "skips": {}
+    },
+    {
+      "id": 11,
+      "product": "mtf-structure-panel",
+      "family": "structural",
+      "configuration": {
+        "rr": 3,
+        "horizon": 96,
+        "filter": "strong"
+      },
+      "train": {
+        "n": 2549,
+        "net_mean_R": -0.5692371974928652,
+        "net_pf": 0.5006186300535785,
+        "net_win_rate": 0.24166339741074933,
+        "max_drawdown_R": 1455.9737922501633,
+        "months": 48,
+        "net_total_R": -1450.9856164093133,
+        "stress_pf": 0.2984272405367669,
+        "positive_quarters_fraction": 0.0625
+      },
+      "validation": {
+        "n": 1406,
+        "net_mean_R": -0.24213816983874545,
+        "net_pf": 0.7428049901311202,
+        "net_win_rate": 0.26955903271692744,
+        "max_drawdown_R": 353.7959035391294,
+        "months": 24,
+        "net_total_R": -340.4462667932761,
+        "stress_pf": 0.5433837676273909,
+        "positive_quarters_fraction": 0.125
+      },
+      "development_gate_pass": false,
+      "skips": {}
+    },
+    {
+      "id": 12,
+      "product": "mtf-structure-panel",
+      "family": "reclaim",
+      "configuration": {
+        "rr": 2,
+        "horizon": 48,
+        "filter": "none"
+      },
+      "train": {
+        "n": 1714,
+        "net_mean_R": -0.4709324758087587,
+        "net_pf": 0.506481987008844,
+        "net_win_rate": 0.3413068844807468,
+        "max_drawdown_R": 808.5098648682354,
+        "months": 48,
+        "net_total_R": -807.1782635362124,
+        "stress_pf": 0.268627794016791,
+        "positive_quarters_fraction": 0.0
+      },
+      "validation": {
+        "n": 894,
+        "net_mean_R": -0.3290713615937963,
+        "net_pf": 0.61511643084283,
+        "net_win_rate": 0.3288590604026846,
+        "max_drawdown_R": 310.11738897243845,
+        "months": 24,
+        "net_total_R": -294.1897972648539,
+        "stress_pf": 0.4147176310208492,
+        "positive_quarters_fraction": 0.125
+      },
+      "development_gate_pass": false,
+      "skips": {}
+    },
+    {
+      "id": 13,
+      "product": "mtf-structure-panel",
+      "family": "reclaim",
+      "configuration": {
+        "rr": 2,
+        "horizon": 48,
+        "filter": "h1"
+      },
+      "train": {
+        "n": 0
+      },
+      "validation": {
+        "n": 0
+      },
+      "development_gate_pass": false,
+      "skips": {}
+    },
+    {
+      "id": 14,
+      "product": "mtf-structure-panel",
+      "family": "reclaim",
+      "configuration": {
+        "rr": 2,
+        "horizon": 48,
+        "filter": "aligned"
+      },
+      "train": {
+        "n": 0
+      },
+      "validation": {
+        "n": 0
+      },
+      "development_gate_pass": false,
+      "skips": {}
+    },
+    {
+      "id": 15,
+      "product": "mtf-structure-panel",
+      "family": "reclaim",
+      "configuration": {
+        "rr": 2,
+        "horizon": 96,
+        "filter": "none"
+      },
+      "train": {
+        "n": 1689,
+        "net_mean_R": -0.46400659904377706,
+        "net_pf": 0.5216262949001523,
+        "net_win_rate": 0.339846062759029,
+        "max_drawdown_R": 785.0387471169624,
+        "months": 48,
+        "net_total_R": -783.7071457849395,
+        "stress_pf": 0.2827118370337634,
+        "positive_quarters_fraction": 0.0
+      },
+      "validation": {
+        "n": 891,
+        "net_mean_R": -0.33122035210661177,
+        "net_pf": 0.61979662016274,
+        "net_win_rate": 0.3265993265993266,
+        "max_drawdown_R": 309.9837429028327,
+        "months": 24,
+        "net_total_R": -295.1173337269911,
+        "stress_pf": 0.42254646234611465,
+        "positive_quarters_fraction": 0.125
+      },
+      "development_gate_pass": false,
+      "skips": {}
+    },
+    {
+      "id": 16,
+      "product": "mtf-structure-panel",
+      "family": "reclaim",
+      "configuration": {
+        "rr": 2,
+        "horizon": 96,
+        "filter": "h1"
+      },
+      "train": {
+        "n": 0
+      },
+      "validation": {
+        "n": 0
+      },
+      "development_gate_pass": false,
+      "skips": {}
+    },
+    {
+      "id": 17,
+      "product": "mtf-structure-panel",
+      "family": "reclaim",
+      "configuration": {
+        "rr": 2,
+        "horizon": 96,
+        "filter": "aligned"
+      },
+      "train": {
+        "n": 0
+      },
+      "validation": {
+        "n": 0
+      },
+      "development_gate_pass": false,
+      "skips": {}
+    },
+    {
+      "id": 18,
+      "product": "mtf-structure-panel",
+      "family": "reclaim",
+      "configuration": {
+        "rr": 3,
+        "horizon": 48,
+        "filter": "none"
+      },
+      "train": {
+        "n": 1688,
+        "net_mean_R": -0.4760996889001574,
+        "net_pf": 0.5429585084437479,
+        "net_win_rate": 0.2802132701421801,
+        "max_drawdown_R": 807.8284774791409,
+        "months": 48,
+        "net_total_R": -803.6562748634657,
+        "stress_pf": 0.32383115315352784,
+        "positive_quarters_fraction": 0.0
+      },
+      "validation": {
+        "n": 888,
+        "net_mean_R": -0.2921895402086642,
+        "net_pf": 0.6834057058126727,
+        "net_win_rate": 0.2747747747747748,
+        "max_drawdown_R": 279.14485531666276,
+        "months": 24,
+        "net_total_R": -259.4643117052938,
+        "stress_pf": 0.48940309116573044,
+        "positive_quarters_fraction": 0.125
+      },
+      "development_gate_pass": false,
+      "skips": {}
+    },
+    {
+      "id": 19,
+      "product": "mtf-structure-panel",
+      "family": "reclaim",
+      "configuration": {
+        "rr": 3,
+        "horizon": 48,
+        "filter": "h1"
+      },
+      "train": {
+        "n": 0
+      },
+      "validation": {
+        "n": 0
+      },
+      "development_gate_pass": false,
+      "skips": {}
+    },
+    {
+      "id": 20,
+      "product": "mtf-structure-panel",
+      "family": "reclaim",
+      "configuration": {
+        "rr": 3,
+        "horizon": 48,
+        "filter": "aligned"
+      },
+      "train": {
+        "n": 0
+      },
+      "validation": {
+        "n": 0
+      },
+      "development_gate_pass": false,
+      "skips": {}
+    },
+    {
+      "id": 21,
+      "product": "mtf-structure-panel",
+      "family": "reclaim",
+      "configuration": {
+        "rr": 3,
+        "horizon": 96,
+        "filter": "none"
+      },
+      "train": {
+        "n": 1648,
+        "net_mean_R": -0.4749985659574536,
+        "net_pf": 0.5607102306604782,
+        "net_win_rate": 0.2633495145631068,
+        "max_drawdown_R": 790.1829433763635,
+        "months": 48,
+        "net_total_R": -782.7976366978835,
+        "stress_pf": 0.34514282224148063,
+        "positive_quarters_fraction": 0.0
+      },
+      "validation": {
+        "n": 882,
+        "net_mean_R": -0.3273215134521216,
+        "net_pf": 0.6604519993147718,
+        "net_win_rate": 0.2528344671201814,
+        "max_drawdown_R": 307.603801810215,
+        "months": 24,
+        "net_total_R": -288.6975748647713,
+        "stress_pf": 0.47948073690781867,
+        "positive_quarters_fraction": 0.125
+      },
+      "development_gate_pass": false,
+      "skips": {}
+    },
+    {
+      "id": 22,
+      "product": "mtf-structure-panel",
+      "family": "reclaim",
+      "configuration": {
+        "rr": 3,
+        "horizon": 96,
+        "filter": "h1"
+      },
+      "train": {
+        "n": 0
+      },
+      "validation": {
+        "n": 0
+      },
+      "development_gate_pass": false,
+      "skips": {}
+    },
+    {
+      "id": 23,
+      "product": "mtf-structure-panel",
+      "family": "reclaim",
+      "configuration": {
+        "rr": 3,
+        "horizon": 96,
+        "filter": "aligned"
+      },
+      "train": {
+        "n": 0
+      },
+      "validation": {
+        "n": 0
+      },
+      "development_gate_pass": false,
+      "skips": {}
+    },
+    {
+      "id": 24,
+      "product": "neckline-mtf",
+      "family": "structural",
+      "configuration": {
+        "rr": 2,
+        "horizon": 48,
+        "filter": "none"
+      },
+      "train": {
+        "n": 2320,
+        "net_mean_R": -0.40442470509463757,
+        "net_pf": 0.5260773169411294,
+        "net_win_rate": 0.32241379310344825,
+        "max_drawdown_R": 940.5608429198303,
+        "months": 48,
+        "net_total_R": -938.2653158195592,
+        "stress_pf": 0.3263817617400048,
+        "positive_quarters_fraction": 0.0
+      },
+      "validation": {
+        "n": 1179,
+        "net_mean_R": -0.1265975270470404,
+        "net_pf": 0.8192381176910857,
+        "net_win_rate": 0.38761662425784565,
+        "max_drawdown_R": 153.71415945172853,
+        "months": 24,
+        "net_total_R": -149.2584843884606,
+        "stress_pf": 0.6083029947421875,
+        "positive_quarters_fraction": 0.125
+      },
+      "development_gate_pass": false,
+      "skips": {}
+    },
+    {
+      "id": 25,
+      "product": "neckline-mtf",
+      "family": "structural",
+      "configuration": {
+        "rr": 2,
+        "horizon": 48,
+        "filter": "aligned"
+      },
+      "train": {
+        "n": 385,
+        "net_mean_R": -0.3404867542430893,
+        "net_pf": 0.5892338309029568,
+        "net_win_rate": 0.34545454545454546,
+        "max_drawdown_R": 135.8135391438321,
+        "months": 48,
+        "net_total_R": -131.08740038358937,
+        "stress_pf": 0.36594189244670045,
+        "positive_quarters_fraction": 0.1875
+      },
+      "validation": {
+        "n": 189,
+        "net_mean_R": -0.10314238623224879,
+        "net_pf": 0.8496877649342895,
+        "net_win_rate": 0.3915343915343915,
+        "max_drawdown_R": 28.142420329600267,
+        "months": 24,
+        "net_total_R": -19.49391099789502,
+        "stress_pf": 0.6338585880690065,
+        "positive_quarters_fraction": 0.375
+      },
+      "development_gate_pass": false,
+      "skips": {}
+    },
+    {
+      "id": 26,
+      "product": "neckline-mtf",
+      "family": "structural",
+      "configuration": {
+        "rr": 2,
+        "horizon": 48,
+        "filter": "strong"
+      },
+      "train": {
+        "n": 164,
+        "net_mean_R": -0.2369905066699044,
+        "net_pf": 0.6987886344308669,
+        "net_win_rate": 0.3902439024390244,
+        "max_drawdown_R": 42.31808651370107,
+        "months": 47,
+        "net_total_R": -38.86644309386432,
+        "stress_pf": 0.4386605713518313,
+        "positive_quarters_fraction": 0.375
+      },
+      "validation": {
+        "n": 76,
+        "net_mean_R": -0.0830616466125172,
+        "net_pf": 0.8778136022212514,
+        "net_win_rate": 0.39473684210526316,
+        "max_drawdown_R": 12.154475862960119,
+        "months": 22,
+        "net_total_R": -6.312685142551308,
+        "stress_pf": 0.6737974772750974,
+        "positive_quarters_fraction": 0.25
+      },
+      "development_gate_pass": false,
+      "skips": {}
+    },
+    {
+      "id": 27,
+      "product": "neckline-mtf",
+      "family": "structural",
+      "configuration": {
+        "rr": 2,
+        "horizon": 96,
+        "filter": "none"
+      },
+      "train": {
+        "n": 2233,
+        "net_mean_R": -0.4026947906193479,
+        "net_pf": 0.5484199070485375,
+        "net_win_rate": 0.3193013882669055,
+        "max_drawdown_R": 901.5129945532749,
+        "months": 48,
+        "net_total_R": -899.2174674530038,
+        "stress_pf": 0.35183471337018085,
+        "positive_quarters_fraction": 0.0
+      },
+      "validation": {
+        "n": 1128,
+        "net_mean_R": -0.1168828130168942,
+        "net_pf": 0.8408323851449072,
+        "net_win_rate": 0.36613475177304966,
+        "max_drawdown_R": 136.3287624971188,
+        "months": 24,
+        "net_total_R": -131.84381308305666,
+        "stress_pf": 0.6367836418985057,
+        "positive_quarters_fraction": 0.25
+      },
+      "development_gate_pass": false,
+      "skips": {}
+    },
+    {
+      "id": 28,
+      "product": "neckline-mtf",
+      "family": "structural",
+      "configuration": {
+        "rr": 2,
+        "horizon": 96,
+        "filter": "aligned"
+      },
+      "train": {
+        "n": 380,
+        "net_mean_R": -0.3326978931912125,
+        "net_pf": 0.6142908345391515,
+        "net_win_rate": 0.3473684210526316,
+        "max_drawdown_R": 130.29238744472778,
+        "months": 48,
+        "net_total_R": -126.42519941266075,
+        "stress_pf": 0.39292345181053745,
+        "positive_quarters_fraction": 0.1875
+      },
+      "validation": {
+        "n": 189,
+        "net_mean_R": -0.08380124300379659,
+        "net_pf": 0.8841649729287911,
+        "net_win_rate": 0.3862433862433862,
+        "max_drawdown_R": 26.0846527750208,
+        "months": 24,
+        "net_total_R": -15.838434927717556,
+        "stress_pf": 0.6723037544947685,
+        "positive_quarters_fraction": 0.5
+      },
+      "development_gate_pass": false,
+      "skips": {}
+    },
+    {
+      "id": 29,
+      "product": "neckline-mtf",
+      "family": "structural",
+      "configuration": {
+        "rr": 2,
+        "horizon": 96,
+        "filter": "strong"
+      },
+      "train": {
+        "n": 163,
+        "net_mean_R": -0.2235607388794548,
+        "net_pf": 0.7285573742817345,
+        "net_win_rate": 0.38650306748466257,
+        "max_drawdown_R": 41.22007519496895,
+        "months": 47,
+        "net_total_R": -36.44040043735113,
+        "stress_pf": 0.4671227664688218,
+        "positive_quarters_fraction": 0.3125
+      },
+      "validation": {
+        "n": 76,
+        "net_mean_R": -0.06568270662121642,
+        "net_pf": 0.908128572490202,
+        "net_win_rate": 0.39473684210526316,
+        "max_drawdown_R": 13.490463261038038,
+        "months": 22,
+        "net_total_R": -4.991885703212448,
+        "stress_pf": 0.7075614685801408,
+        "positive_quarters_fraction": 0.5
+      },
+      "development_gate_pass": false,
+      "skips": {}
+    },
+    {
+      "id": 30,
+      "product": "neckline-mtf",
+      "family": "structural",
+      "configuration": {
+        "rr": 3,
+        "horizon": 48,
+        "filter": "none"
+      },
+      "train": {
+        "n": 2243,
+        "net_mean_R": -0.40441589485370566,
+        "net_pf": 0.5564286133279193,
+        "net_win_rate": 0.2804279982166741,
+        "max_drawdown_R": 909.5742140677833,
+        "months": 48,
+        "net_total_R": -907.1048521568619,
+        "stress_pf": 0.36962506152840463,
+        "positive_quarters_fraction": 0.0
+      },
+      "validation": {
+        "n": 1140,
+        "net_mean_R": -0.1336735608641491,
+        "net_pf": 0.824838973262289,
+        "net_win_rate": 0.3350877192982456,
+        "max_drawdown_R": 159.15043067488165,
+        "months": 24,
+        "net_total_R": -152.38785938512999,
+        "stress_pf": 0.6333406736438579,
+        "positive_quarters_fraction": 0.25
+      },
+      "development_gate_pass": false,
+      "skips": {}
+    },
+    {
+      "id": 31,
+      "product": "neckline-mtf",
+      "family": "structural",
+      "configuration": {
+        "rr": 3,
+        "horizon": 48,
+        "filter": "aligned"
+      },
+      "train": {
+        "n": 371,
+        "net_mean_R": -0.34666569102956474,
+        "net_pf": 0.6140387038551123,
+        "net_win_rate": 0.29380053908355797,
+        "max_drawdown_R": 140.8846177702671,
+        "months": 48,
+        "net_total_R": -128.6129713719685,
+        "stress_pf": 0.40794620470331083,
+        "positive_quarters_fraction": 0.1875
+      },
+      "validation": {
+        "n": 186,
+        "net_mean_R": 0.018485876551554623,
+        "net_pf": 1.0257403645406131,
+        "net_win_rate": 0.3655913978494624,
+        "max_drawdown_R": 19.56193558626735,
+        "months": 24,
+        "net_total_R": 3.43837303858916,
+        "stress_pf": 0.7909581978108035,
+        "positive_quarters_fraction": 0.375
+      },
+      "development_gate_pass": false,
+      "skips": {}
+    },
+    {
+      "id": 32,
+      "product": "neckline-mtf",
+      "family": "structural",
+      "configuration": {
+        "rr": 3,
+        "horizon": 48,
+        "filter": "strong"
+      },
+      "train": {
+        "n": 158,
+        "net_mean_R": -0.190954269533611,
+        "net_pf": 0.7741808048437602,
+        "net_win_rate": 0.34177215189873417,
+        "max_drawdown_R": 43.5251766496212,
+        "months": 47,
+        "net_total_R": -30.17077458631054,
+        "stress_pf": 0.5106608357552883,
+        "positive_quarters_fraction": 0.4375
+      },
+      "validation": {
+        "n": 75,
+        "net_mean_R": 0.15744397685797082,
+        "net_pf": 1.2289335782678004,
+        "net_win_rate": 0.38666666666666666,
+        "max_drawdown_R": 7.6592092490951895,
+        "months": 22,
+        "net_total_R": 11.808298264347812,
+        "stress_pf": 0.9777040667522047,
+        "positive_quarters_fraction": 0.5
+      },
+      "development_gate_pass": false,
+      "skips": {}
+    },
+    {
+      "id": 33,
+      "product": "neckline-mtf",
+      "family": "structural",
+      "configuration": {
+        "rr": 3,
+        "horizon": 96,
+        "filter": "none"
+      },
+      "train": {
+        "n": 2123,
+        "net_mean_R": -0.4089714841932826,
+        "net_pf": 0.5797144169551242,
+        "net_win_rate": 0.2609514837494112,
+        "max_drawdown_R": 870.7158228532604,
+        "months": 48,
+        "net_total_R": -868.246460942339,
+        "stress_pf": 0.4002997740762866,
+        "positive_quarters_fraction": 0.0
+      },
+      "validation": {
+        "n": 1072,
+        "net_mean_R": -0.14766877633271816,
+        "net_pf": 0.8219674658802949,
+        "net_win_rate": 0.2891791044776119,
+        "max_drawdown_R": 166.16817297281102,
+        "months": 24,
+        "net_total_R": -158.30092822867385,
+        "stress_pf": 0.6461226938470102,
+        "positive_quarters_fraction": 0.25
+      },
+      "development_gate_pass": false,
+      "skips": {}
+    },
+    {
+      "id": 34,
+      "product": "neckline-mtf",
+      "family": "structural",
+      "configuration": {
+        "rr": 3,
+        "horizon": 96,
+        "filter": "aligned"
+      },
+      "train": {
+        "n": 364,
+        "net_mean_R": -0.3398437155882281,
+        "net_pf": 0.6454861178089019,
+        "net_win_rate": 0.2774725274725275,
+        "max_drawdown_R": 135.27182445676345,
+        "months": 48,
+        "net_total_R": -123.70311247411503,
+        "stress_pf": 0.44647751660700497,
+        "positive_quarters_fraction": 0.1875
+      },
+      "validation": {
+        "n": 184,
+        "net_mean_R": 0.05671257102411577,
+        "net_pf": 1.0741694479403092,
+        "net_win_rate": 0.34782608695652173,
+        "max_drawdown_R": 18.255335407106376,
+        "months": 24,
+        "net_total_R": 10.435113068437301,
+        "stress_pf": 0.8434181778409222,
+        "positive_quarters_fraction": 0.75
+      },
+      "development_gate_pass": false,
+      "skips": {}
+    },
+    {
+      "id": 35,
+      "product": "neckline-mtf",
+      "family": "structural",
+      "configuration": {
+        "rr": 3,
+        "horizon": 96,
+        "filter": "strong"
+      },
+      "train": {
+        "n": 155,
+        "net_mean_R": -0.14427962873027106,
+        "net_pf": 0.8409016666152003,
+        "net_win_rate": 0.33548387096774196,
+        "max_drawdown_R": 39.97182556023288,
+        "months": 47,
+        "net_total_R": -22.363342453192015,
+        "stress_pf": 0.575400431546176,
+        "positive_quarters_fraction": 0.4375
+      },
+      "validation": {
+        "n": 75,
+        "net_mean_R": 0.2178061211291101,
+        "net_pf": 1.3011102392107858,
+        "net_win_rate": 0.38666666666666666,
+        "max_drawdown_R": 8.896943688467058,
+        "months": 22,
+        "net_total_R": 16.335459084683258,
+        "stress_pf": 1.051006519863804,
+        "positive_quarters_fraction": 0.5
+      },
+      "development_gate_pass": false,
+      "skips": {}
+    },
+    {
+      "id": 36,
+      "product": "neckline-mtf",
+      "family": "reclaim",
+      "configuration": {
+        "rr": 2,
+        "horizon": 48,
+        "filter": "none"
+      },
+      "train": {
+        "n": 831,
+        "net_mean_R": -0.3397623044648301,
+        "net_pf": 0.6137702387136574,
+        "net_win_rate": 0.3658243080625752,
+        "max_drawdown_R": 283.916219713798,
+        "months": 48,
+        "net_total_R": -282.3424750102738,
+        "stress_pf": 0.34843433334980406,
+        "positive_quarters_fraction": 0.1875
+      },
+      "validation": {
+        "n": 393,
+        "net_mean_R": -0.17245841012391314,
+        "net_pf": 0.7761778376997824,
+        "net_win_rate": 0.37404580152671757,
+        "max_drawdown_R": 89.87471343356958,
+        "months": 24,
+        "net_total_R": -67.77615517869786,
+        "stress_pf": 0.539082252874267,
+        "positive_quarters_fraction": 0.375
+      },
+      "development_gate_pass": false,
+      "skips": {}
+    },
+    {
+      "id": 37,
+      "product": "neckline-mtf",
+      "family": "reclaim",
+      "configuration": {
+        "rr": 2,
+        "horizon": 48,
+        "filter": "h1"
+      },
+      "train": {
+        "n": 281,
+        "net_mean_R": -0.27380700916600725,
+        "net_pf": 0.6791848064310597,
+        "net_win_rate": 0.3879003558718861,
+        "max_drawdown_R": 78.51351427917227,
+        "months": 48,
+        "net_total_R": -76.93976957564804,
+        "stress_pf": 0.3835677563571062,
+        "positive_quarters_fraction": 0.1875
+      },
+      "validation": {
+        "n": 152,
+        "net_mean_R": -0.15456786213735385,
+        "net_pf": 0.8006753267235404,
+        "net_win_rate": 0.3881578947368421,
+        "max_drawdown_R": 33.43639088172135,
+        "months": 23,
+        "net_total_R": -23.494315044877784,
+        "stress_pf": 0.5402854760176882,
+        "positive_quarters_fraction": 0.375
+      },
+      "development_gate_pass": false,
+      "skips": {}
+    },
+    {
+      "id": 38,
+      "product": "neckline-mtf",
+      "family": "reclaim",
+      "configuration": {
+        "rr": 2,
+        "horizon": 48,
+        "filter": "aligned"
+      },
+      "train": {
+        "n": 79,
+        "net_mean_R": -0.315728827962166,
+        "net_pf": 0.628786653675191,
+        "net_win_rate": 0.35443037974683544,
+        "max_drawdown_R": 31.16547969113328,
+        "months": 38,
+        "net_total_R": -24.942577409011115,
+        "stress_pf": 0.35942695777732603,
+        "positive_quarters_fraction": 0.21428571428571427
+      },
+      "validation": {
+        "n": 53,
+        "net_mean_R": -0.2117925362964344,
+        "net_pf": 0.7413215384725069,
+        "net_win_rate": 0.37735849056603776,
+        "max_drawdown_R": 20.361858524545628,
+        "months": 22,
+        "net_total_R": -11.225004423711024,
+        "stress_pf": 0.5198437018577851,
+        "positive_quarters_fraction": 0.25
+      },
+      "development_gate_pass": false,
+      "skips": {}
+    },
+    {
+      "id": 39,
+      "product": "neckline-mtf",
+      "family": "reclaim",
+      "configuration": {
+        "rr": 2,
+        "horizon": 96,
+        "filter": "none"
+      },
+      "train": {
+        "n": 824,
+        "net_mean_R": -0.3330696538335545,
+        "net_pf": 0.6294445407661216,
+        "net_win_rate": 0.36893203883495146,
+        "max_drawdown_R": 276.02313946237314,
+        "months": 48,
+        "net_total_R": -274.44939475884894,
+        "stress_pf": 0.3644776777026762,
+        "positive_quarters_fraction": 0.0625
+      },
+      "validation": {
+        "n": 390,
+        "net_mean_R": -0.17411854450127906,
+        "net_pf": 0.7790525622634252,
+        "net_win_rate": 0.3717948717948718,
+        "max_drawdown_R": 86.1316880855064,
+        "months": 24,
+        "net_total_R": -67.90623235549883,
+        "stress_pf": 0.5470405173444651,
+        "positive_quarters_fraction": 0.375
+      },
+      "development_gate_pass": false,
+      "skips": {}
+    },
+    {
+      "id": 40,
+      "product": "neckline-mtf",
+      "family": "reclaim",
+      "configuration": {
+        "rr": 2,
+        "horizon": 96,
+        "filter": "h1"
+      },
+      "train": {
+        "n": 280,
+        "net_mean_R": -0.2610896619314088,
+        "net_pf": 0.6977681650985021,
+        "net_win_rate": 0.39285714285714285,
+        "max_drawdown_R": 75.76795735293564,
+        "months": 48,
+        "net_total_R": -73.10510534079447,
+        "stress_pf": 0.39930083228437363,
+        "positive_quarters_fraction": 0.25
+      },
+      "validation": {
+        "n": 152,
+        "net_mean_R": -0.16499552389441852,
+        "net_pf": 0.790275188198811,
+        "net_win_rate": 0.3815789473684211,
+        "max_drawdown_R": 36.156475547306556,
+        "months": 23,
+        "net_total_R": -25.079319631951616,
+        "stress_pf": 0.5353910776246571,
+        "positive_quarters_fraction": 0.25
+      },
+      "development_gate_pass": false,
+      "skips": {}
+    },
+    {
+      "id": 41,
+      "product": "neckline-mtf",
+      "family": "reclaim",
+      "configuration": {
+        "rr": 2,
+        "horizon": 96,
+        "filter": "aligned"
+      },
+      "train": {
+        "n": 79,
+        "net_mean_R": -0.332083553826311,
+        "net_pf": 0.6161619898021455,
+        "net_win_rate": 0.35443037974683544,
+        "max_drawdown_R": 32.585855319839865,
+        "months": 38,
+        "net_total_R": -26.23460075227857,
+        "stress_pf": 0.35299177116876684,
+        "positive_quarters_fraction": 0.21428571428571427
+      },
+      "validation": {
+        "n": 53,
+        "net_mean_R": -0.2151114983460377,
+        "net_pf": 0.7413712732977978,
+        "net_win_rate": 0.3584905660377358,
+        "max_drawdown_R": 21.91132784055194,
+        "months": 22,
+        "net_total_R": -11.400909412339999,
+        "stress_pf": 0.524816504600823,
+        "positive_quarters_fraction": 0.25
+      },
+      "development_gate_pass": false,
+      "skips": {}
+    },
+    {
+      "id": 42,
+      "product": "neckline-mtf",
+      "family": "reclaim",
+      "configuration": {
+        "rr": 3,
+        "horizon": 48,
+        "filter": "none"
+      },
+      "train": {
+        "n": 821,
+        "net_mean_R": -0.38624530648977023,
+        "net_pf": 0.6066229928329426,
+        "net_win_rate": 0.2911084043848965,
+        "max_drawdown_R": 319.68114133162555,
+        "months": 48,
+        "net_total_R": -317.10739662810136,
+        "stress_pf": 0.3791972509726679,
+        "positive_quarters_fraction": 0.125
+      },
+      "validation": {
+        "n": 388,
+        "net_mean_R": -0.1146252900305646,
+        "net_pf": 0.8620876606434646,
+        "net_win_rate": 0.3247422680412371,
+        "max_drawdown_R": 79.64421419714529,
+        "months": 24,
+        "net_total_R": -44.474612531859066,
+        "stress_pf": 0.6288856688477854,
+        "positive_quarters_fraction": 0.5
+      },
+      "development_gate_pass": false,
+      "skips": {}
+    },
+    {
+      "id": 43,
+      "product": "neckline-mtf",
+      "family": "reclaim",
+      "configuration": {
+        "rr": 3,
+        "horizon": 48,
+        "filter": "h1"
+      },
+      "train": {
+        "n": 281,
+        "net_mean_R": -0.40457977917764093,
+        "net_pf": 0.5913038296402712,
+        "net_win_rate": 0.28113879003558717,
+        "max_drawdown_R": 116.26066265244133,
+        "months": 48,
+        "net_total_R": -113.6869179489171,
+        "stress_pf": 0.3667112240152242,
+        "positive_quarters_fraction": 0.125
+      },
+      "validation": {
+        "n": 152,
+        "net_mean_R": -0.010577019879921042,
+        "net_pf": 0.9871220624218378,
+        "net_win_rate": 0.34868421052631576,
+        "max_drawdown_R": 28.33661656199205,
+        "months": 23,
+        "net_total_R": -1.6077070217479985,
+        "stress_pf": 0.7062715361475754,
+        "positive_quarters_fraction": 0.25
+      },
+      "development_gate_pass": false,
+      "skips": {}
+    },
+    {
+      "id": 44,
+      "product": "neckline-mtf",
+      "family": "reclaim",
+      "configuration": {
+        "rr": 3,
+        "horizon": 48,
+        "filter": "aligned"
+      },
+      "train": {
+        "n": 79,
+        "net_mean_R": -0.3327298914707056,
+        "net_pf": 0.6519003974309987,
+        "net_win_rate": 0.26582278481012656,
+        "max_drawdown_R": 32.27706353370444,
+        "months": 38,
+        "net_total_R": -26.28566142618574,
+        "stress_pf": 0.4207331281770894,
+        "positive_quarters_fraction": 0.42857142857142855
+      },
+      "validation": {
+        "n": 53,
+        "net_mean_R": -0.12380842315054492,
+        "net_pf": 0.8549001873254914,
+        "net_win_rate": 0.33962264150943394,
+        "max_drawdown_R": 22.906712561991217,
+        "months": 22,
+        "net_total_R": -6.561846426978881,
+        "stress_pf": 0.6231750985633179,
+        "positive_quarters_fraction": 0.5
+      },
+      "development_gate_pass": false,
+      "skips": {}
+    },
+    {
+      "id": 45,
+      "product": "neckline-mtf",
+      "family": "reclaim",
+      "configuration": {
+        "rr": 3,
+        "horizon": 96,
+        "filter": "none"
+      },
+      "train": {
+        "n": 811,
+        "net_mean_R": -0.41887509675516976,
+        "net_pf": 0.5965382350138055,
+        "net_win_rate": 0.2725030826140567,
+        "max_drawdown_R": 342.2814481719669,
+        "months": 48,
+        "net_total_R": -339.7077034684427,
+        "stress_pf": 0.3827082302121119,
+        "positive_quarters_fraction": 0.125
+      },
+      "validation": {
+        "n": 379,
+        "net_mean_R": -0.0787806505264117,
+        "net_pf": 0.9081953605564416,
+        "net_win_rate": 0.316622691292876,
+        "max_drawdown_R": 69.32912373294518,
+        "months": 24,
+        "net_total_R": -29.85786654951003,
+        "stress_pf": 0.6754196744282692,
+        "positive_quarters_fraction": 0.5
+      },
+      "development_gate_pass": false,
+      "skips": {}
+    },
+    {
+      "id": 46,
+      "product": "neckline-mtf",
+      "family": "reclaim",
+      "configuration": {
+        "rr": 3,
+        "horizon": 96,
+        "filter": "h1"
+      },
+      "train": {
+        "n": 279,
+        "net_mean_R": -0.4503947753682351,
+        "net_pf": 0.5699413430855853,
+        "net_win_rate": 0.26523297491039427,
+        "max_drawdown_R": 128.23388703126182,
+        "months": 48,
+        "net_total_R": -125.66014232773759,
+        "stress_pf": 0.36200888912149276,
+        "positive_quarters_fraction": 0.125
+      },
+      "validation": {
+        "n": 152,
+        "net_mean_R": 0.007628983932021149,
+        "net_pf": 1.0091953478470113,
+        "net_win_rate": 0.34868421052631576,
+        "max_drawdown_R": 26.572809325038605,
+        "months": 23,
+        "net_total_R": 1.1596055576672146,
+        "stress_pf": 0.726702361335995,
+        "positive_quarters_fraction": 0.25
+      },
+      "development_gate_pass": false,
+      "skips": {}
+    },
+    {
+      "id": 47,
+      "product": "neckline-mtf",
+      "family": "reclaim",
+      "configuration": {
+        "rr": 3,
+        "horizon": 96,
+        "filter": "aligned"
+      },
+      "train": {
+        "n": 79,
+        "net_mean_R": -0.40803292091491855,
+        "net_pf": 0.5966109535738877,
+        "net_win_rate": 0.25316455696202533,
+        "max_drawdown_R": 38.35435514523639,
+        "months": 38,
+        "net_total_R": -32.23460075227857,
+        "stress_pf": 0.39052953714117195,
+        "positive_quarters_fraction": 0.42857142857142855
+      },
+      "validation": {
+        "n": 53,
+        "net_mean_R": -0.043217844594056844,
+        "net_pf": 0.9496194735203298,
+        "net_win_rate": 0.33962264150943394,
+        "max_drawdown_R": 20.38547736163422,
+        "months": 22,
+        "net_total_R": -2.290545763485013,
+        "stress_pf": 0.7009543956094196,
+        "positive_quarters_fraction": 0.625
+      },
+      "development_gate_pass": false,
+      "skips": {}
+    },
+    {
+      "id": 48,
+      "product": "progress-candle",
+      "family": "structural",
+      "configuration": {
+        "rr": 2,
+        "horizon": 48,
+        "filter": "none"
+      },
+      "train": {
+        "n": 11106,
+        "net_mean_R": -0.48389645223817895,
+        "net_pf": 0.49518028713867757,
+        "net_win_rate": 0.3256798127138484,
+        "max_drawdown_R": 5388.534892058448,
+        "months": 48,
+        "net_total_R": -5374.153998557215,
+        "stress_pf": 0.27388715912631845,
+        "positive_quarters_fraction": 0.0
+      },
+      "validation": {
+        "n": 5799,
+        "net_mean_R": -0.2518604388675998,
+        "net_pf": 0.6918566143417235,
+        "net_win_rate": 0.35006035523366097,
+        "max_drawdown_R": 1470.8664669173374,
+        "months": 24,
+        "net_total_R": -1460.538684993211,
+        "stress_pf": 0.47698402167934495,
+        "positive_quarters_fraction": 0.0
+      },
+      "development_gate_pass": false,
+      "skips": {}
+    },
+    {
+      "id": 49,
+      "product": "progress-candle",
+      "family": "structural",
+      "configuration": {
+        "rr": 2,
+        "horizon": 48,
+        "filter": "aligned"
+      },
+      "train": {
+        "n": 1850,
+        "net_mean_R": -0.48333710269609215,
+        "net_pf": 0.49562529448128123,
+        "net_win_rate": 0.3178378378378378,
+        "max_drawdown_R": 898.6764015748988,
+        "months": 48,
+        "net_total_R": -894.1736399877705,
+        "stress_pf": 0.27954587441604684,
+        "positive_quarters_fraction": 0.0
+      },
+      "validation": {
+        "n": 1009,
+        "net_mean_R": -0.22669428373520817,
+        "net_pf": 0.7202181882972319,
+        "net_win_rate": 0.3518334985133796,
+        "max_drawdown_R": 247.8183160378494,
+        "months": 24,
+        "net_total_R": -228.73453228882505,
+        "stress_pf": 0.5107307029243635,
+        "positive_quarters_fraction": 0.125
+      },
+      "development_gate_pass": false,
+      "skips": {}
+    },
+    {
+      "id": 50,
+      "product": "progress-candle",
+      "family": "structural",
+      "configuration": {
+        "rr": 2,
+        "horizon": 48,
+        "filter": "strong"
+      },
+      "train": {
+        "n": 794,
+        "net_mean_R": -0.4512473040384814,
+        "net_pf": 0.5243282995390535,
+        "net_win_rate": 0.3337531486146096,
+        "max_drawdown_R": 361.0008133927713,
+        "months": 48,
+        "net_total_R": -358.2903594065542,
+        "stress_pf": 0.29578250947328266,
+        "positive_quarters_fraction": 0.0625
+      },
+      "validation": {
+        "n": 463,
+        "net_mean_R": -0.17726764386530133,
+        "net_pf": 0.7742023121281743,
+        "net_win_rate": 0.367170626349892,
+        "max_drawdown_R": 105.96235115811479,
+        "months": 24,
+        "net_total_R": -82.07491910963452,
+        "stress_pf": 0.5498720939886931,
+        "positive_quarters_fraction": 0.375
+      },
+      "development_gate_pass": false,
+      "skips": {}
+    },
+    {
+      "id": 51,
+      "product": "progress-candle",
+      "family": "structural",
+      "configuration": {
+        "rr": 2,
+        "horizon": 96,
+        "filter": "none"
+      },
+      "train": {
+        "n": 10259,
+        "net_mean_R": -0.474315378665791,
+        "net_pf": 0.5100796486122351,
+        "net_win_rate": 0.3224485817331124,
+        "max_drawdown_R": 4878.551618134564,
+        "months": 48,
+        "net_total_R": -4866.0014697323495,
+        "stress_pf": 0.2900640228042723,
+        "positive_quarters_fraction": 0.0
+      },
+      "validation": {
+        "n": 5437,
+        "net_mean_R": -0.24213250097932498,
+        "net_pf": 0.706937350489367,
+        "net_win_rate": 0.34522714732389187,
+        "max_drawdown_R": 1326.2124505471531,
+        "months": 24,
+        "net_total_R": -1316.47440782459,
+        "stress_pf": 0.49419326925662005,
+        "positive_quarters_fraction": 0.0
+      },
+      "development_gate_pass": false,
+      "skips": {}
+    },
+    {
+      "id": 52,
+      "product": "progress-candle",
+      "family": "structural",
+      "configuration": {
+        "rr": 2,
+        "horizon": 96,
+        "filter": "aligned"
+      },
+      "train": {
+        "n": 1823,
+        "net_mean_R": -0.4661435487569423,
+        "net_pf": 0.5161091920227834,
+        "net_win_rate": 0.321996708721887,
+        "max_drawdown_R": 853.8791239474657,
+        "months": 48,
+        "net_total_R": -849.7796893839059,
+        "stress_pf": 0.2954317511877784,
+        "positive_quarters_fraction": 0.0
+      },
+      "validation": {
+        "n": 1001,
+        "net_mean_R": -0.22244931776572868,
+        "net_pf": 0.7304823837857182,
+        "net_win_rate": 0.34565434565434566,
+        "max_drawdown_R": 240.29853783170688,
+        "months": 24,
+        "net_total_R": -222.67176708349442,
+        "stress_pf": 0.5230042263739034,
+        "positive_quarters_fraction": 0.125
+      },
+      "development_gate_pass": false,
+      "skips": {}
+    },
+    {
+      "id": 53,
+      "product": "progress-candle",
+      "family": "structural",
+      "configuration": {
+        "rr": 2,
+        "horizon": 96,
+        "filter": "strong"
+      },
+      "train": {
+        "n": 782,
+        "net_mean_R": -0.4349349890020707,
+        "net_pf": 0.5419627022067527,
+        "net_win_rate": 0.3350383631713555,
+        "max_drawdown_R": 342.4262883622679,
+        "months": 48,
+        "net_total_R": -340.1191613996193,
+        "stress_pf": 0.3091568242673646,
+        "positive_quarters_fraction": 0.0625
+      },
+      "validation": {
+        "n": 456,
+        "net_mean_R": -0.18624651053530725,
+        "net_pf": 0.7695845114207605,
+        "net_win_rate": 0.35526315789473684,
+        "max_drawdown_R": 104.10399198863082,
+        "months": 24,
+        "net_total_R": -84.9284088041001,
+        "stress_pf": 0.5550128101597628,
+        "positive_quarters_fraction": 0.25
+      },
+      "development_gate_pass": false,
+      "skips": {}
+    },
+    {
+      "id": 54,
+      "product": "progress-candle",
+      "family": "structural",
+      "configuration": {
+        "rr": 3,
+        "horizon": 48,
+        "filter": "none"
+      },
+      "train": {
+        "n": 9989,
+        "net_mean_R": -0.4722553044809731,
+        "net_pf": 0.545216458710154,
+        "net_win_rate": 0.2697967764540995,
+        "max_drawdown_R": 4733.558357700875,
+        "months": 48,
+        "net_total_R": -4717.35823646044,
+        "stress_pf": 0.3362962267767385,
+        "positive_quarters_fraction": 0.0
+      },
+      "validation": {
+        "n": 5171,
+        "net_mean_R": -0.25544412299925656,
+        "net_pf": 0.715571818133881,
+        "net_win_rate": 0.28621156449429513,
+        "max_drawdown_R": 1339.7084804432536,
+        "months": 24,
+        "net_total_R": -1320.9015600291557,
+        "stress_pf": 0.5216152193883618,
+        "positive_quarters_fraction": 0.0
+      },
+      "development_gate_pass": false,
+      "skips": {}
+    },
+    {
+      "id": 55,
+      "product": "progress-candle",
+      "family": "structural",
+      "configuration": {
+        "rr": 3,
+        "horizon": 48,
+        "filter": "aligned"
+      },
+      "train": {
+        "n": 1748,
+        "net_mean_R": -0.4537061739840928,
+        "net_pf": 0.559720280083098,
+        "net_win_rate": 0.2654462242562929,
+        "max_drawdown_R": 803.1375787682623,
+        "months": 48,
+        "net_total_R": -793.0783921241942,
+        "stress_pf": 0.34881807669940085,
+        "positive_quarters_fraction": 0.0
+      },
+      "validation": {
+        "n": 951,
+        "net_mean_R": -0.22790907500579125,
+        "net_pf": 0.7422500958113665,
+        "net_win_rate": 0.28496319663512093,
+        "max_drawdown_R": 224.89846522003984,
+        "months": 24,
+        "net_total_R": -216.7415303305075,
+        "stress_pf": 0.5516988856674563,
+        "positive_quarters_fraction": 0.0
+      },
+      "development_gate_pass": false,
+      "skips": {}
+    },
+    {
+      "id": 56,
+      "product": "progress-candle",
+      "family": "structural",
+      "configuration": {
+        "rr": 3,
+        "horizon": 48,
+        "filter": "strong"
+      },
+      "train": {
+        "n": 755,
+        "net_mean_R": -0.4207580399865138,
+        "net_pf": 0.5910557027570753,
+        "net_win_rate": 0.27947019867549666,
+        "max_drawdown_R": 319.48151566369125,
+        "months": 48,
+        "net_total_R": -317.6723201898179,
+        "stress_pf": 0.37021748689747563,
+        "positive_quarters_fraction": 0.0625
+      },
+      "validation": {
+        "n": 438,
+        "net_mean_R": -0.18873846609346812,
+        "net_pf": 0.7840875624345919,
+        "net_win_rate": 0.2922374429223744,
+        "max_drawdown_R": 92.47202954000304,
+        "months": 24,
+        "net_total_R": -82.66744814893903,
+        "stress_pf": 0.5838658730385166,
+        "positive_quarters_fraction": 0.125
+      },
+      "development_gate_pass": false,
+      "skips": {}
+    },
+    {
+      "id": 57,
+      "product": "progress-candle",
+      "family": "structural",
+      "configuration": {
+        "rr": 3,
+        "horizon": 96,
+        "filter": "none"
+      },
+      "train": {
+        "n": 8811,
+        "net_mean_R": -0.45936995602723135,
+        "net_pf": 0.5681357512453437,
+        "net_win_rate": 0.2568380433548973,
+        "max_drawdown_R": 4067.5129060749414,
+        "months": 48,
+        "net_total_R": -4047.5086825559356,
+        "stress_pf": 0.36293591736986547,
+        "positive_quarters_fraction": 0.0
+      },
+      "validation": {
+        "n": 4615,
+        "net_mean_R": -0.21784383973012691,
+        "net_pf": 0.7615989620389289,
+        "net_win_rate": 0.27518959913326113,
+        "max_drawdown_R": 1031.848021346074,
+        "months": 24,
+        "net_total_R": -1005.3493203545357,
+        "stress_pf": 0.5668525738882706,
+        "positive_quarters_fraction": 0.125
+      },
+      "development_gate_pass": false,
+      "skips": {}
+    },
+    {
+      "id": 58,
+      "product": "progress-candle",
+      "family": "structural",
+      "configuration": {
+        "rr": 3,
+        "horizon": 96,
+        "filter": "aligned"
+      },
+      "train": {
+        "n": 1707,
+        "net_mean_R": -0.4408445358434351,
+        "net_pf": 0.582285865311252,
+        "net_win_rate": 0.2577621558289397,
+        "max_drawdown_R": 762.1774823052432,
+        "months": 48,
+        "net_total_R": -752.5216226847436,
+        "stress_pf": 0.3708077406540466,
+        "positive_quarters_fraction": 0.0
+      },
+      "validation": {
+        "n": 930,
+        "net_mean_R": -0.21055369152804976,
+        "net_pf": 0.7692358321543762,
+        "net_win_rate": 0.26881720430107525,
+        "max_drawdown_R": 208.064084827868,
+        "months": 24,
+        "net_total_R": -195.81493312108628,
+        "stress_pf": 0.5799780873322813,
+        "positive_quarters_fraction": 0.125
+      },
+      "development_gate_pass": false,
+      "skips": {}
+    },
+    {
+      "id": 59,
+      "product": "progress-candle",
+      "family": "structural",
+      "configuration": {
+        "rr": 3,
+        "horizon": 96,
+        "filter": "strong"
+      },
+      "train": {
+        "n": 736,
+        "net_mean_R": -0.3983813140198739,
+        "net_pf": 0.6192824729308792,
+        "net_win_rate": 0.26902173913043476,
+        "max_drawdown_R": 299.89416032907195,
+        "months": 48,
+        "net_total_R": -293.2086471186272,
+        "stress_pf": 0.39543825585999626,
+        "positive_quarters_fraction": 0.0625
+      },
+      "validation": {
+        "n": 430,
+        "net_mean_R": -0.18886478015013372,
+        "net_pf": 0.7920344198347251,
+        "net_win_rate": 0.27209302325581397,
+        "max_drawdown_R": 90.083076039938,
+        "months": 24,
+        "net_total_R": -81.2118554645575,
+        "stress_pf": 0.6000490425849326,
+        "positive_quarters_fraction": 0.25
+      },
+      "development_gate_pass": false,
+      "skips": {}
+    },
+    {
+      "id": 60,
+      "product": "progress-candle",
+      "family": "reclaim",
+      "configuration": {
+        "rr": 2,
+        "horizon": 48,
+        "filter": "none"
+      },
+      "train": {
+        "n": 5713,
+        "net_mean_R": -0.4904477069227398,
+        "net_pf": 0.4925316395809791,
+        "net_win_rate": 0.33870120777174867,
+        "max_drawdown_R": 2807.37756020332,
+        "months": 48,
+        "net_total_R": -2801.9277496496125,
+        "stress_pf": 0.2532740884895952,
+        "positive_quarters_fraction": 0.0
+      },
+      "validation": {
+        "n": 2887,
+        "net_mean_R": -0.2813381316975058,
+        "net_pf": 0.6616590571275961,
+        "net_win_rate": 0.34811222722549356,
+        "max_drawdown_R": 814.0807954701658,
+        "months": 24,
+        "net_total_R": -812.2231862106993,
+        "stress_pf": 0.4408740313461114,
+        "positive_quarters_fraction": 0.0
+      },
+      "development_gate_pass": false,
+      "skips": {}
+    },
+    {
+      "id": 61,
+      "product": "progress-candle",
+      "family": "reclaim",
+      "configuration": {
+        "rr": 2,
+        "horizon": 48,
+        "filter": "h1"
+      },
+      "train": {
+        "n": 2262,
+        "net_mean_R": -0.5145900494174965,
+        "net_pf": 0.47830803647360326,
+        "net_win_rate": 0.3302387267904509,
+        "max_drawdown_R": 1167.0127529682898,
+        "months": 48,
+        "net_total_R": -1164.0026917823773,
+        "stress_pf": 0.24688149933120937,
+        "positive_quarters_fraction": 0.0
+      },
+      "validation": {
+        "n": 1186,
+        "net_mean_R": -0.2332104993194614,
+        "net_pf": 0.7139074972537018,
+        "net_win_rate": 0.3634064080944351,
+        "max_drawdown_R": 286.94421554676904,
+        "months": 24,
+        "net_total_R": -276.5876521928812,
+        "stress_pf": 0.47579504625886215,
+        "positive_quarters_fraction": 0.125
+      },
+      "development_gate_pass": false,
+      "skips": {}
+    },
+    {
+      "id": 62,
+      "product": "progress-candle",
+      "family": "reclaim",
+      "configuration": {
+        "rr": 2,
+        "horizon": 48,
+        "filter": "aligned"
+      },
+      "train": {
+        "n": 982,
+        "net_mean_R": -0.5306837053796922,
+        "net_pf": 0.46562457479252883,
+        "net_win_rate": 0.32790224032586557,
+        "max_drawdown_R": 522.8012366086539,
+        "months": 48,
+        "net_total_R": -521.1313986828578,
+        "stress_pf": 0.23925261896166153,
+        "positive_quarters_fraction": 0.0
+      },
+      "validation": {
+        "n": 517,
+        "net_mean_R": -0.21799352305612865,
+        "net_pf": 0.7293567369752921,
+        "net_win_rate": 0.3655705996131528,
+        "max_drawdown_R": 114.65056054314164,
+        "months": 24,
+        "net_total_R": -112.70265142001851,
+        "stress_pf": 0.49903230820603894,
+        "positive_quarters_fraction": 0.125
+      },
+      "development_gate_pass": false,
+      "skips": {}
+    },
+    {
+      "id": 63,
+      "product": "progress-candle",
+      "family": "reclaim",
+      "configuration": {
+        "rr": 2,
+        "horizon": 96,
+        "filter": "none"
+      },
+      "train": {
+        "n": 5507,
+        "net_mean_R": -0.4942829134789856,
+        "net_pf": 0.4977361006359195,
+        "net_win_rate": 0.3335754494280007,
+        "max_drawdown_R": 2727.4658150824816,
+        "months": 48,
+        "net_total_R": -2722.016004528774,
+        "stress_pf": 0.2626045683218488,
+        "positive_quarters_fraction": 0.0
+      },
+      "validation": {
+        "n": 2791,
+        "net_mean_R": -0.2871761102567582,
+        "net_pf": 0.6628252423789025,
+        "net_win_rate": 0.3375134360444285,
+        "max_drawdown_R": 803.3661329860787,
+        "months": 24,
+        "net_total_R": -801.5085237266122,
+        "stress_pf": 0.4493412230337623,
+        "positive_quarters_fraction": 0.0
+      },
+      "development_gate_pass": false,
+      "skips": {}
+    },
+    {
+      "id": 64,
+      "product": "progress-candle",
+      "family": "reclaim",
+      "configuration": {
+        "rr": 2,
+        "horizon": 96,
+        "filter": "h1"
+      },
+      "train": {
+        "n": 2231,
+        "net_mean_R": -0.5120191124674623,
+        "net_pf": 0.4862572220047565,
+        "net_win_rate": 0.3290004482294935,
+        "max_drawdown_R": 1145.324701100821,
+        "months": 48,
+        "net_total_R": -1142.3146399149084,
+        "stress_pf": 0.2539298662809803,
+        "positive_quarters_fraction": 0.0
+      },
+      "validation": {
+        "n": 1166,
+        "net_mean_R": -0.22685688069250834,
+        "net_pf": 0.7263755038221045,
+        "net_win_rate": 0.35763293310463123,
+        "max_drawdown_R": 274.7221210374982,
+        "months": 24,
+        "net_total_R": -264.5151228874647,
+        "stress_pf": 0.49140661114681183,
+        "positive_quarters_fraction": 0.125
+      },
+      "development_gate_pass": false,
+      "skips": {}
+    },
+    {
+      "id": 65,
+      "product": "progress-candle",
+      "family": "reclaim",
+      "configuration": {
+        "rr": 2,
+        "horizon": 96,
+        "filter": "aligned"
+      },
+      "train": {
+        "n": 977,
+        "net_mean_R": -0.5312326475876331,
+        "net_pf": 0.47228654795771896,
+        "net_win_rate": 0.32446264073694986,
+        "max_drawdown_R": 520.6841346189136,
+        "months": 48,
+        "net_total_R": -519.0142966931176,
+        "stress_pf": 0.24637741899802465,
+        "positive_quarters_fraction": 0.0
+      },
+      "validation": {
+        "n": 516,
+        "net_mean_R": -0.2265145855610928,
+        "net_pf": 0.7273837288339364,
+        "net_win_rate": 0.35271317829457366,
+        "max_drawdown_R": 118.79175057243525,
+        "months": 24,
+        "net_total_R": -116.88152614952388,
+        "stress_pf": 0.5050624911134701,
+        "positive_quarters_fraction": 0.125
+      },
+      "development_gate_pass": false,
+      "skips": {}
+    },
+    {
+      "id": 66,
+      "product": "progress-candle",
+      "family": "reclaim",
+      "configuration": {
+        "rr": 3,
+        "horizon": 48,
+        "filter": "none"
+      },
+      "train": {
+        "n": 5371,
+        "net_mean_R": -0.49639343424672977,
+        "net_pf": 0.5324653436720865,
+        "net_win_rate": 0.27648482591696144,
+        "max_drawdown_R": 2671.8359275198295,
+        "months": 48,
+        "net_total_R": -2666.1291353391857,
+        "stress_pf": 0.3113718196031297,
+        "positive_quarters_fraction": 0.0
+      },
+      "validation": {
+        "n": 2706,
+        "net_mean_R": -0.24008788881183482,
+        "net_pf": 0.73142858069636,
+        "net_win_rate": 0.29785661492978566,
+        "max_drawdown_R": 652.5354363842915,
+        "months": 24,
+        "net_total_R": -649.6778271248251,
+        "stress_pf": 0.5165656091631384,
+        "positive_quarters_fraction": 0.0
+      },
+      "development_gate_pass": false,
+      "skips": {}
+    },
+    {
+      "id": 67,
+      "product": "progress-candle",
+      "family": "reclaim",
+      "configuration": {
+        "rr": 3,
+        "horizon": 48,
+        "filter": "h1"
+      },
+      "train": {
+        "n": 2200,
+        "net_mean_R": -0.5004302520872612,
+        "net_pf": 0.5339634772834543,
+        "net_win_rate": 0.2727272727272727,
+        "max_drawdown_R": 1106.7704940503072,
+        "months": 48,
+        "net_total_R": -1100.9465545919747,
+        "stress_pf": 0.31409055224909943,
+        "positive_quarters_fraction": 0.0
+      },
+      "validation": {
+        "n": 1137,
+        "net_mean_R": -0.2139384660913441,
+        "net_pf": 0.7609731820282806,
+        "net_win_rate": 0.29991204925241866,
+        "max_drawdown_R": 261.1981033484268,
+        "months": 24,
+        "net_total_R": -243.24803594585825,
+        "stress_pf": 0.5392124675032789,
+        "positive_quarters_fraction": 0.125
+      },
+      "development_gate_pass": false,
+      "skips": {}
+    },
+    {
+      "id": 68,
+      "product": "progress-candle",
+      "family": "reclaim",
+      "configuration": {
+        "rr": 3,
+        "horizon": 48,
+        "filter": "aligned"
+      },
+      "train": {
+        "n": 968,
+        "net_mean_R": -0.5492489684126695,
+        "net_pf": 0.4967677517230533,
+        "net_win_rate": 0.265495867768595,
+        "max_drawdown_R": 541.2145223007598,
+        "months": 48,
+        "net_total_R": -531.673001423464,
+        "stress_pf": 0.2895926953383163,
+        "positive_quarters_fraction": 0.0625
+      },
+      "validation": {
+        "n": 506,
+        "net_mean_R": -0.21373602593871205,
+        "net_pf": 0.7600374781797532,
+        "net_win_rate": 0.2984189723320158,
+        "max_drawdown_R": 111.09833824811142,
+        "months": 24,
+        "net_total_R": -108.15042912498829,
+        "stress_pf": 0.5509569350698217,
+        "positive_quarters_fraction": 0.125
+      },
+      "development_gate_pass": false,
+      "skips": {}
+    },
+    {
+      "id": 69,
+      "product": "progress-candle",
+      "family": "reclaim",
+      "configuration": {
+        "rr": 3,
+        "horizon": 96,
+        "filter": "none"
+      },
+      "train": {
+        "n": 5056,
+        "net_mean_R": -0.502115494498517,
+        "net_pf": 0.541857125464545,
+        "net_win_rate": 0.2598892405063291,
+        "max_drawdown_R": 2544.341719095895,
+        "months": 48,
+        "net_total_R": -2538.695940184502,
+        "stress_pf": 0.32785323029146973,
+        "positive_quarters_fraction": 0.0
+      },
+      "validation": {
+        "n": 2548,
+        "net_mean_R": -0.2561525198188168,
+        "net_pf": 0.7264517090267861,
+        "net_win_rate": 0.271193092621664,
+        "max_drawdown_R": 655.5342297578117,
+        "months": 24,
+        "net_total_R": -652.6766204983452,
+        "stress_pf": 0.5256005945897843,
+        "positive_quarters_fraction": 0.0
+      },
+      "development_gate_pass": false,
+      "skips": {}
+    },
+    {
+      "id": 70,
+      "product": "progress-candle",
+      "family": "reclaim",
+      "configuration": {
+        "rr": 3,
+        "horizon": 96,
+        "filter": "h1"
+      },
+      "train": {
+        "n": 2142,
+        "net_mean_R": -0.5045168725487693,
+        "net_pf": 0.5437382716086386,
+        "net_win_rate": 0.2586367880485528,
+        "max_drawdown_R": 1085.0772091642923,
+        "months": 48,
+        "net_total_R": -1080.6751409994638,
+        "stress_pf": 0.32705024922915094,
+        "positive_quarters_fraction": 0.0
+      },
+      "validation": {
+        "n": 1103,
+        "net_mean_R": -0.20095209847107687,
+        "net_pf": 0.7830049830529159,
+        "net_win_rate": 0.2810516772438803,
+        "max_drawdown_R": 240.4927868998226,
+        "months": 24,
+        "net_total_R": -221.65016461359778,
+        "stress_pf": 0.567302398927564,
+        "positive_quarters_fraction": 0.125
+      },
+      "development_gate_pass": false,
+      "skips": {}
+    },
+    {
+      "id": 71,
+      "product": "progress-candle",
+      "family": "reclaim",
+      "configuration": {
+        "rr": 3,
+        "horizon": 96,
+        "filter": "aligned"
+      },
+      "train": {
+        "n": 954,
+        "net_mean_R": -0.5701363902435211,
+        "net_pf": 0.4950751666378046,
+        "net_win_rate": 0.24737945492662475,
+        "max_drawdown_R": 554.5810272332063,
+        "months": 48,
+        "net_total_R": -543.9101162923191,
+        "stress_pf": 0.2948997049969929,
+        "positive_quarters_fraction": 0.0625
+      },
+      "validation": {
+        "n": 502,
+        "net_mean_R": -0.20897319764702557,
+        "net_pf": 0.775064712210059,
+        "net_win_rate": 0.27689243027888444,
+        "max_drawdown_R": 108.31043637633461,
+        "months": 24,
+        "net_total_R": -104.90454521880683,
+        "stress_pf": 0.5719768665390684,
+        "positive_quarters_fraction": 0.25
+      },
+      "development_gate_pass": false,
+      "skips": {}
+    },
+    {
+      "id": 72,
+      "product": "decision-map",
+      "family": "native_filtered",
+      "configuration": {
+        "min_rr": 1.5,
+        "filter": "h1",
+        "max_cost_fraction": 0.05
+      },
+      "train": {
+        "n": 11,
+        "net_mean_R": -0.2213144232835515,
+        "net_pf": 0.7067525994442454,
+        "net_win_rate": 0.2727272727272727,
+        "max_drawdown_R": 6.236561612276315,
+        "months": 8,
+        "net_total_R": -2.4344586561190664,
+        "stress_pf": 0.6677064243143255,
+        "positive_quarters_fraction": 0.3333333333333333
+      },
+      "validation": {
+        "n": 22,
+        "net_mean_R": 0.16474188626636677,
+        "net_pf": 1.2687048084504389,
+        "net_win_rate": 0.4090909090909091,
+        "max_drawdown_R": 4.155869097696877,
+        "months": 10,
+        "net_total_R": 3.624321497860069,
+        "stress_pf": 1.2019855755762203,
+        "positive_quarters_fraction": 0.3333333333333333
+      },
+      "development_gate_pass": false,
+      "skips": {}
+    },
+    {
+      "id": 73,
+      "product": "decision-map",
+      "family": "native_filtered",
+      "configuration": {
+        "min_rr": 1.5,
+        "filter": "h1",
+        "max_cost_fraction": 0.1
+      },
+      "train": {
+        "n": 60,
+        "net_mean_R": -0.36898878905435883,
+        "net_pf": 0.550055236027564,
+        "net_win_rate": 0.23333333333333334,
+        "max_drawdown_R": 29.956857355502915,
+        "months": 34,
+        "net_total_R": -22.13932734326153,
+        "stress_pf": 0.4982859990162623,
+        "positive_quarters_fraction": 0.2857142857142857
+      },
+      "validation": {
+        "n": 69,
+        "net_mean_R": 0.26579049776112174,
+        "net_pf": 1.4546760975576836,
+        "net_win_rate": 0.4492753623188406,
+        "max_drawdown_R": 6.799509967049326,
+        "months": 23,
+        "net_total_R": 18.3395443455174,
+        "stress_pf": 1.3289645979825069,
+        "positive_quarters_fraction": 0.625
+      },
+      "development_gate_pass": false,
+      "skips": {}
+    },
+    {
+      "id": 74,
+      "product": "decision-map",
+      "family": "native_filtered",
+      "configuration": {
+        "min_rr": 1.5,
+        "filter": "strong",
+        "max_cost_fraction": 0.05
+      },
+      "train": {
+        "n": 6,
+        "net_mean_R": -1.037776421988738,
+        "net_pf": 0.0,
+        "net_win_rate": 0.0,
+        "max_drawdown_R": 6.2266585319324275,
+        "months": 5,
+        "net_total_R": -6.2266585319324275,
+        "stress_pf": 0.0,
+        "positive_quarters_fraction": 0.0
+      },
+      "validation": {
+        "n": 10,
+        "net_mean_R": 0.7589880592342563,
+        "net_pf": 2.826858523466867,
+        "net_win_rate": 0.6,
+        "max_drawdown_R": 3.1142198716436207,
+        "months": 7,
+        "net_total_R": 7.5898805923425625,
+        "stress_pf": 2.6828799706442705,
+        "positive_quarters_fraction": 0.75
+      },
+      "development_gate_pass": false,
+      "skips": {}
+    },
+    {
+      "id": 75,
+      "product": "decision-map",
+      "family": "native_filtered",
+      "configuration": {
+        "min_rr": 1.5,
+        "filter": "strong",
+        "max_cost_fraction": 0.1
+      },
+      "train": {
+        "n": 24,
+        "net_mean_R": -0.8159084187568951,
+        "net_pf": 0.16327509505835816,
+        "net_win_rate": 0.08333333333333333,
+        "max_drawdown_R": 19.581802050165482,
+        "months": 19,
+        "net_total_R": -19.581802050165482,
+        "stress_pf": 0.14749322201978005,
+        "positive_quarters_fraction": 0.0
+      },
+      "validation": {
+        "n": 36,
+        "net_mean_R": 0.25907288943494655,
+        "net_pf": 1.436917605614019,
+        "net_win_rate": 0.4444444444444444,
+        "max_drawdown_R": 4.45411883907186,
+        "months": 19,
+        "net_total_R": 9.326624019658075,
+        "stress_pf": 1.3090240887038067,
+        "positive_quarters_fraction": 0.5
+      },
+      "development_gate_pass": false,
+      "skips": {}
+    },
+    {
+      "id": 76,
+      "product": "decision-map",
+      "family": "native_filtered",
+      "configuration": {
+        "min_rr": 1.8,
+        "filter": "h1",
+        "max_cost_fraction": 0.05
+      },
+      "train": {
+        "n": 11,
+        "net_mean_R": -0.2213144232835515,
+        "net_pf": 0.7067525994442454,
+        "net_win_rate": 0.2727272727272727,
+        "max_drawdown_R": 6.236561612276315,
+        "months": 8,
+        "net_total_R": -2.4344586561190664,
+        "stress_pf": 0.6677064243143255,
+        "positive_quarters_fraction": 0.3333333333333333
+      },
+      "validation": {
+        "n": 21,
+        "net_mean_R": 0.10137407688287417,
+        "net_pf": 1.1578319529493888,
+        "net_win_rate": 0.38095238095238093,
+        "max_drawdown_R": 4.155869097696877,
+        "months": 10,
+        "net_total_R": 2.1288556145403574,
+        "stress_pf": 1.0984570884494356,
+        "positive_quarters_fraction": 0.3333333333333333
+      },
+      "development_gate_pass": false,
+      "skips": {}
+    },
+    {
+      "id": 77,
+      "product": "decision-map",
+      "family": "native_filtered",
+      "configuration": {
+        "min_rr": 1.8,
+        "filter": "h1",
+        "max_cost_fraction": 0.1
+      },
+      "train": {
+        "n": 60,
+        "net_mean_R": -0.36898878905435883,
+        "net_pf": 0.550055236027564,
+        "net_win_rate": 0.23333333333333334,
+        "max_drawdown_R": 29.956857355502915,
+        "months": 34,
+        "net_total_R": -22.13932734326153,
+        "stress_pf": 0.4982859990162623,
+        "positive_quarters_fraction": 0.2857142857142857
+      },
+      "validation": {
+        "n": 64,
+        "net_mean_R": 0.20164740328039052,
+        "net_pf": 1.3289028040388349,
+        "net_win_rate": 0.421875,
+        "max_drawdown_R": 6.7995099670493255,
+        "months": 23,
+        "net_total_R": 12.905433809944993,
+        "stress_pf": 1.2166193474941147,
+        "positive_quarters_fraction": 0.5
+      },
+      "development_gate_pass": false,
+      "skips": {}
+    },
+    {
+      "id": 78,
+      "product": "decision-map",
+      "family": "native_filtered",
+      "configuration": {
+        "min_rr": 1.8,
+        "filter": "strong",
+        "max_cost_fraction": 0.05
+      },
+      "train": {
+        "n": 6,
+        "net_mean_R": -1.037776421988738,
+        "net_pf": 0.0,
+        "net_win_rate": 0.0,
+        "max_drawdown_R": 6.2266585319324275,
+        "months": 5,
+        "net_total_R": -6.2266585319324275,
+        "stress_pf": 0.0,
+        "positive_quarters_fraction": 0.0
+      },
+      "validation": {
+        "n": 10,
+        "net_mean_R": 0.7589880592342563,
+        "net_pf": 2.826858523466867,
+        "net_win_rate": 0.6,
+        "max_drawdown_R": 3.1142198716436207,
+        "months": 7,
+        "net_total_R": 7.5898805923425625,
+        "stress_pf": 2.6828799706442705,
+        "positive_quarters_fraction": 0.75
+      },
+      "development_gate_pass": false,
+      "skips": {}
+    },
+    {
+      "id": 79,
+      "product": "decision-map",
+      "family": "native_filtered",
+      "configuration": {
+        "min_rr": 1.8,
+        "filter": "strong",
+        "max_cost_fraction": 0.1
+      },
+      "train": {
+        "n": 24,
+        "net_mean_R": -0.8159084187568951,
+        "net_pf": 0.16327509505835816,
+        "net_win_rate": 0.08333333333333333,
+        "max_drawdown_R": 19.581802050165482,
+        "months": 19,
+        "net_total_R": -19.581802050165482,
+        "stress_pf": 0.14749322201978005,
+        "positive_quarters_fraction": 0.0
+      },
+      "validation": {
+        "n": 34,
+        "net_mean_R": 0.2558114712382917,
+        "net_pf": 1.4295351429716379,
+        "net_win_rate": 0.4411764705882353,
+        "max_drawdown_R": 4.45411883907186,
+        "months": 19,
+        "net_total_R": 8.697590022101917,
+        "stress_pf": 1.3045790358880112,
+        "positive_quarters_fraction": 0.5
+      },
+      "development_gate_pass": false,
+      "skips": {}
+    },
+    {
+      "id": 80,
+      "product": "decision-map",
+      "family": "native_filtered",
+      "configuration": {
+        "min_rr": 2.0,
+        "filter": "h1",
+        "max_cost_fraction": 0.05
+      },
+      "train": {
+        "n": 8,
+        "net_mean_R": -0.28722106048297263,
+        "net_pf": 0.630863106790826,
+        "net_win_rate": 0.25,
+        "max_drawdown_R": 5.192950051723843,
+        "months": 5,
+        "net_total_R": -2.297768483863781,
+        "stress_pf": 0.5956426612722365,
+        "positive_quarters_fraction": 0.2
+      },
+      "validation": {
+        "n": 9,
+        "net_mean_R": -0.36860858774821215,
+        "net_pf": 0.5439571431049895,
+        "net_win_rate": 0.2222222222222222,
+        "max_drawdown_R": 5.298219026334151,
+        "months": 6,
+        "net_total_R": -3.317477289733909,
+        "stress_pf": 0.5142462406360504,
+        "positive_quarters_fraction": 0.0
+      },
+      "development_gate_pass": false,
+      "skips": {}
+    },
+    {
+      "id": 81,
+      "product": "decision-map",
+      "family": "native_filtered",
+      "configuration": {
+        "min_rr": 2.0,
+        "filter": "h1",
+        "max_cost_fraction": 0.1
+      },
+      "train": {
+        "n": 42,
+        "net_mean_R": -0.3535372688497088,
+        "net_pf": 0.5660489422523189,
+        "net_win_rate": 0.23809523809523808,
+        "max_drawdown_R": 22.9110663678388,
+        "months": 26,
+        "net_total_R": -14.848565291687772,
+        "stress_pf": 0.5125365301107848,
+        "positive_quarters_fraction": 0.23076923076923078
+      },
+      "validation": {
+        "n": 38,
+        "net_mean_R": 0.35875933370246016,
+        "net_pf": 1.6425424134553661,
+        "net_win_rate": 0.47368421052631576,
+        "max_drawdown_R": 5.27479092288462,
+        "months": 19,
+        "net_total_R": 13.632854680693486,
+        "stress_pf": 1.4981087215673465,
+        "positive_quarters_fraction": 0.75
+      },
+      "development_gate_pass": false,
+      "skips": {}
+    },
+    {
+      "id": 82,
+      "product": "decision-map",
+      "family": "native_filtered",
+      "configuration": {
+        "min_rr": 2.0,
+        "filter": "strong",
+        "max_cost_fraction": 0.05
+      },
+      "train": {
+        "n": 4,
+        "net_mean_R": -1.0374103101010255,
+        "net_pf": 0.0,
+        "net_win_rate": 0.0,
+        "max_drawdown_R": 4.149641240404102,
+        "months": 3,
+        "net_total_R": -4.149641240404102,
+        "stress_pf": 0.0,
+        "positive_quarters_fraction": 0.0
+      },
+      "validation": {
+        "n": 4,
+        "net_mean_R": 0.47078232809907894,
+        "net_pf": 1.9080226602583321,
+        "net_win_rate": 0.5,
+        "max_drawdown_R": 1.0403878852499406,
+        "months": 4,
+        "net_total_R": 1.8831293123963158,
+        "stress_pf": 1.8074799550618124,
+        "positive_quarters_fraction": 0.6666666666666666
+      },
+      "development_gate_pass": false,
+      "skips": {}
+    },
+    {
+      "id": 83,
+      "product": "decision-map",
+      "family": "native_filtered",
+      "configuration": {
+        "min_rr": 2.0,
+        "filter": "strong",
+        "max_cost_fraction": 0.1
+      },
+      "train": {
+        "n": 17,
+        "net_mean_R": -0.8900304748464904,
+        "net_pf": 0.11174386851968826,
+        "net_win_rate": 0.058823529411764705,
+        "max_drawdown_R": 15.130518072390338,
+        "months": 13,
+        "net_total_R": -15.130518072390338,
+        "stress_pf": 0.10000493348291616,
+        "positive_quarters_fraction": 0.0
+      },
+      "validation": {
+        "n": 20,
+        "net_mean_R": 0.4343369975571917,
+        "net_pf": 1.816070618851067,
+        "net_win_rate": 0.5,
+        "max_drawdown_R": 2.1602525542238977,
+        "months": 15,
+        "net_total_R": 8.686739951143833,
+        "stress_pf": 1.648788684920177,
+        "positive_quarters_fraction": 0.8571428571428571
+      },
+      "development_gate_pass": false,
+      "skips": {}
+    }
+  ]
+}

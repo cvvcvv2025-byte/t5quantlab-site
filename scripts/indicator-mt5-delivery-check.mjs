@@ -54,18 +54,25 @@ for (const [slug,code] of [['mtf-structure-panel-mt5','mtf_structure_panel_mt4']
   r=await call(upload,admin,'PUT',fixture);assert.equal(r.status,400);assert.equal(r.data.code,'ARTIFACT_HASH_MISMATCH');assert.equal(puts,0);
   const artifact=vm.runInContext('INDICATOR_ARTIFACTS['+JSON.stringify(slug)+']',context);
   assert.equal(artifact.code,code);assert.equal(artifact.membershipRequired,false);assert.equal(artifact.releaseStatus,'awaiting_upload');
+  const previousHash=artifact.previous.sha256;
+  artifact.previous.sha256=Buffer.from(await webcrypto.subtle.digest('SHA-256',fixture)).toString('hex');
+  stored={key:artifact.previous.r2Key,bytes:fixture,metadata:{sha256:artifact.previous.sha256,version:artifact.previous.version}};
+  r=await call(route,signed);assert.equal(r.status,200);assert.deepEqual(Array.from(r.data),Array.from(fixture));
+  assert(r.headers.get('Content-Disposition').includes(artifact.previous.filename));
+  corruptReadback=true;r=await call(route,signed);assert.equal(r.status,503);assert.equal(r.data.code,'ARTIFACT_CONTENT_MISMATCH');corruptReadback=false;
+  artifact.previous.sha256=previousHash;stored=null;downloads=0;
   const originalHash=artifact.sha256;
   // Replace only the in-memory fixture pin; paid customer binaries never enter this repository.
   artifact.sha256=Buffer.from(await webcrypto.subtle.digest('SHA-256',fixture)).toString('hex');
   r=await call(upload,admin,'PUT',fixture);assert.equal(r.status,200);assert.equal(r.data.storage_verified,true);
   r=await call(route,signed);assert.equal(r.status,200);assert.deepEqual(Array.from(r.data),Array.from(fixture));assert.equal(downloads,1);
-  assert(r.headers.get('Cache-Control').includes('private'));assert(r.headers.get('Content-Disposition').includes('_MT5_Customer_Pack.zip'));
+  assert(r.headers.get('Cache-Control').includes('private'));assert(r.headers.get('Content-Disposition').includes(artifact.filename));
   grants=['indicator_membership'];r=await call(route,signed);assert.equal(r.status,200);
   grants=['premium_membership'];r=await call(route,signed);assert.equal(r.status,200);
   corruptReadback=true;r=await call(route,signed);assert.equal(r.status,503);assert.equal(r.data.code,'ARTIFACT_CONTENT_MISMATCH');
   r=await call(upload,admin,'PUT',fixture);assert.equal(r.status,503);assert.equal(r.data.code,'ARTIFACT_STORAGE_MISMATCH');corruptReadback=false;
   artifact.sha256=originalHash;
   const page=fs.readFileSync('tools/indicators/'+slug.replace(/-mt5$/,'')+'/index.html','utf8');
-  for(const text of ['data-download="'+slug+'"','data-artifact-state="'+slug+'"','尚未完成 MT5 图表运行验收','/assets/indicator-download.js','/assets/delivery-status.js'])assert(page.includes(text),slug+': '+text);
+  for(const text of ['data-download="'+slug+'"','data-artifact-state="'+slug+'"','已完成本机 MT5 原生加载、历史计算与图表检查','/assets/indicator-download.js','/assets/delivery-status.js'])assert(page.includes(text),slug+': '+text);
 }
 console.log('MT5 indicator ports: legacy product entitlement reuse, both membership tiers, cross-product denial, hash-gated upload/readback, private downloads, corruption rejection and platform controls passed.');

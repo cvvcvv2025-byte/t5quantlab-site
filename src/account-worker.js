@@ -12,43 +12,47 @@ const INDICATOR_ARTIFACTS = {
   "mtf-structure-panel-mt5": {
     membershipRequired: false, // optional platform addition; preserve existing checkout readiness
     code: "mtf_structure_panel_mt4",
-    version: "0.1.1",
-    filename: "T5_MTF_Structure_Panel_v0_1_1_MT5_Customer_Pack.zip",
-    r2Key: "member-artifacts/mtf-structure-panel-mt5/0.1.1/T5_MTF_Structure_Panel_v0_1_1_MT5_Customer_Pack.zip",
+    version: "0.1.1-display.1",
+    filename: "T5_MTF_Structure_Panel_v0_1_1_MT5_DisplayFix1_Customer_Pack.zip",
+    r2Key: "member-artifacts/mtf-structure-panel-mt5/0.1.1-display.1/T5_MTF_Structure_Panel_v0_1_1_MT5_DisplayFix1_Customer_Pack.zip",
     releaseStatus: "awaiting_upload",
-    sha256: "5c2e1a0532171206de52194cca6fbd765402d84f61429981d50e96d7e761b458",
-    maxBytes: 1024 * 1024
+    sha256: "0bb9df8f90b386e0024c3f8908a3bc7238352143816799d746633eea5cb345b7",
+    maxBytes: 1024 * 1024,
+    previous: {"version": "0.1.1", "filename": "T5_MTF_Structure_Panel_v0_1_1_MT5_Customer_Pack.zip", "r2Key": "member-artifacts/mtf-structure-panel-mt5/0.1.1/T5_MTF_Structure_Panel_v0_1_1_MT5_Customer_Pack.zip", "sha256": "5c2e1a0532171206de52194cca6fbd765402d84f61429981d50e96d7e761b458"},
   },
   "neckline-mtf-mt5": {
     membershipRequired: false, // optional platform addition; preserve existing checkout readiness
     code: "neckline_mtf_mt4",
-    version: "0.1.2",
-    filename: "T5_Neckline_MTF_v0_1_2_MT5_Customer_Pack.zip",
-    r2Key: "member-artifacts/neckline-mtf-mt5/0.1.2/T5_Neckline_MTF_v0_1_2_MT5_Customer_Pack.zip",
+    version: "0.1.2-display.1",
+    filename: "T5_Neckline_MTF_v0_1_2_MT5_DisplayFix1_Customer_Pack.zip",
+    r2Key: "member-artifacts/neckline-mtf-mt5/0.1.2-display.1/T5_Neckline_MTF_v0_1_2_MT5_DisplayFix1_Customer_Pack.zip",
     releaseStatus: "awaiting_upload",
-    sha256: "f853277884d3bf90b37d7380c0db5f77b65df9f259955b3acef0db0bdd0ca276",
-    maxBytes: 1024 * 1024
+    sha256: "59f867ce7e2c6f78aa122176c60946d68c2ec62968e784e9b3f810dc22dbe78c",
+    maxBytes: 1024 * 1024,
+    previous: {"version": "0.1.2", "filename": "T5_Neckline_MTF_v0_1_2_MT5_Customer_Pack.zip", "r2Key": "member-artifacts/neckline-mtf-mt5/0.1.2/T5_Neckline_MTF_v0_1_2_MT5_Customer_Pack.zip", "sha256": "f853277884d3bf90b37d7380c0db5f77b65df9f259955b3acef0db0bdd0ca276"},
   },
   "progress-candle-mt5": {
     membershipRequired: false, // optional platform addition; preserve existing checkout readiness
     code: "progress_candle_mt4",
-    version: "0.1.2",
-    filename: "T5_Progress_Candle_v0_1_2_MT5_Customer_Pack.zip",
-    r2Key: "member-artifacts/progress-candle-mt5/0.1.2/T5_Progress_Candle_v0_1_2_MT5_Customer_Pack.zip",
+    version: "0.1.2-display.1",
+    filename: "T5_Progress_Candle_v0_1_2_MT5_DisplayFix1_Customer_Pack.zip",
+    r2Key: "member-artifacts/progress-candle-mt5/0.1.2-display.1/T5_Progress_Candle_v0_1_2_MT5_DisplayFix1_Customer_Pack.zip",
     releaseStatus: "awaiting_upload",
-    sha256: "4130a5e4d0d5b3c39dcb373f4452f5f6dbabb3a77fcb985a69ca5aa606d62c7e",
-    maxBytes: 1024 * 1024
+    sha256: "d957ac73ec0a009e49fe026fabfe0323ea29df3f8a48ab84f0c4da287c9db7e6",
+    maxBytes: 1024 * 1024,
+    previous: {"version": "0.1.2", "filename": "T5_Progress_Candle_v0_1_2_MT5_Customer_Pack.zip", "r2Key": "member-artifacts/progress-candle-mt5/0.1.2/T5_Progress_Candle_v0_1_2_MT5_Customer_Pack.zip", "sha256": "4130a5e4d0d5b3c39dcb373f4452f5f6dbabb3a77fcb985a69ca5aa606d62c7e"},
   },
   "structure-decision-map-mt5": {
     membershipRequired: false,
     // Same product entitlement as MT4; keep existing single-product customers authorised.
     code: "structure_decision_map_mt4",
-    version: "0.2.3",
-    filename: "T5_Structure_Decision_Map_v0_2_3_MT5_Customer_Pack.zip",
-    r2Key: "member-artifacts/structure-decision-map-mt5/0.2.3/T5_Structure_Decision_Map_v0_2_3_MT5_Customer_Pack.zip",
+    version: "0.2.3-display.1",
+    filename: "T5_Structure_Decision_Map_v0_2_3_MT5_DisplayFix1_Customer_Pack.zip",
+    r2Key: "member-artifacts/structure-decision-map-mt5/0.2.3-display.1/T5_Structure_Decision_Map_v0_2_3_MT5_DisplayFix1_Customer_Pack.zip",
     releaseStatus: "awaiting_upload",
-    sha256: "794971d73b226df129fb6f603f8e3db0ac17115e2e26431825417dcdc4925dee",
-    maxBytes: 1024 * 1024
+    sha256: "d00b544471384f10ca42e7d7be93e2db19425d7c557d59d5a733c9abccea81b1",
+    maxBytes: 1024 * 1024,
+    previous: {"version": "0.2.3", "filename": "T5_Structure_Decision_Map_v0_2_3_MT5_Customer_Pack.zip", "r2Key": "member-artifacts/structure-decision-map-mt5/0.2.3/T5_Structure_Decision_Map_v0_2_3_MT5_Customer_Pack.zip", "sha256": "794971d73b226df129fb6f603f8e3db0ac17115e2e26431825417dcdc4925dee"},
   },
   "structure-decision-map": {
     membershipRequired: false, // staged addition; existing membership delivery remains unchanged
@@ -523,9 +527,16 @@ async function artifactState(env, artifact) {
   } catch { return { ready: false, size: null }; }
 }
 
+async function resolveIndicatorArtifact(env, artifact) {
+  if (!artifact.previous || (await artifactState(env, artifact)).ready) return artifact;
+  const previous = { ...artifact, ...artifact.previous, previous: undefined };
+  return (await artifactState(env, previous)).ready ? previous : artifact;
+}
+
 async function deliveryCatalog(env, verify = false) {
   const items = [...Object.entries(INDICATOR_ARTIFACTS).map(([slug, a]) => [slug, a, 'indicator']), ...Object.entries(EA_ARTIFACTS).map(([slug, a]) => [slug, a, 'ea'])];
   const artifacts = await Promise.all(items.map(async ([slug, artifact, kind]) => {
+    if (kind === 'indicator') artifact = await resolveIndicatorArtifact(env, artifact);
     const state = await artifactState(env, artifact);
     const out = { slug, kind, version: artifact.version, filename: artifact.filename, ...state };
     if (artifact.membershipRequired === false) out.membership_required = false;
@@ -546,6 +557,7 @@ async function deliveryCatalog(env, verify = false) {
 }
 
 async function indicatorAccess(request, env, artifact) {
+  artifact = await resolveIndicatorArtifact(env, artifact);
   const user = await resolveSession(request, env);
   if (!user) return json({ ok: false, error: "请先登录 T5 账户", code: "ACCOUNT_REQUIRED" }, 401);
   await ensureAccountDb(env);
@@ -559,6 +571,7 @@ async function indicatorAccess(request, env, artifact) {
 }
 
 async function downloadIndicator(request, env, artifact) {
+  artifact = await resolveIndicatorArtifact(env, artifact);
   const user = await resolveSession(request, env);
   if (!user) return json({ ok: false, error: "请先登录后下载", code: "ACCOUNT_REQUIRED" }, 401);
   await ensureAccountDb(env);

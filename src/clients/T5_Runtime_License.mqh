@@ -1,4 +1,4 @@
-// T5 runtime license client v1 candidate. Native MetaEditor acceptance required.
+// T5 runtime license client v2 candidate. Native broker-demo acceptance required.
 // Include AFTER defining T5_LICENSE_PRODUCT. Never put a service-side secret here.
 #ifndef T5_RUNTIME_LICENSE_INCLUDED
 #define T5_RUNTIME_LICENSE_INCLUDED
@@ -8,6 +8,41 @@ uint t5LeaseTick=0,t5LeaseSeconds=0,t5AttemptTick=0;
 datetime t5LeaseLocal=0;
 bool t5Attempted=false;
 string t5LeaseLogin="",t5LeaseServer="";
+string t5TerminalId="";
+
+string T5Digest(string value)
+{
+   uchar data[],key[],digest[];
+   int size=StringToCharArray(value,data,0,WHOLE_ARRAY,CP_UTF8);
+   if(size<=1) return "";
+   ArrayResize(data,size-1);
+   if(CryptEncode(CRYPT_HASH_SHA256,data,key,digest)!=32) return "";
+   string result="";
+   for(int i=0;i<32;i++) result+=StringFormat("%02x",digest[i]);
+   return result;
+}
+string T5TerminalIdentity()
+{
+   if(t5TerminalId!="") return t5TerminalId;
+   // Local installation identifier, not a hardware attestation or license proof.
+   // No account password, raw filesystem path or machine serial is transmitted.
+   // Exclusive file open serializes simultaneous chart instances in this terminal.
+   int handle=FileOpen("T5_terminal_v2.id",FILE_READ|FILE_WRITE|FILE_TXT|FILE_ANSI);
+   if(handle==INVALID_HANDLE) return "";
+   string seed=FileReadString(handle);
+   if(FileSize(handle)==0)
+   {
+      seed=T5Digest(StringFormat("%u|%I64u|%I64d|%d|%s",GetTickCount(),GetMicrosecondCount(),(long)TimeLocal(),MathRand(),TerminalInfoString(TERMINAL_DATA_PATH)));
+      if(StringLen(seed)!=64) { FileClose(handle);return ""; }
+      FileSeek(handle,0,SEEK_SET);
+      if(FileWriteString(handle,seed)!=64) { FileClose(handle);return ""; }
+      FileFlush(handle);
+   }
+   FileClose(handle);
+   if(StringLen(seed)!=64) return "";
+   t5TerminalId=T5Digest(seed+"|"+TerminalInfoString(TERMINAL_DATA_PATH));
+   return t5TerminalId;
+}
 
 string T5AccountLogin()
 {
@@ -79,14 +114,16 @@ void T5LicenseRefresh()
    uint tick=GetTickCount();
    bool changed=t5LeaseSeconds>0 && (T5AccountLogin()!=t5LeaseLogin || T5AccountServer()!=t5LeaseServer);
    if(changed) { T5LicenseDeny("ACCOUNT_CHANGED");t5Attempted=false; }
-   if(t5Attempted && (uint)(tick-t5AttemptTick)<300000) return;
+   if(t5Attempted && (uint)(tick-t5AttemptTick)<60000) return;
    t5AttemptTick=tick;t5Attempted=true;
    if(StringLen(InpT5LicenseKey)!=64) { T5LicenseDeny("ENTER_LICENSE_KEY");return; }
+   string terminal=T5TerminalIdentity();
+   if(StringLen(terminal)!=64) { T5LicenseDeny("TERMINAL_ID_UNAVAILABLE");return; }
    string login=T5AccountLogin(),server=T5AccountServer();
    if(login=="0" || server=="") { T5LicenseDeny("WAITING_FOR_TRADING_ACCOUNT");t5Attempted=false;return; }
    // Nonce correlates the TLS response with this request; it is not an auth key.
    string nonce=StringFormat("%08x%08x%08x%08x",GetTickCount(),(uint)GetMicrosecondCount(),(uint)TimeLocal(),(uint)MathRand());
-   string body="{\"product_code\":\""+T5_LICENSE_PRODUCT+"\",\"platform\":\""+T5Platform()+"\",\"account_login\":\""+login+"\",\"broker_server\":\""+T5JsonEscape(server)+"\",\"nonce\":\""+nonce+"\"}";
+   string body="{\"protocol_version\":2,\"terminal_id\":\""+terminal+"\",\"product_code\":\""+T5_LICENSE_PRODUCT+"\",\"platform\":\""+T5Platform()+"\",\"account_login\":\""+login+"\",\"broker_server\":\""+T5JsonEscape(server)+"\",\"nonce\":\""+nonce+"\"}";
    char data[],result[];StringToCharArray(body,data,0,WHOLE_ARRAY,CP_UTF8);ArrayResize(data,ArraySize(data)-1);
    string headers="Content-Type: application/json\r\nAccept: text/plain\r\nAuthorization: Bearer "+InpT5LicenseKey+"\r\n",responseHeaders;
    // Called only from OnTimer, not from an order/position management callback.
@@ -95,10 +132,10 @@ void T5LicenseRefresh()
    if(code==401 || code==403 || code==409) { T5LicenseDeny("AUTHORIZATION_DENIED");return; }
    if(code!=200) { T5LicenseStatus(T5LicenseAllowsNewEntry()?"OFFLINE_GRACE":"ONLINE_CHECK_REQUIRED");return; }
    string fields[];int count=StringSplit(CharArrayToString(result,0,-1,CP_UTF8),StringGetCharacter("|",0),fields);
-   if(count!=9 || fields[0]!="T5L1" || fields[1]!=nonce || fields[2]!=T5_LICENSE_PRODUCT || fields[3]!=T5Platform() || fields[4]!=login || fields[8]!="active" || !T5Decimal(fields[5]) || !T5Decimal(fields[6]) || !T5Decimal(fields[7]))
+   if(count!=10 || fields[0]!="T5L2" || fields[9]!=terminal || fields[1]!=nonce || fields[2]!=T5_LICENSE_PRODUCT || fields[3]!=T5Platform() || fields[4]!=login || fields[8]!="active" || !T5Decimal(fields[5]) || !T5Decimal(fields[6]) || !T5Decimal(fields[7]))
    { T5LicenseDeny("INVALID_SERVER_RESPONSE");return; }
    long issued=StringToInteger(fields[5]),expiry=StringToInteger(fields[6]),lease=StringToInteger(fields[7]);
-   if(issued<=0 || lease<=issued || lease-issued>86400 || (expiry>0 && lease>expiry) || login!=T5AccountLogin() || server!=T5AccountServer())
+   if(issued<=0 || lease<=issued || lease-issued>300 || (expiry>0 && lease>expiry) || login!=T5AccountLogin() || server!=T5AccountServer())
    { T5LicenseDeny("INVALID_OR_EXPIRED_LEASE");return; }
    if(lease-issued<=2) { T5LicenseDeny("LEASE_TOO_CLOSE_TO_EXPIRY");return; }
    // Deduct the bounded request time plus rounding; receiving the response must

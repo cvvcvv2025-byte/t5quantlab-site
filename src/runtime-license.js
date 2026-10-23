@@ -7,7 +7,11 @@ export const LICENSE_PRODUCTS = {
   attack_completion_c_mt5: { platforms: ['MT5'], kind: 'ea' },
   trend_capture_mt5: { platforms: ['MT5'], kind: 'ea' },
   range_martingale_mt4: { platforms: ['MT4', 'MT5'], kind: 'ea' },
-  range_aggressive_mt4_mt5: { platforms: ['MT4', 'MT5'], kind: 'ea' }
+  range_aggressive_mt4_mt5: { platforms: ['MT4', 'MT5'], kind: 'ea' },
+  attack_completion_c_mt5_v2: { entitlement_product:'attack_completion_c_mt5', protocol_version:2, platforms:['MT5'], kind:'ea' },
+  trend_capture_mt5_v2: { entitlement_product:'trend_capture_mt5', protocol_version:2, platforms:['MT5'], kind:'ea' },
+  range_martingale_mt4_v2: { entitlement_product:'range_martingale_mt4', protocol_version:2, platforms:['MT4','MT5'], kind:'ea' },
+  range_aggressive_mt4_mt5_v2: { entitlement_product:'range_aggressive_mt4_mt5', protocol_version:2, platforms:['MT4','MT5'], kind:'ea' }
 };
 const json = (data, status = 200) => Response.json(data, { status, headers: { 'Cache-Control': 'no-store', 'X-Content-Type-Options': 'nosniff' } });
 const now = () => new Date().toISOString();
@@ -17,8 +21,15 @@ function enabled(env, product) {
   // No release is enabled by default. Enable only after native compiled-client acceptance.
   // Indicators need a different, signed authorization client; an environment
   // typo must not accidentally sell them an unsupported activation flow.
-  return LICENSE_PRODUCTS[product]?.kind === 'ea' && String(env.RUNTIME_LICENSE_PRODUCTS || '').split(',').map(x => x.trim()).includes(product);
+  const accepted = String(env.RUNTIME_LICENSE_PRODUCTS || '').split(',').map(x => x.trim()).includes(product);
+  const acceptedV2 = String(env.RUNTIME_LICENSE_V2_PRODUCTS || '').split(',').map(x => x.trim()).includes(product);
+  return LICENSE_PRODUCTS[product]?.kind === 'ea' && accepted && (LICENSE_PRODUCTS[product].protocol_version !== 2 || acceptedV2);
 }
+// Independently gated: never silently change the contract of existing clients.
+function hardened(env, product) {
+  return LICENSE_PRODUCTS[product]?.protocol_version === 2;
+}
+const V2_LEASE_SECONDS = 300, REBIND_SECONDS = 7 * 86400;
 async function setup(env) {
   await env.BUILDER_DB.batch([
     env.BUILDER_DB.prepare(`CREATE TABLE IF NOT EXISTS runtime_licenses (
@@ -30,7 +41,11 @@ async function setup(env) {
     env.BUILDER_DB.prepare(`CREATE TABLE IF NOT EXISTS runtime_license_requests (
       ip_hash TEXT NOT NULL, created_at TEXT NOT NULL
     )`),
-    env.BUILDER_DB.prepare('CREATE INDEX IF NOT EXISTS idx_runtime_license_requests ON runtime_license_requests(ip_hash,created_at)')
+    env.BUILDER_DB.prepare('CREATE INDEX IF NOT EXISTS idx_runtime_license_requests ON runtime_license_requests(ip_hash,created_at)'),
+    env.BUILDER_DB.prepare(`CREATE TABLE IF NOT EXISTS runtime_license_terminals (
+      user_id TEXT NOT NULL, product_code TEXT NOT NULL, terminal_hash TEXT NOT NULL,
+      lease_until INTEGER NOT NULL, PRIMARY KEY(user_id,product_code)
+    )`)
   ]);
   await env.BUILDER_DB.prepare(`CREATE TABLE IF NOT EXISTS runtime_license_qa (
     qa_id TEXT PRIMARY KEY, product_code TEXT NOT NULL, platform TEXT NOT NULL,
@@ -42,7 +57,7 @@ async function setup(env) {
 }
 async function activeEntitlement(env, userId, product) {
   const spec = LICENSE_PRODUCTS[product];
-  const products = [product, 'premium_membership', ...(spec.membership ? [spec.membership] : [])];
+  const products = [product, ...(spec.entitlement_product ? [spec.entitlement_product] : []), 'premium_membership', ...(spec.membership ? [spec.membership] : [])];
   // Compare actual dates: null expiry means perpetual; an overlapping later
   // entitlement must not be hidden by an expired/revoked earlier purchase.
   const result = await env.BUILDER_DB.prepare(`SELECT e.expires_at FROM product_entitlements e
@@ -130,12 +145,16 @@ export async function runtimeLicenseResponse(request, env, resolveSession) {
   await setup(env);
   if (!verifying && request.method === 'GET') {
     const rows = await env.BUILDER_DB.prepare('SELECT license_id,product_code,platform,account_login,broker_server,status,created_at,updated_at FROM runtime_licenses WHERE user_id=? ORDER BY created_at DESC').bind(user.user_id).all();
-    return json({ ok: true, products: Object.entries(LICENSE_PRODUCTS).map(([code, v]) => ({ code, kind: v.kind, enabled: enabled(env, code), platforms: v.platforms })), licenses: rows.results || [], legacy_downloads_require_activation: false });
+    return json({ ok: true, products: Object.entries(LICENSE_PRODUCTS).map(([code, v]) => ({ code, kind: v.kind, enabled: enabled(env, code), platforms: v.platforms,
+      protocol_version: hardened(env,code) ? 2 : 1,
+      offline_grace_seconds: hardened(env,code) ? V2_LEASE_SECONDS : 86400,
+      rebind_cooldown_seconds: hardened(env,code) ? REBIND_SECONDS : 0 })), licenses: rows.results || [], legacy_downloads_require_activation: false });
   }
   const body = await bodyOf(request);
   if (!body) return json({ ok: false, code: 'INVALID_REQUEST' }, 400);
   if (!verifying && p.endsWith('/revoke')) {
-    const r = await env.BUILDER_DB.prepare("UPDATE runtime_licenses SET status='revoked',updated_at=? WHERE license_id=? AND user_id=?").bind(now(), String(body.license_id || ''), user.user_id).run();
+    // Repeated revoke calls must not move the cooldown timestamp.
+    const r = await env.BUILDER_DB.prepare("UPDATE runtime_licenses SET status='revoked',updated_at=? WHERE license_id=? AND user_id=? AND status='active'").bind(now(), String(body.license_id || ''), user.user_id).run();
     return Number(r.meta?.changes) ? json({ ok: true }) : json({ ok: false, code: 'LICENSE_NOT_FOUND' }, 404);
   }
   const b = binding(body);
@@ -143,22 +162,32 @@ export async function runtimeLicenseResponse(request, env, resolveSession) {
   if (!verifying && !enabled(env, b.product)) return json({ ok: false, code: 'LICENSE_RELEASE_NOT_ENABLED', error: '当前安装包仍按原交付方式使用，无需激活。' }, 409);
   if (!verifying) {
     const entitlement = await activeEntitlement(env, user.user_id, b.product);
+    if (hardened(env,b.product) && body.license_policy_version !== 'terminal-v2-20261023') return json({ok:false,code:'LICENSE_POLICY_REQUIRED'},400);
     if (!entitlement) return json({ ok: false, code: 'ENTITLEMENT_REQUIRED' }, 403);
     // One active trading account per product. Revoke first to replace a binding;
     // renewing membership never changes the stored client credential.
-    const token = hex(crypto.getRandomValues(new Uint8Array(32))), id = 'T5-L-' + crypto.randomUUID();
+    const v2 = hardened(env,b.product), token = hex(crypto.getRandomValues(new Uint8Array(32))), id = 'T5-L-' + crypto.randomUUID();
+    const cooldownCutoff = new Date(Date.now() - REBIND_SECONDS * 1000).toISOString();
     const r = await env.BUILDER_DB.prepare(`INSERT INTO runtime_licenses
       (license_id,user_id,product_code,platform,account_login,broker_server,token_hash,status,created_at,updated_at)
       VALUES (?,?,?,?,?,?,?,'active',?,?) ON CONFLICT(user_id,product_code) DO UPDATE SET
       license_id=excluded.license_id,platform=excluded.platform,account_login=excluded.account_login,
       broker_server=excluded.broker_server,token_hash=excluded.token_hash,status='active',updated_at=excluded.updated_at
-      WHERE runtime_licenses.status='revoked'`)
-      .bind(id, user.user_id, b.product, b.platform, b.login, b.server, await hash(token), now(), now()).run();
-    if (!Number(r.meta?.changes)) return json({ ok: false, code: 'ACTIVE_BINDING_EXISTS', error: '已有激活账号。更换前请先撤销原授权。' }, 409);
-    return json({ ok: true, license_id: id, license_key: token, expires_at: entitlement.expires_at, offline_grace_seconds: 86400 });
+      WHERE runtime_licenses.status='revoked' AND (?=0 OR runtime_licenses.updated_at<=?)`)
+      .bind(id, user.user_id, b.product, b.platform, b.login, b.server, await hash(token), now(), now(), v2 ? 1 : 0, cooldownCutoff).run();
+    if (!Number(r.meta?.changes)) {
+      const current = await env.BUILDER_DB.prepare('SELECT status,updated_at FROM runtime_licenses WHERE user_id=? AND product_code=?').bind(user.user_id,b.product).first();
+      if (v2 && current?.status === 'revoked') return json({ ok:false, code:'REBIND_COOLDOWN', retry_at:new Date(Date.parse(current.updated_at) + REBIND_SECONDS * 1000).toISOString() },409);
+      return json({ ok: false, code: 'ACTIVE_BINDING_EXISTS', error: '已有激活账号。更换前请先撤销原授权。' }, 409);
+    }
+    return json({ ok: true, license_id: id, license_key: token, expires_at: entitlement.expires_at, protocol_version:v2 ? 2 : 1, offline_grace_seconds: v2 ? V2_LEASE_SECONDS : 86400 });
   }
   const nonce = String(body.nonce || '');
   if (!/^[a-f0-9]{32}$/.test(nonce)) return json({ ok: false, code: 'INVALID_NONCE' }, 400);
+  // QA credentials can exercise the new client while production remains closed.
+  // Explicit v2 clients receive v2 leases even on a legacy-enabled release.
+  const v2 = hardened(env,b.product) || body.protocol_version === 2;
+  if (v2 && (body.protocol_version !== 2 || !/^[a-f0-9]{64}$/.test(String(body.terminal_id || '')))) return json({ok:false,code:'CLIENT_UPGRADE_REQUIRED',allow_new_entries:false,manage_existing_positions:true},403);
   // Bound failed lookups as well as successful checks. Never store client keys,
   // plaintext IP addresses or account credentials in the request ledger.
   const ipHash = await hash(env.ACCOUNT_AUTH_SECRET + ':license:' + (request.headers.get('CF-Connecting-IP') || 'unknown'));
@@ -176,9 +205,22 @@ export async function runtimeLicenseResponse(request, env, resolveSession) {
   const entitlement = qaAllowed ? { expires_at: qa.expires_at } : matches(license) ? await activeEntitlement(env, license.user_id, b.product) : null;
   if (qaAllowed) await env.BUILDER_DB.prepare('UPDATE runtime_license_qa SET last_verified_at=?,verified_count=verified_count+1 WHERE qa_id=?').bind(now(),qa.qa_id).run();
   const issued = Math.floor(Date.now() / 1000), expiry = entitlement?.expires_at ? Math.floor(Date.parse(entitlement.expires_at) / 1000) : 0;
-  const lease = entitlement ? Math.min(issued + (qaAllowed ? qa.lease_seconds : 86400), expiry || Infinity) : 0;
+  const lease = entitlement ? Math.min(issued + (v2 ? Math.min(qaAllowed ? qa.lease_seconds : V2_LEASE_SECONDS,V2_LEASE_SECONDS) : qaAllowed ? qa.lease_seconds : 86400), expiry || Infinity) : 0;
+  if (entitlement && v2) {
+    // Atomic compare-and-swap; no read-then-write race. Keep the slot across key
+    // rotation. It cannot move to a different terminal until ALL issued leases
+    // for this slot have elapsed. Same-terminal refreshes must never shorten it.
+    const owner = qaAllowed ? 'qa:' + qa.qa_id : license.user_id;
+    const terminalHash = await hash(env.ACCOUNT_AUTH_SECRET + ':terminal:' + body.terminal_id);
+    const slot = await env.BUILDER_DB.prepare(`INSERT INTO runtime_license_terminals(user_id,product_code,terminal_hash,lease_until)
+      VALUES (?,?,?,?) ON CONFLICT(user_id,product_code) DO UPDATE SET
+      terminal_hash=excluded.terminal_hash,lease_until=MAX(runtime_license_terminals.lease_until,excluded.lease_until)
+      WHERE runtime_license_terminals.terminal_hash=excluded.terminal_hash OR runtime_license_terminals.lease_until<=?`)
+      .bind(owner,b.product,terminalHash,lease,issued).run();
+    if (!Number(slot.meta?.changes)) return json({ok:false,code:'TERMINAL_IN_USE',allow_new_entries:false,manage_existing_positions:true},409);
+  }
   const state = entitlement ? 'active' : 'denied';
-  const wire = ['T5L1', nonce, b.product, b.platform, b.login, issued, expiry, lease, state].join('|');
+  const wire = [v2 ? 'T5L2' : 'T5L1', nonce, b.product, b.platform, b.login, issued, expiry, lease, state,...(v2 ? [body.terminal_id] : [])].join('|');
   if (request.headers.get('Accept') === 'text/plain') return new Response(wire, { status: entitlement ? 200 : 403, headers: { 'Content-Type': 'text/plain; charset=utf-8', 'Cache-Control': 'no-store', 'X-Content-Type-Options': 'nosniff' } });
   return json({ ok: Boolean(entitlement), code: entitlement ? 'LICENSE_ACTIVE' : 'LICENSE_DENIED', nonce, server_time: issued, expires_at: expiry, lease_until: lease, allow_new_entries: Boolean(entitlement), manage_existing_positions: true }, entitlement ? 200 : 403);
 }

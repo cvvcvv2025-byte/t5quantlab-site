@@ -10,7 +10,7 @@ for (const page of ['membership/checkout/index.html', 'membership/automation-che
   const code = source.slice(0, source.lastIndexOf('(async()=>{'));
   for (const wechat of [true, false]) {
     const elements = new Map();
-    const element = () => ({ textContent: '', className: '', disabled: false, classList: { add() {}, remove() {} }, setAttribute() {}, dataset: {}, appendChild() {}, after() {}, addEventListener() {} });
+    const element = () => ({ textContent: '', className: '', disabled: false, style: {}, classList: { add() {}, remove() {} }, setAttribute() {}, dataset: {}, appendChild() {}, after() {}, addEventListener() {} });
     const get = id => { if (!elements.has(id)) elements.set(id, element()); return elements.get(id); };
     let calls = 0, navigate = '', release;
     const response = new Promise(resolve => { release = resolve; });

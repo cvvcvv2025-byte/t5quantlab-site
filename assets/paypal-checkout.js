@@ -24,6 +24,8 @@
   if (!box) return;
   const note = document.createElement('div');
   note.className = 'status' + (inWeChat ? ' bad' : '');
+  note.style.display = 'block';
+  note.style.overflowWrap = 'anywhere';
   note.setAttribute('role', 'note');
   note.dataset.paypalBrowserHelp = '';
   note.textContent = inWeChat ? messages.WECHAT_BROWSER : '若 PayPal 显示“系统暂时无响应”：返回本页刷新订单状态。若已确认或扣款，请勿重复付款；仍无法打开时，请使用 Safari 或 Chrome，或联系客户支持并提供 T5 订单号。';

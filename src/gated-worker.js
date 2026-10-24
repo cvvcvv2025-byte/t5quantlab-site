@@ -650,6 +650,16 @@ function paypalSafeDiagnostics(error) {
   };
 }
 
+function paypalApprovalUrl(value, env) {
+  try {
+    const url = new URL(value);
+    const live = String(env.PAYPAL_ENVIRONMENT || "sandbox").toLowerCase() === "live";
+    const hosts = live ? ["www.paypal.com", "paypal.com"] : ["www.sandbox.paypal.com", "sandbox.paypal.com"];
+    if (url.protocol !== "https:" || !hosts.includes(url.hostname) || url.username || url.password || url.port) return null;
+    return url.href;
+  } catch { return null; }
+}
+
 async function handlePayPalCreate(request, env, { callbackPath = "/checkout/", callbackProvider = "paypal" } = {}) {
   if (!paypalConfigured(env)) return paymentAdapterNotConfigured("PayPal");
   await ensureAccessDb(env);
@@ -664,12 +674,27 @@ async function handlePayPalCreate(request, env, { callbackPath = "/checkout/", c
 
   const existing = await env.BUILDER_DB.prepare(`SELECT provider_order_id, approval_url, status
     FROM payment_intents WHERE provider = 'paypal' AND order_id = ?`).bind(orderId).first();
-  if (existing?.provider_order_id && existing?.approval_url && existing.status !== "failed") {
+  if (existing?.provider_order_id) {
+    // A saved redirect is not proof that an order is still payable. Never replace
+    // an uncertain payment with a new provider order: that risks duplicate payment.
+    let remote;
+    try {
+      remote = await paypalJson(env, `/v2/checkout/orders/${encodeURIComponent(existing.provider_order_id)}`);
+    } catch (error) {
+      if (error.status === 404 || error.status === 410) return json({ ok: false, code: "PAYPAL_LINK_EXPIRED", error: "原 PayPal 付款链接已不可用。请先刷新订单状态；确认未付款后，取消原订单再创建。若已扣款，请勿再次付款，联系客户支持。" }, 409);
+      return json({ ok: false, code: "PAYPAL_STATUS_UNAVAILABLE", error: "暂时无法核对 PayPal 订单，未创建新的付款。请稍后重试；若已扣款，请勿再次付款。" }, 502);
+    }
+    if (remote.id !== existing.provider_order_id) return json({ ok: false, code: "PAYPAL_STATUS_UNAVAILABLE", error: "PayPal 订单核对未通过，请勿重复付款，联系客户支持。" }, 502);
+    if (["COMPLETED", "APPROVED"].includes(remote.status)) return json({ ok: false, code: "PAYPAL_APPROVAL_RECEIVED", error: "PayPal 已收到此订单的付款确认，请返回原付款完成页继续确认，或刷新订单状态。请勿重复付款；状态未更新时请联系客户支持。" }, 409);
+    if (!["CREATED", "PAYER_ACTION_REQUIRED"].includes(remote.status)) return json({ ok: false, code: "PAYPAL_LINK_EXPIRED", error: "原 PayPal 订单已不能继续付款。请刷新状态；确认未付款后取消原订单再创建，已扣款请联系客户支持。" }, 409);
+    const approvalUrl = paypalApprovalUrl((remote.links || []).find(x => x.rel === "payer-action")?.href
+      || (remote.links || []).find(x => x.rel === "approve")?.href || existing.approval_url, env);
+    if (!approvalUrl) return json({ ok: false, code: "PAYPAL_CREATE_FAILED", error: "PayPal 未提供有效付款地址，请联系客户支持。" }, 502);
     return json({
       ok: true,
       order_id: orderId,
       paypal_order_id: existing.provider_order_id,
-      approval_url: existing.approval_url,
+      approval_url: approvalUrl,
       reused: true
     });
   }
@@ -710,8 +735,8 @@ async function handlePayPalCreate(request, env, { callbackPath = "/checkout/", c
         }
       }
     });
-    const approvalUrl = (pp.links || []).find(x => x.rel === "payer-action")?.href
-      || (pp.links || []).find(x => x.rel === "approve")?.href;
+    const approvalUrl = paypalApprovalUrl((pp.links || []).find(x => x.rel === "payer-action")?.href
+      || (pp.links || []).find(x => x.rel === "approve")?.href, env);
     if (!pp.id || !approvalUrl) throw new Error("PAYPAL_APPROVAL_LINK_MISSING");
     const now = nowIso();
     await env.BUILDER_DB.prepare(`INSERT INTO payment_intents

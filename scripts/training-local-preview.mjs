@@ -45,7 +45,7 @@ globalThis.fetch = async (url, options = {}) => {
   if (url.endsWith('/v2/checkout/orders')) {
     const body = JSON.parse(options.body), id = 'PP-' + ppOrders.size;
     ppOrders.set(id, body.purchase_units[0]);
-    return Response.json({ id, links: [{ rel: 'approve', href: 'https://example.invalid/approve/' + id }] });
+    return Response.json({ id, links: [{ rel: 'approve', href: 'https://www.sandbox.paypal.com/checkoutnow?token=' + id }] });
   }
   if (/\/v2\/checkout\/orders\/PP-\d+\/capture$/.test(url)) {
     const id = url.split('/').at(-2), unit = ppOrders.get(id);

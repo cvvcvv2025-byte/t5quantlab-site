@@ -33,6 +33,7 @@ const env = { BUILDER_DB: db, USER_CODE_BUCKET: bucket, ACCOUNT_AUTH_SECRET: 'te
   T5_BUILDER_PASS_PRICE_USD_MINOR: '1490', T5_INDICATOR_MEMBERSHIP_PRICE_USD_MINOR: '1390', T5_PREMIUM_MEMBERSHIP_PRICE_USD_MINOR: '5990' };
 let aiCalls = 0, failAI = false, pauseAI = null;
 const ppOrders = new Map();
+let ppLookupStatus = 'CREATED', ppLookupError = 0;
 const originalFetch = globalThis.fetch;
 globalThis.fetch = async (url, options = {}) => {
   url = String(url);
@@ -40,7 +41,11 @@ globalThis.fetch = async (url, options = {}) => {
   if (url.endsWith('/v2/checkout/orders')) {
     const body = JSON.parse(options.body), id = 'PP-' + ppOrders.size;
     ppOrders.set(id, body.purchase_units[0]);
-    return Response.json({ id, links: [{ rel: 'approve', href: 'https://example.invalid/approve/' + id }] });
+    return Response.json({ id, links: [{ rel: 'approve', href: 'https://www.paypal.com/checkoutnow?token=' + id }] });
+  }
+  if (/\/v2\/checkout\/orders\/PP-\d+$/.test(url)) {
+    if (ppLookupError) return Response.json({ name: 'SIMULATED_LOOKUP_ERROR' }, { status: ppLookupError });
+    return Response.json({ id: url.split('/').at(-1), status: ppLookupStatus });
   }
   if (/\/v2\/checkout\/orders\/PP-\d+\/capture$/.test(url)) {
     const id = url.split('/').at(-2), unit = ppOrders.get(id);
@@ -77,7 +82,27 @@ try {
     let r = await call('/api/orders/create', { product_code: product, currency: 'USD', terms_accepted: true, terms_version: 'refund-v2-2026-10-20' });
     assert.equal(r.status, 200, JSON.stringify(r)); const order = r.data.order, headers = { 'X-Order-Token': order.order_token };
     r = await call('/api/payment/paypal/create', { order_id: order.order_id }, headers); assert.equal(r.status, 200, JSON.stringify(r));
-    const captureBody = { order_id: order.order_id, paypal_order_id: r.data.paypal_order_id };
+    const providerId = r.data.paypal_order_id, providerCount = ppOrders.size;
+    r = await call('/api/payment/paypal/create', { order_id: order.order_id }, headers);
+    assert.equal(r.status, 200); assert.equal(r.data.reused, true); assert.equal(r.data.paypal_order_id, providerId);
+    for (const [remoteStatus, code] of [['VOIDED', 'PAYPAL_LINK_EXPIRED'], ['COMPLETED', 'PAYPAL_APPROVAL_RECEIVED'], ['APPROVED', 'PAYPAL_APPROVAL_RECEIVED']]) {
+      ppLookupStatus = remoteStatus;
+      r = await call('/api/payment/paypal/create', { order_id: order.order_id }, headers);
+      assert.equal(r.status, 409); assert.equal(r.data.code, code);
+      assert.equal(ppOrders.size, providerCount, 'never replace an uncertain or confirmed payment');
+    }
+    ppLookupStatus = 'CREATED';
+    for (const [status, code] of [[404, 'PAYPAL_LINK_EXPIRED'], [503, 'PAYPAL_STATUS_UNAVAILABLE']]) {
+      ppLookupError = status;
+      r = await call('/api/payment/paypal/create', { order_id: order.order_id }, headers);
+      assert.equal(r.data.code, code); assert.equal(ppOrders.size, providerCount);
+    }
+    ppLookupError = 0;
+    await run("UPDATE payment_intents SET approval_url = ? WHERE order_id = ?", 'https://paypal.com.attacker.invalid/pay', order.order_id);
+    r = await call('/api/payment/paypal/create', { order_id: order.order_id }, headers);
+    assert.equal(r.status, 502); assert.equal(r.data.code, 'PAYPAL_CREATE_FAILED');
+    await run("UPDATE payment_intents SET approval_url = ? WHERE order_id = ?", 'https://www.paypal.com/checkoutnow?token=' + providerId, order.order_id);
+    const captureBody = { order_id: order.order_id, paypal_order_id: providerId };
     r = await call('/api/payment/paypal/capture', captureBody, headers); assert.equal(r.status, 200, JSON.stringify(r));
     r = await call('/api/payment/paypal/capture', captureBody, headers); assert.equal(r.status, 200); assert.equal(r.data.duplicate, true);
     return { order, headers };

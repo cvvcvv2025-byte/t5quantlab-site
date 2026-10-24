@@ -45,6 +45,7 @@ jobs:
         run: |
           node scripts/account-session-behavior-check.mjs
           node scripts/delivery-behavior-check.mjs
+          node scripts/paypal-checkout-behavior-check.mjs
           node scripts/training-behavior-check.mjs
           node scripts/training-feedback-behavior-check.mjs
           node scripts/builder-recovery-behavior-check.mjs

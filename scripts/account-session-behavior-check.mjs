@@ -82,5 +82,29 @@ for (const path of ['/account/login/?next=%2Faccount%2Fmember-center%2F', '/acco
 const account = await runtime.fetch(new Request('https://t5quantlab.com/account/member-center/'), env, {});
 assert.equal(account.status, 200); assert(account.headers.get('Cache-Control').includes('no-store'));
 const config = JSON.parse(fs.readFileSync('wrangler.jsonc', 'utf8'));
-assert(config.assets.run_worker_first.includes('/account/*'), 'account documents must run origin/cache guards before assets');
+assert((config.assets.run_worker_first.includes('/*') || config.assets.run_worker_first.includes('/account/*')), 'account documents must run origin/cache guards before assets');
 console.log('Account session behavior OK: stored-cookie confirmation, blocked-cookie recovery, no OTP reuse, no auth bounce, safe return paths and canonical private account pages. No live emails or customer sessions.');
+
+let assetCalls = 0;
+const httpsEnv = { ASSETS: { fetch: async () => { assetCalls++; return new Response('asset-body', { headers: { 'Content-Type': 'text/html' } }); } } };
+for (const host of ['t5quantlab.com', 'www.t5quantlab.com']) {
+  for (const path of ['/', '/assets/styles.css', '/account/login/?next=%2Faccount%2Fmember-center%2F', '/membership/checkout/?provider=paypal&status=return&order_id=TEST&token=TEST']) {
+    const before = assetCalls;
+    const response = await runtime.fetch(new Request('http://' + host + path), httpsEnv, {});
+    assert.equal(response.status, 307);
+    assert.equal(response.headers.get('Location'), 'https://t5quantlab.com' + path);
+    assert.equal(assetCalls, before, 'HTTP must redirect before static assets or business routes');
+    assert.equal(response.headers.get('Set-Cookie'), null);
+  }
+}
+const post = await runtime.fetch(new Request('http://t5quantlab.com/api/payment/paypal/create', { method: 'POST', body: '{}' }), {}, {});
+assert.equal(post.status, 307, 'method-preserving redirect, no payment handler runs over HTTP');
+assert.equal(post.headers.get('Location'), 'https://t5quantlab.com/api/payment/paypal/create');
+const secure = await runtime.fetch(new Request('https://t5quantlab.com/'), httpsEnv, {});
+assert.equal(secure.status, 200); assert.equal(await secure.text(), 'asset-body');
+assert.equal(secure.headers.get('Strict-Transport-Security'), 'max-age=86400');
+const health = await runtime.fetch(new Request('https://t5quantlab.com/api/health'), {}, {});
+assert.equal(health.headers.get('Strict-Transport-Security'), 'max-age=86400');
+assert.equal((await health.json()).ok, true);
+assert(config.assets.run_worker_first.includes('/*'), 'all static and dynamic entrypoints must pass the HTTPS guard');
+console.log('HTTPS behavior OK: homepage/assets/account/payment callbacks redirect before business logic; query and POST method preserved; secure pages and API send HSTS.');

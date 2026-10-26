@@ -537,11 +537,11 @@ async function guardedPayPalCapture(request, env, ctx) {
   return app.fetch(request, env, ctx);
 }
 
-export default {
+const routes = {
   async fetch(request, env, ctx) {
     const url = new URL(request.url);
     // Keep host-only session cookies on one production origin; never widen Domain.
-    if (url.hostname === 'www.t5quantlab.com') {
+    if ((url.hostname === 't5quantlab.com' && url.protocol === 'http:') || url.hostname === 'www.t5quantlab.com') {
       url.hostname = 't5quantlab.com'; url.protocol = 'https:'; url.port = '';
       return new Response(null, { status: 307, headers: { Location: url.href, 'Cache-Control': 'no-store' } });
     }
@@ -562,4 +562,16 @@ export default {
   async scheduled(controller, env, ctx) {
     if (typeof app.scheduled === "function") return app.scheduled(controller, env, ctx);
   }
+};
+
+export default {
+  async fetch(request, env, ctx) {
+    const response = await routes.fetch(request, env, ctx);
+    const url = new URL(request.url);
+    if (url.protocol !== 'https:' || !['t5quantlab.com', 'www.t5quantlab.com'].includes(url.hostname)) return response;
+    const headers = new Headers(response.headers);
+    headers.set('Strict-Transport-Security', 'max-age=86400');
+    return new Response(response.body, { status: response.status, statusText: response.statusText, headers });
+  },
+  async scheduled(controller, env, ctx) { return routes.scheduled(controller, env, ctx); }
 };

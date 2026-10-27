@@ -55,11 +55,11 @@ const INDICATOR_ARTIFACTS = {
   "structure-decision-map": {
     membershipRequired: true,
     code: "structure_decision_map_mt4",
-    version: "0.2.5",
-    filename: "T5_Structure_Decision_Map_v0_2_5_MT4_Customer_Pack.zip",
-    r2Key: "member-artifacts/structure-decision-map/0.2.5/T5_Structure_Decision_Map_v0_2_5_MT4_Customer_Pack.zip",
+    version: "0.2.6",
+    filename: "T5_Structure_Decision_Map_v0_2_6_MT4_Customer_Pack.zip",
+    r2Key: "member-artifacts/structure-decision-map/0.2.6/T5_Structure_Decision_Map_v0_2_6_MT4_Customer_Pack.zip",
     releaseStatus: "awaiting_upload",
-    sha256: "3789d2ea9765950605864de9ca3e0318dab5da45f489b9123fa590fbd060905c",
+    sha256: "9e643726e3b387c69a3fb0ef7daa249e99251d8de1f843aa7412aea9a2157a6e",
     maxBytes: 1024 * 1024
   },
   "mtf-structure-panel": {

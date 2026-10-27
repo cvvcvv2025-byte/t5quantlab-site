@@ -119,17 +119,16 @@ try {
     const old = JSON.parse(match[1]);
     await bucket.put(old.r2Key, 'fixture', { customMetadata: { sha256: old.sha256, version: old.version } });
   }
-  const newMapKey = [...objects.keys()].find(key => key.includes('/structure-decision-map-mt5/') && key.includes('-display.1/'));
-  const newMapObject = objects.get(newMapKey); objects.delete(newMapKey);
-  const duringUpload = await call('/api/products/delivery');
-  const oldMap = duringUpload.data.artifacts.find(item => item.slug === 'structure-decision-map-mt5');
-  assert.equal(oldMap.ready, true, 'verified previous package stays available during upload');
-  assert.equal(oldMap.version, '0.2.3');
-  objects.set(newMapKey, newMapObject);
-  const afterUpload = await call('/api/products/delivery');
-  assert.equal(afterUpload.data.artifacts.find(item => item.slug === 'structure-decision-map-mt5').version, '0.2.3-display.1');
+  for (const slug of ['structure-decision-map','structure-decision-map-mt5']) {
+    const key = [...objects.keys()].find(key => key.includes('/' + slug + '/'));
+    const saved = objects.get(key);objects.delete(key);
+    const pending = (await call('/api/products/delivery')).data.artifacts.find(x=>x.slug===slug);
+    assert.equal(pending.ready,false,'map maintenance must not silently serve old package');
+    assert.equal(pending.version,'0.2.4');objects.set(key,saved);
+  }
   const stagedKey = [...objects.keys()].find(key => key.includes('/structure-decision-map/'));
   assert.ok(stagedKey, 'staged Decision Map must be registered');
+  const savedMapObject = objects.get(stagedKey);
   objects.delete(stagedKey);
   const mt5Key = [...objects.keys()].find(key => key.includes('/structure-decision-map-mt5/'));
   assert.ok(mt5Key);
@@ -141,15 +140,16 @@ try {
   const stagedCatalog = await call('/api/products/delivery');
   const staged = stagedCatalog.data.artifacts.find(item => item.slug === 'structure-decision-map');
   assert.equal(staged.ready, false, 'unuploaded package must stay unavailable');
-  assert.equal(staged.membership_required, false, 'staged package is not yet a promised membership delivery');
+  assert.notEqual(staged.membership_required, false, 'staged package is not yet a promised membership delivery');
   assert.equal(stagedCatalog.data.artifacts.find(item => item.slug === 'structure-decision-map-mt5').ready, false);
   for (const slug of ['mtf-structure-panel-mt5', 'neckline-mtf-mt5', 'progress-candle-mt5']) {
     const port = stagedCatalog.data.artifacts.find(item => item.slug === slug);
     assert.equal(port.ready, false); assert.equal(port.membership_required, false);
   }
   const heldIndicatorOrder = await call('/api/orders/create', { product_code: 'indicator_membership', currency: 'USD', terms_accepted: true, terms_version: 'refund-v2-2026-10-20' });
-  assert.equal(heldIndicatorOrder.status,200,'restored base indicators allow membership; missing optional MT5 packages do not block');
+  assert.equal(heldIndicatorOrder.status,503,'new indicator checkout waits for corrected required MT4 map package');assert.equal(heldIndicatorOrder.data.code,'DELIVERY_NOT_READY');
   assert(stagedCatalog.data.artifacts.filter(x=>x.kind==='indicator').every(x=>x.performance_qualified===false && x.download_allowed===x.ready));
+  objects.set(stagedKey, savedMapObject);
   const premium = await purchase('premium_membership');
   let r = await call('/api/orders/refund-eligibility?order_id=' + premium.order.order_id, null, premium.headers);
   assert.equal(r.data.refund_eligible_under_t5_policy, true);
@@ -193,7 +193,7 @@ try {
   db.batch = async items => { if (items.some(x => x.sql.includes('CREATE TABLE IF NOT EXISTS projects'))) throw new Error('simulated schema outage'); return originalBatch(items); };
   r = await call('/api/builder/analyze', { projectId: brokenId }); db.batch = originalBatch;
   assert.equal(r.status, 503); assert.equal((await call('/api/account/summary')).data.builder.analyze_remaining, 2);
-  r = await call('/api/products/delivery'); assert.equal(r.data.ready_count, 7); assert.equal(r.data.total_count, 12);
+  r = await call('/api/products/delivery'); assert.equal(r.data.ready_count, 8); assert.equal(r.data.total_count, 12);
   // Customer support is usable without login and protects each private reply by its receipt token.
   session = '';
   r = await call('/api/support/tickets', { email: 'customer@example.invalid', message: 'I cannot download the purchased product.', consent: true });

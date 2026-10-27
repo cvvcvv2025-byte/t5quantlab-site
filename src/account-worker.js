@@ -44,24 +44,22 @@ const INDICATOR_ARTIFACTS = {
   },
   "structure-decision-map-mt5": {
     membershipRequired: false,
-    // Same product entitlement as MT4; keep existing single-product customers authorised.
     code: "structure_decision_map_mt4",
-    version: "0.2.3-display.1",
-    filename: "T5_Structure_Decision_Map_v0_2_3_MT5_DisplayFix1_Customer_Pack.zip",
-    r2Key: "member-artifacts/structure-decision-map-mt5/0.2.3-display.1/T5_Structure_Decision_Map_v0_2_3_MT5_DisplayFix1_Customer_Pack.zip",
+    version: "0.2.4",
+    filename: "T5_Structure_Decision_Map_v0_2_4_MT5_Customer_Pack.zip",
+    r2Key: "member-artifacts/structure-decision-map-mt5/0.2.4/T5_Structure_Decision_Map_v0_2_4_MT5_Customer_Pack.zip",
     releaseStatus: "awaiting_upload",
-    sha256: "d00b544471384f10ca42e7d7be93e2db19425d7c557d59d5a733c9abccea81b1",
-    maxBytes: 1024 * 1024,
-    previous: {"version": "0.2.3", "filename": "T5_Structure_Decision_Map_v0_2_3_MT5_Customer_Pack.zip", "r2Key": "member-artifacts/structure-decision-map-mt5/0.2.3/T5_Structure_Decision_Map_v0_2_3_MT5_Customer_Pack.zip", "sha256": "794971d73b226df129fb6f603f8e3db0ac17115e2e26431825417dcdc4925dee"},
+    sha256: "663c14b175b8d762204b515b3503c3669b3072f5da9b5a2a10d1e8ce4aa25799",
+    maxBytes: 1024 * 1024
   },
   "structure-decision-map": {
-    membershipRequired: false, // staged addition; existing membership delivery remains unchanged
+    membershipRequired: true,
     code: "structure_decision_map_mt4",
-    version: "0.2.3",
-    filename: "T5_Structure_Decision_Map_v0_2_3_MT4_Customer_Pack.zip",
-    r2Key: "member-artifacts/structure-decision-map/0.2.3/T5_Structure_Decision_Map_v0_2_3_MT4_Customer_Pack.zip",
+    version: "0.2.4",
+    filename: "T5_Structure_Decision_Map_v0_2_4_MT4_Customer_Pack.zip",
+    r2Key: "member-artifacts/structure-decision-map/0.2.4/T5_Structure_Decision_Map_v0_2_4_MT4_Customer_Pack.zip",
     releaseStatus: "awaiting_upload",
-    sha256: "dde54e1d9c196dde95d0db9b7ef4354a398fc22ee786f616c0a1291cdd74485b",
+    sha256: "a3e6cfc585032d7ede83d1839d5e56fdc17681564a37afc55ff9ddc291e0c3c2",
     maxBytes: 1024 * 1024
   },
   "mtf-structure-panel": {

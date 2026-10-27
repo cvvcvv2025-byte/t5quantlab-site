@@ -45,21 +45,21 @@ const INDICATOR_ARTIFACTS = {
   "structure-decision-map-mt5": {
     membershipRequired: false,
     code: "structure_decision_map_mt4",
-    version: "0.2.5",
-    filename: "T5_Structure_Decision_Map_v0_2_5_MT5_Customer_Pack.zip",
-    r2Key: "member-artifacts/structure-decision-map-mt5/0.2.5/T5_Structure_Decision_Map_v0_2_5_MT5_Customer_Pack.zip",
+    version: "0.3.0",
+    filename: "T5_Structure_Decision_Map_v0_3_0_MT5_Customer_Pack.zip",
+    r2Key: "member-artifacts/structure-decision-map-mt5/0.3.0/T5_Structure_Decision_Map_v0_3_0_MT5_Customer_Pack.zip",
     releaseStatus: "awaiting_upload",
-    sha256: "8b9bb95f9ffe6ce1f1c0190bc668149c8f74ce983a3b991883acb0c771f9a43b",
+    sha256: "b4f338b6dd5ef17fe7e3a75b940445dcfdd7cdda28ceba7d6ab0ad11ba497e56",
     maxBytes: 1024 * 1024
   },
   "structure-decision-map": {
     membershipRequired: true,
     code: "structure_decision_map_mt4",
-    version: "0.2.6",
-    filename: "T5_Structure_Decision_Map_v0_2_6_MT4_Customer_Pack.zip",
-    r2Key: "member-artifacts/structure-decision-map/0.2.6/T5_Structure_Decision_Map_v0_2_6_MT4_Customer_Pack.zip",
+    version: "0.3.0",
+    filename: "T5_Structure_Decision_Map_v0_3_0_MT4_Customer_Pack.zip",
+    r2Key: "member-artifacts/structure-decision-map/0.3.0/T5_Structure_Decision_Map_v0_3_0_MT4_Customer_Pack.zip",
     releaseStatus: "awaiting_upload",
-    sha256: "9e643726e3b387c69a3fb0ef7daa249e99251d8de1f843aa7412aea9a2157a6e",
+    sha256: "9ef47806ff5121b7d2356ebf574722f57bbb38d4aa9eae581eb185cd6568b982",
     maxBytes: 1024 * 1024
   },
   "mtf-structure-panel": {

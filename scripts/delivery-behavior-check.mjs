@@ -124,7 +124,7 @@ try {
     const saved = objects.get(key);objects.delete(key);
     const pending = (await call('/api/products/delivery')).data.artifacts.find(x=>x.slug===slug);
     assert.equal(pending.ready,false,'map maintenance must not silently serve old package');
-    assert.equal(pending.version,slug==='structure-decision-map'?'0.2.6':'0.2.5');objects.set(key,saved);
+    assert.equal(pending.version,'0.3.0');objects.set(key,saved);
   }
   const stagedKey = [...objects.keys()].find(key => key.includes('/structure-decision-map/'));
   assert.ok(stagedKey, 'staged Decision Map must be registered');
@@ -211,4 +211,3 @@ try {
   r = await call('/api/member/eas/range-aggressive/download'); assert.equal(r.status, 403);
   console.log('Delivery behavior OK: full-stack simulated payment, idempotent capture, immutable refund evidence, quota failure/exception/concurrency/reconciliation, account recovery and isolation. No live provider requests.');
 } finally { globalThis.fetch = originalFetch; fs.rmSync(dir, { recursive: true, force: true }); }
-

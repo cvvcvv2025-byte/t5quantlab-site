@@ -124,7 +124,7 @@ try {
     const saved = objects.get(key);objects.delete(key);
     const pending = (await call('/api/products/delivery')).data.artifacts.find(x=>x.slug===slug);
     assert.equal(pending.ready,false,'map maintenance must not silently serve old package');
-    assert.equal(pending.version,'0.2.4');objects.set(key,saved);
+    assert.equal(pending.version,'0.2.5');objects.set(key,saved);
   }
   const stagedKey = [...objects.keys()].find(key => key.includes('/structure-decision-map/'));
   assert.ok(stagedKey, 'staged Decision Map must be registered');

@@ -16,7 +16,7 @@ need(membership.includes('历史绩效审计仍未通过'), 'Restored software m
 need((membership.match(/<span class="plan-state ready">现在可购买<\/span>/g) || []).length === 2, 'Indicator and automation memberships are both available with truthful performance disclosure');
 need(membership.includes('href="/membership/checkout/"'), 'Indicator membership must link to checkout');
 need(membership.includes('.ex4 / .ex5'), 'Membership page must disclose downloadable MT4/MT5 file formats');
-need(membership.includes('4 款指标，MT4／MT5 按包核验') && membership.includes('T5 Structure Decision Map v0.2.4'), 'Membership page must disclose the exact current delivery count');
+need(membership.includes('4 款指标，MT4／MT5 按包核验') && membership.includes('T5 Structure Decision Map v0.2.5'), 'Membership page must disclose the exact current delivery count');
 need(membership.includes('T5 MTF Structure Panel v0.1.1'), 'Membership page must list the released structure panel');
 need(membership.includes('T5 Neckline MTF v0.1.2'), 'Membership page must list the released neckline indicator');
 need(membership.includes('T5 Progress Candle v0.1.2'), 'Membership page must list the released progress candle indicator');

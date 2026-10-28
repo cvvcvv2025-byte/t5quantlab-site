@@ -38,6 +38,7 @@ jobs:
           node --check src/runtime-worker.js
           node scripts/account-session-behavior-check.mjs
           node scripts/delivery-behavior-check.mjs
+          node scripts/protected-delivery-behavior-check.mjs
           node scripts/paypal-checkout-behavior-check.mjs
           node scripts/training-behavior-check.mjs
           node scripts/builder-recovery-behavior-check.mjs

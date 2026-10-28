@@ -13,7 +13,7 @@ need(/\$13\.90(?:\s|<[^>]+>)*\/ 90天/.test(membership), 'Indicator Member launc
 need(account.includes('$13.90 / 90天'), 'Account must show the Indicator Member checkout price');
 
 need(membership.includes('历史绩效审计仍未通过'), 'Restored software must retain the actual unqualified performance disclosure');
-need((membership.match(/<span class="plan-state ready">现在可购买<\/span>/g) || []).length === 2, 'Indicator and automation memberships are both available with truthful performance disclosure');
+need((membership.match(/<span class="plan-state ready">授权版升级中<\/span>/g) || []).length === 2, 'Both membership plans must disclose the protected-delivery hold');
 need(membership.includes('href="/membership/checkout/"'), 'Indicator membership must link to checkout');
 need(membership.includes('.ex4 / .ex5'), 'Membership page must disclose downloadable MT4/MT5 file formats');
 need(membership.includes('4 款指标，MT4／MT5 按包核验') && membership.includes('T5 Structure Decision Map v0.3.0'), 'Membership page must disclose the exact current delivery count');

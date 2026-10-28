@@ -76,3 +76,20 @@ Local RSA keys, SQLite and signed provider fixtures cover forgery, ownership,
 amount changes, rollback/retry, duplicate notifications, signed query, close,
 full-refund revocation and existing-payments recovery while new sales are off.
 These tests are engineering evidence, not a live payment receipt.
+
+## Approved CNY price snapshot — 2026-10-28
+
+User authorized conversion of existing USD prices at the current rate. Use the
+2026-10-28 official USD/CNY central parity rate 6.7165 (SAFE table quotes 671.65
+CNY per 100 USD). Source: https://www.safe.gov.cn/AppStructured/hlw/RMBQuery.do
+Amounts are rounded half-up to a fen using decimal arithmetic, without a markup:
+
+| Product | USD | CNY | Fen |
+|---|---:|---:|---:|
+| Builder Pass, 30 days | 14.90 | 100.08 | 10008 |
+| Indicator membership, 90 days | 13.90 | 93.36 | 9336 |
+| Automation membership, 90 days | 59.90 | 402.32 | 40232 |
+
+These are fixed catalog prices, not a live conversion or a processor settlement
+rate. This configuration does not change the existing USD prices or enable
+Alipay sales. Merchant PID and live payment acceptance remain outstanding.

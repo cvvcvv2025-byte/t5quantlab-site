@@ -973,6 +973,7 @@ export default {
       if (p === "/api/orders/status" && request.method === "GET") return forwardOwnedOrderAction(request, env, ctx);
       if (p === "/api/orders/cancel" && request.method === "POST") return forwardOwnedOrderAction(request, env, ctx);
       if (p === "/api/orders/refund-eligibility" && request.method === "GET") return forwardOwnedOrderAction(request, env, ctx);
+      if (['/api/payment/alipay/create','/api/payment/alipay/query','/api/payment/alipay/close'].includes(p) && request.method === 'POST') return forwardOwnedOrderAction(request,env,ctx);
       if (p === "/api/payment/paypal/create" && request.method === "POST") return forwardOwnedOrderAction(request, env, ctx);
       if (p === "/api/payment/paypal/capture" && request.method === "POST") return forwardOwnedOrderAction(request, env, ctx);
       if (p.startsWith("/api/builder/")) return bridgeBuilderAccess(request, env, ctx);

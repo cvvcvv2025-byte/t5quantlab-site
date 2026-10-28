@@ -123,6 +123,7 @@ async function ensureAccessDb(env) {
     )`),
     env.BUILDER_DB.prepare(`CREATE INDEX IF NOT EXISTS idx_payment_events_order
       ON payment_events(order_id)`),
+    env.BUILDER_DB.prepare(`CREATE TABLE IF NOT EXISTS alipay_receipts(order_id TEXT PRIMARY KEY,app_id TEXT NOT NULL,seller_id TEXT NOT NULL,created_at TEXT NOT NULL,lease_token TEXT,lease_until INTEGER,closed INTEGER NOT NULL DEFAULT 0)`),
     env.BUILDER_DB.prepare(`CREATE TABLE IF NOT EXISTS payment_intents (
       provider TEXT NOT NULL,
       provider_order_id TEXT NOT NULL,
@@ -264,9 +265,9 @@ function priceFor(env, productCode, currency) {
   } else if (productCode === "code_workshop_single") {
     raw = c === "CNY" ? env.CODE_WORKSHOP_PRICE_CNY_MINOR : c === "USD" ? env.CODE_WORKSHOP_PRICE_USD_MINOR : null;
   } else if (productCode === "indicator_membership") {
-    raw = c === "USD" ? env.INDICATOR_MEMBERSHIP_PRICE_USD_MINOR : null;
+    raw = c === "CNY" ? env.INDICATOR_MEMBERSHIP_PRICE_CNY_MINOR : c === "USD" ? env.INDICATOR_MEMBERSHIP_PRICE_USD_MINOR : null;
   } else if (productCode === "premium_membership") {
-    raw = c === "USD" ? env.PREMIUM_MEMBERSHIP_PRICE_USD_MINOR : null;
+    raw = c === "CNY" ? env.PREMIUM_MEMBERSHIP_PRICE_CNY_MINOR : c === "USD" ? env.PREMIUM_MEMBERSHIP_PRICE_USD_MINOR : null;
   }
   if (raw == null || raw === "") return null;
   const amount = Number(raw);
@@ -396,8 +397,9 @@ async function handleCancelOrder(request, env) {
   const order = await getAuthorizedOrder(request, env, orderId);
   if (!order) return json({ ok: false, error: "订单不存在或订单令牌无效" }, 403);
   if (order.status !== "pending") return json({ ok: false, error: "仅未付款订单可以取消" }, 409);
-  await env.BUILDER_DB.prepare("UPDATE orders SET status = 'canceled', updated_at = ? WHERE order_id = ? AND status = 'pending'")
+  const canceled = await env.BUILDER_DB.prepare("UPDATE orders SET status = 'canceled', updated_at = ? WHERE order_id = ? AND status = 'pending' AND NOT EXISTS (SELECT 1 FROM alipay_receipts WHERE order_id = orders.order_id)")
     .bind(nowIso(), orderId).run();
+  if (!Number(canceled.meta?.changes)) return json({ok:false,code:"ALIPAY_PAYMENT_OPEN",error:"请回到支付宝结账页核对并关闭付款。"},409);
   return json({ ok: true, order_id: orderId, status: "canceled" });
 }
 
@@ -1143,6 +1145,7 @@ function paymentAdapterNotConfigured(provider) {
 }
 
 export default {
+  paymentServices: { ensureAccessDb, getAuthorizedOrder, completePaidOrder, revokePaidOrder },
   async fetch(request, env, ctx) {
     const url = new URL(request.url);
 

@@ -472,7 +472,10 @@ async function trainingCheckoutReady(env) {
 async function guardedCreateOrder(request, env, ctx) {
   const state = configState(env);
   const productCode = await requestedProduct(request);
-  const ready = productCode === "training_breakout_v1" ? await trainingCheckoutReady(env) && Boolean(await env.USER_CODE_BUCKET?.head(TRAINING_CONTENT_KEY)) : productCode === "premium_membership" ? state.membership_checkout_ready
+  let cny = false;
+  try { cny = String((await request.clone().json()).currency).toUpperCase() === 'CNY'; } catch {}
+  const cnyReady = state.d1 && state.r2 && state.account_ready && state.audit_salt && (productCode !== 'code_workshop_single' || state.openai);
+  const ready = cny && productCode !== 'training_breakout_v1' ? cnyReady : productCode === "training_breakout_v1" ? await trainingCheckoutReady(env) && Boolean(await env.USER_CODE_BUCKET?.head(TRAINING_CONTENT_KEY)) : productCode === "premium_membership" ? state.membership_checkout_ready
     : productCode === "indicator_membership" ? state.indicator_checkout_ready : state.checkout_ready;
   if (!ready) return productCode === 'training_breakout_v1' ? json({ok:false,code:'TRAINING_CHECKOUT_CLOSED'},503) : checkoutNotReady();
 
@@ -509,6 +512,13 @@ async function guardedCreateOrder(request, env, ctx) {
     }, 409);
   }
   return app.fetch(request, env, ctx);
+}
+
+async function guardedAlipayCreate(request,env,ctx) {
+  const state=configState(env),product=await requestedOrderProduct(request,env);
+  if (!(state.d1 && state.r2 && state.account_ready && state.audit_salt && (product !== 'code_workshop_single' || state.openai))) return checkoutNotReady();
+  if (!(await membershipDeliveryReady(request,env,ctx,product))) return deliveryUnavailable();
+  return app.fetch(request,env,ctx);
 }
 
 async function guardedPayPalCreate(request, env, ctx) {
@@ -555,6 +565,7 @@ const routes = {
     if (url.pathname === "/api/admin/runtime-health" && request.method === "GET") return adminHealth(request, env);
     if (url.pathname === "/api/payments/catalog" && request.method === "GET") return guardedCatalog(request, env, ctx);
     if (url.pathname === "/api/orders/create" && request.method === "POST") return guardedCreateOrder(request, env, ctx);
+    if (url.pathname === '/api/payment/alipay/create' && request.method === 'POST') return guardedAlipayCreate(request,env,ctx);
     if (url.pathname === "/api/payment/paypal/create" && request.method === "POST") return guardedPayPalCreate(request, env, ctx);
     if (url.pathname === "/api/payment/paypal/capture" && request.method === "POST") return guardedPayPalCapture(request, env, ctx);
     return app.fetch(request, env, ctx);

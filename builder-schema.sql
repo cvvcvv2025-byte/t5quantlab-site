@@ -313,3 +313,10 @@ CREATE TABLE IF NOT EXISTS training_sandbox_webhook_events (
 CREATE TABLE IF NOT EXISTS training_sandbox_test_orders (
   order_id TEXT PRIMARY KEY, content_sha256 TEXT NOT NULL, created_at TEXT NOT NULL
 );
+
+-- Account-bound Alipay payment identity and short fulfillment lease.
+CREATE TABLE IF NOT EXISTS alipay_receipts (
+ order_id TEXT PRIMARY KEY, app_id TEXT NOT NULL, seller_id TEXT NOT NULL,
+ created_at TEXT NOT NULL, lease_token TEXT, lease_until INTEGER,
+ closed INTEGER NOT NULL DEFAULT 0
+);

@@ -14,7 +14,7 @@ const source=fs.readFileSync('src/account-worker.js','utf8')
 const context=vm.createContext({Request,Response,Headers,URL,TextEncoder,crypto:webcrypto,console,runtimeLicenseResponse,adminRuntimeLicenseQa,TRAINING_TERMS,trainingResponse,TRAINING_CONTENT_KEY});
 vm.runInContext(source+'\nensureAccountDb=async()=>{};',context);
 let grants=[],gets=0,puts=0,downloads=0,stored=null,corruptReadback=false;
-const env={ACCOUNT_AUTH_SECRET:'test-secret',BUILDER_ACCESS_KEY:'test-admin-only',
+const env={RUNTIME_LICENSE_PRODUCTS:'range_martingale_mt4_v2',RUNTIME_LICENSE_V2_PRODUCTS:'range_martingale_mt4_v2',ACCOUNT_AUTH_SECRET:'test-secret',BUILDER_ACCESS_KEY:'test-admin-only',
  USER_CODE_BUCKET:{
   head:async key=>stored?.key===key?{customMetadata:stored.metadata}:null,
   get:async key=>{gets++;if(stored?.key!==key)return null;return {arrayBuffer:async()=>corruptReadback?new Uint8Array([0]).buffer:stored.bytes.slice().buffer}},
@@ -70,7 +70,7 @@ assert.equal(r.status,503);assert.equal(r.data.code,'ARTIFACT_STORAGE_MISMATCH')
 corruptReadback=false;
 grants=['premium_membership'];
 r=await call('/api/member/eas/trend-capture/download',signed);
-assert.equal(r.status,503);assert.equal(r.data.code,'ARTIFACT_NOT_READY');
+assert.equal(r.status,503);assert.equal(r.data.code,'LICENSE_UPGRADE_PENDING');
 r=await call('/api/member/eas/range-martingale/download',signed);assert.equal(r.status,200);
 const page=fs.readFileSync('tools/ea/range-boundary/index.html','utf8');
 for(const text of ['v0.3.4','v0.3.5','18.39%','29.69%—32.64%','5个有记录日期','逐笔结果未发现实际佣金扣款','不是运行门槛','80%篮子预算','MT5客户包已制作','尚未完成原生回测'])assert(page.includes(text),text);

@@ -498,7 +498,7 @@ async function accountSummary(request, env) {
   const entitlementResult = await env.BUILDER_DB.prepare(`SELECT product_code, status, starts_at, expires_at, source
     FROM product_entitlements WHERE user_id = ? AND status = 'active' AND starts_at <= ? AND (expires_at IS NULL OR expires_at > ?)
     ORDER BY created_at DESC`).bind(user.user_id, nowIso(), nowIso()).all();
-  return json({ ok: true, user: { user_id: user.user_id, email: user.email, marketing_consent: Number(user.marketing_consent || 0) === 1, created_at: user.created_at, last_login_at: user.last_login_at }, builder: grant || null, entitlements: entitlementResult?.results || [], orders });
+  return json({ ok: true, delivery_owner: deliveryOwner(user), user: { user_id: user.user_id, email: user.email, marketing_consent: Number(user.marketing_consent || 0) === 1, created_at: user.created_at, last_login_at: user.last_login_at }, builder: grant || null, entitlements: entitlementResult?.results || [], orders });
 }
 
 async function isAdmin(request, env) {
@@ -515,6 +515,29 @@ async function activeIndicatorEntitlement(env, userId, artifact) {
       AND starts_at <= ? AND (expires_at IS NULL OR expires_at > ?)
     ORDER BY expires_at DESC LIMIT 1`)
     .bind(userId, ...products, nowIso(), nowIso()).first();
+}
+
+// Owner exemption is derived only from the verified account session. It does
+// not grant membership, change existing executables, or trust a supplied email.
+function deliveryOwner(user) {
+  return String(user?.email || '').trim().toLowerCase() === 'cvvcvv2025@gmail.com';
+}
+function protectedRelease(env, artifact) {
+  // No indicator binary has passed signed runtime-client acceptance yet.
+  // Do not infer protection from an upload, a filename, or an entitlement.
+  const accepted = Object.values(EA_ARTIFACTS).some(a => a === artifact);
+  const enabled = String(env.RUNTIME_LICENSE_PRODUCTS || '').split(',').map(x => x.trim());
+  const v2 = String(env.RUNTIME_LICENSE_V2_PRODUCTS || '').split(',').map(x => x.trim());
+  return accepted && Boolean(artifact.license_product) && enabled.includes(artifact.license_product) && v2.includes(artifact.license_product);
+}
+function deliveryPolicy(env, artifact, user = null) {
+  const protectedReady = protectedRelease(env, artifact);
+  return { runtime_license_ready: protectedReady, owner_download_exemption: deliveryOwner(user),
+    download_allowed: protectedReady || deliveryOwner(user),
+    blocked_reason: protectedReady || deliveryOwner(user) ? null : 'LICENSE_UPGRADE_PENDING' };
+}
+function protectedDeliveryPending() {
+  return json({ ok: false, code: 'LICENSE_UPGRADE_PENDING', error: '防共享授权版升级中，当前安装包暂停客户下载；已有会员和手工授权权益保留。' }, 503);
 }
 
 async function artifactState(env, artifact) {
@@ -539,7 +562,8 @@ async function deliveryCatalog(env, verify = false) {
     const out = { slug, kind, version: artifact.version, filename: artifact.filename, ...state };
     if (artifact.membershipRequired === false) out.membership_required = false;
     out.performance_qualified = kind === 'indicator' ? INDICATOR_PERFORMANCE_AUDIT.qualified : null;
-    out.download_allowed = state.ready;
+    Object.assign(out, deliveryPolicy(env, artifact));
+    out.download_allowed = state.ready && out.download_allowed;
     if (kind === 'indicator') out.audit_report = INDICATOR_PERFORMANCE_AUDIT.report;
     if (verify) {
       const object = env.USER_CODE_BUCKET ? await env.USER_CODE_BUCKET.get(artifact.r2Key) : null;
@@ -547,6 +571,7 @@ async function deliveryCatalog(env, verify = false) {
       out.content_verified = Boolean(bytes && await sha256BytesHex(bytes) === artifact.sha256);
       out.size = bytes?.byteLength || null;
       out.ready = out.ready && out.content_verified;
+      out.download_allowed = out.download_allowed && out.ready;
       out.sha256 = artifact.sha256;
     }
     return out;
@@ -562,7 +587,7 @@ async function indicatorAccess(request, env, artifact) {
   const entitlement = await activeIndicatorEntitlement(env, user.user_id, artifact);
   return json({
     ok: true,
-    artifact: { code: artifact.code, version: artifact.version, filename: artifact.filename, ...await artifactState(env, artifact), performance_qualified: INDICATOR_PERFORMANCE_AUDIT.qualified, download_allowed: true },
+    artifact: { code: artifact.code, version: artifact.version, filename: artifact.filename, ...await artifactState(env, artifact), performance_qualified: INDICATOR_PERFORMANCE_AUDIT.qualified, ...deliveryPolicy(env, artifact, user) },
     entitled: Boolean(entitlement),
     entitlement: entitlement || null
   });
@@ -575,6 +600,7 @@ async function downloadIndicator(request, env, artifact) {
   await ensureAccountDb(env);
   const entitlement = await activeIndicatorEntitlement(env, user.user_id, artifact);
   if (!entitlement) return json({ ok: false, error: "当前账户没有有效的指标会员权限", code: "INDICATOR_ENTITLEMENT_REQUIRED" }, 403);
+  if (!deliveryPolicy(env, artifact, user).download_allowed) return protectedDeliveryPending();
   if (!env.USER_CODE_BUCKET) return json({ ok: false, error: "下载存储尚未就绪", code: "ARTIFACT_STORAGE_NOT_READY" }, 503);
   const object = await env.USER_CODE_BUCKET.get(artifact.r2Key);
   if (!object) return json({ ok: false, error: "安装包尚未上传，请稍后再试", code: "ARTIFACT_NOT_READY" }, 503);
@@ -616,7 +642,7 @@ async function eaAccess(request, env, artifact) {
   await ensureAccountDb(env);
   const entitlement = await activeEaEntitlement(env, user.user_id, artifact);
   const { ready } = await artifactState(env, artifact);
-  return json({ ok: true, artifact: { code: artifact.code, version: artifact.version, filename: artifact.filename, ready }, entitled: Boolean(entitlement), entitlement: entitlement || null });
+  return json({ ok: true, artifact: { code: artifact.code, version: artifact.version, filename: artifact.filename, ready, ...deliveryPolicy(env, artifact, user) }, entitled: Boolean(entitlement), entitlement: entitlement || null });
 }
 async function downloadEa(request, env, artifact) {
   const user = await resolveSession(request, env);
@@ -624,6 +650,7 @@ async function downloadEa(request, env, artifact) {
   await ensureAccountDb(env);
   const entitlement = await activeEaEntitlement(env, user.user_id, artifact);
   if (!entitlement) return json({ ok: false, error: "当前账户没有有效的自动化会员权限", code: "EA_ENTITLEMENT_REQUIRED" }, 403);
+  if (!deliveryPolicy(env, artifact, user).download_allowed) return protectedDeliveryPending();
   if (artifact.releaseStatus === "awaiting_binary") return json({ ok: false, error: "该版本客户安装包尚未就绪，请查看产品页的交付状态", code: "ARTIFACT_NOT_RELEASED" }, 503);
   if (!env.USER_CODE_BUCKET) return json({ ok: false, error: "下载存储尚未就绪", code: "ARTIFACT_STORAGE_NOT_READY" }, 503);
   const object = await env.USER_CODE_BUCKET.get(artifact.r2Key);

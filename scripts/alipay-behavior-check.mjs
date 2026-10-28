@@ -4,7 +4,7 @@ import path from 'node:path';
 import assert from 'node:assert/strict';
 import {spawnSync} from 'node:child_process';
 import {generateKeyPairSync,createHash,sign,verify} from 'node:crypto';
-import runtime from '../src/runtime-worker.js';
+import runtime, { setAcceptedDeliveryFixture, futureAcceptedCatalog } from './runtime-test-harness.mjs';
 import {alipayCanonical,responseObject} from '../src/alipay.js';
 const dir=fs.mkdtempSync(path.join(os.tmpdir(),'t5-alipay-')),dbfile=path.join(dir,'db.sqlite');
 const sql=items=>{const p=spawnSync('python3',['scripts/test-d1.py',dbfile],{input:JSON.stringify(items),encoding:'utf8'});if(p.status)throw Error(p.stderr);return JSON.parse(p.stdout);};
@@ -58,6 +58,8 @@ try{
  for(const match of source.matchAll(/r2Key: "([^\"]+)"[\s\S]*?sha256: "([^\"]+)"/g))heads.set(match[1],{size:7,customMetadata:{sha256:match[2],version:match[1].split('/').at(-2)}});
  for(const match of source.matchAll(/previous: (\{[^\n]+\})/g)){const old=JSON.parse(match[1]);heads.set(old.r2Key,{size:7,customMetadata:{sha256:old.sha256,version:old.version}});}
  env.USER_CODE_BUCKET.head=async key=>heads.get(key)||null;
+ const held=await call('/api/orders/create',{...body,product_code:'indicator_membership'});assert.equal(held.status,503,'CNY sales also stop for unlocked delivery');
+ setAcceptedDeliveryFixture(futureAcceptedCatalog());
  for(const [product,priceKey]of [['indicator_membership','T5_INDICATOR_MEMBERSHIP_PRICE_CNY_MINOR'],['premium_membership','T5_PREMIUM_MEMBERSHIP_PRICE_CNY_MINOR']]){
   env[priceKey]='9900';r=await call('/api/orders/create',{...body,product_code:product});assert.equal(r.status,200,JSON.stringify(r));const member=r.data.order,mh={'X-Order-Token':member.order_token};
   r=await call('/api/payment/alipay/create',{order_id:member.order_id},mh);assert.equal(r.status,200);

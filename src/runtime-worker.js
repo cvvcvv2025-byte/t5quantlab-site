@@ -432,10 +432,10 @@ async function membershipDeliveryReady(request, env, ctx, product) {
   if (!['indicator_membership', 'premium_membership'].includes(product)) return true;
   try {
     const items = (await deliveryState(request, env, ctx)).filter(x => x.membership_required !== false && (product === 'premium_membership' || x.kind === 'indicator'));
-    return items.length >= (product === 'premium_membership' ? 7 : 3) && items.every(x => x.ready === true);
+    return items.length >= (product === 'premium_membership' ? 7 : 3) && items.every(x => x.ready === true && x.download_allowed === true && x.runtime_license_ready === true);
   } catch { return false; }
 }
-function deliveryUnavailable() { return json({ ok: false, code: 'DELIVERY_NOT_READY', error: '会员安装包暂时未全部就绪，本次不会发起扣款。请稍后再试或联系客户支持。' }, 503); }
+function deliveryUnavailable() { return json({ ok: false, code: 'DELIVERY_NOT_READY', error: '会员防共享授权版升级中，本次不会发起扣款；已有权益保留。请稍后再试或联系客户支持。' }, 503); }
 
 async function guardedCatalog(request, env, ctx) {
   const response = await app.fetch(request, env, ctx);

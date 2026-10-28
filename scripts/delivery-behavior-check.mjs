@@ -4,7 +4,7 @@ import path from 'node:path';
 import assert from 'node:assert/strict';
 import { spawnSync } from 'node:child_process';
 import { createHash } from 'node:crypto';
-import runtime from '../src/runtime-worker.js';
+import runtime, { setAcceptedDeliveryFixture, futureAcceptedCatalog } from './runtime-test-harness.mjs';
 import { reserveOperation, settleOperation, reconcileBuilderOperations } from '../src/builder-lifecycle.js';
 
 const dir = fs.mkdtempSync(path.join(os.tmpdir(), 't5-delivery-'));
@@ -148,8 +148,11 @@ try {
   }
   const heldIndicatorOrder = await call('/api/orders/create', { product_code: 'indicator_membership', currency: 'USD', terms_accepted: true, terms_version: 'refund-v2-2026-10-20' });
   assert.equal(heldIndicatorOrder.status,503,'new indicator checkout waits for corrected required MT4 map package');assert.equal(heldIndicatorOrder.data.code,'DELIVERY_NOT_READY');
-  assert(stagedCatalog.data.artifacts.filter(x=>x.kind==='indicator').every(x=>x.performance_qualified===false && x.download_allowed===x.ready));
+  assert(stagedCatalog.data.artifacts.filter(x=>x.kind==='indicator').every(x=>x.performance_qualified===false && x.download_allowed===false && x.runtime_license_ready===false));
   objects.set(stagedKey, savedMapObject);
+  const heldWithFiles = await call('/api/orders/create', { product_code: 'premium_membership', currency: 'USD', terms_accepted: true, terms_version: 'refund-v2-2026-10-20' });
+  assert.equal(heldWithFiles.status,503,'uploaded unlocked indicators cannot unblock membership sales');
+  setAcceptedDeliveryFixture(futureAcceptedCatalog()); // future signed-client acceptance, test only
   const premium = await purchase('premium_membership');
   let r = await call('/api/orders/refund-eligibility?order_id=' + premium.order.order_id, null, premium.headers);
   assert.equal(r.data.refund_eligible_under_t5_policy, true);

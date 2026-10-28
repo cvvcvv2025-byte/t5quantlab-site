@@ -2,7 +2,7 @@
   const box = document.getElementById('runtimeLicenses');
   if (!box) return;
   const names = { mtf_structure_panel_mt4: '多周期结构面板', neckline_mtf_mt4: '多周期颈线', progress_candle_mt4: '推进K线', attack_completion_c_mt5: 'Attack Completion C', trend_capture_mt5: 'Trend Capture', range_martingale_mt4: 'Range Martingale', range_aggressive_mt4_mt5: 'Range Aggressive' };
-  const messages = { ACCOUNT_REQUIRED: '请先登录后查看授权。', ENTITLEMENT_REQUIRED: '当前会员权益不包含该产品，或已经到期。', ACTIVE_BINDING_EXISTS: '该产品已有激活账号，请先撤销原授权再更换。', INVALID_BINDING: '请检查平台、交易账号和服务器名称。', LICENSE_RELEASE_NOT_ENABLED: '该产品尚未开放新版激活，请继续使用当前下载版本。' };
+  const messages = { ACCOUNT_REQUIRED: '请先登录后查看授权。', ENTITLEMENT_REQUIRED: '当前会员权益不包含该产品，或已经到期。', ACTIVE_BINDING_EXISTS: '该产品已有激活账号，请先撤销原授权再更换。', INVALID_BINDING: '请检查平台、交易账号和服务器名称。', LICENSE_RELEASE_NOT_ENABLED: '该产品授权版升级中，已有权益保留，请等待新版交付。' };
   for (const [code,name] of Object.entries({...names})) names[code+'_v2'] = name+' · 终端授权新版';
   async function api(url, body) {
     const r = await fetch(url, { method: body ? 'POST' : 'GET', credentials: 'same-origin', cache: 'no-store', headers: body ? { 'Content-Type': 'application/json' } : {}, body: body ? JSON.stringify(body) : undefined });
@@ -15,7 +15,7 @@
     const data = await api('/api/account/runtime-licenses');
     box.replaceChildren();
     const enabled = data.products.filter(p => p.enabled);
-    if (!enabled.length && !data.licenses.length) { box.textContent = '当前下载安装包无需在这里激活。会员到期后停止下载及更新；现有版本不会通过网站远程停用。'; return; }
+    if (!enabled.length && !data.licenses.length) { box.textContent = '所有客户交付统一采用终端授权。尚未完成授权客户端验收的产品暂停客户下载，已有权益保留；已流出的旧文件无法事后加锁。'; return; }
     box.append(node('p', '授权绑定产品、平台、交易账号与服务器。到期后 EA 停止新开仓及加仓，已有持仓继续管理。具体联网宽限、终端与换绑规则以对应产品下方说明为准；旧安装包不因此自动获得防共享能力。'));
     for (const license of data.licenses) {
       const row = node('div'); row.className = 'account-row';

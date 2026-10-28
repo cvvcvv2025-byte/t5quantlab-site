@@ -13,7 +13,7 @@ const source=fs.readFileSync('src/account-worker.js','utf8')
  .replace('export default {','globalThis.worker = {');
 const context=vm.createContext({Request,Response,Headers,URL,TextEncoder,crypto:webcrypto,console,runtimeLicenseResponse,adminRuntimeLicenseQa,TRAINING_TERMS,trainingResponse,TRAINING_CONTENT_KEY});
 vm.runInContext(source+'\nensureAccountDb=async()=>{};',context);
-let grants=[],gets=0,puts=0,downloads=0,stored=null,corruptReadback=false;
+let email='u1@example.test',grants=[],gets=0,puts=0,downloads=0,stored=null,corruptReadback=false;
 const env={ACCOUNT_AUTH_SECRET:'test-secret',BUILDER_ACCESS_KEY:'test-admin-only',
  USER_CODE_BUCKET:{
   head:async key=>stored?.key===key?{customMetadata:stored.metadata}:null,
@@ -21,7 +21,7 @@ const env={ACCOUNT_AUTH_SECRET:'test-secret',BUILDER_ACCESS_KEY:'test-admin-only
   put:async(key,bytes,options)=>{puts++;stored={key,bytes:new Uint8Array(bytes),metadata:options.customMetadata}}
  },
  BUILDER_DB:{prepare(sql){let values=[];return {bind(...args){values=args;return this},async first(){
-  if(sql.includes('FROM auth_sessions'))return {user_id:'u1',email:'u1@example.test'};
+  if(sql.includes('FROM auth_sessions'))return {user_id:'u1',email};
   if(sql.includes('FROM product_entitlements')){
    assert.equal(values[0],'u1');const permitted=values.slice(1,-2);
    assert.equal(permitted[0],'indicator_membership');assert.equal(permitted[1],'premium_membership');assert.equal(permitted.length,3);
@@ -40,14 +40,14 @@ async function call(path,headers={},method='GET',body){
 const performanceAudit = vm.runInContext('INDICATOR_PERFORMANCE_AUDIT', context);
 assert.equal(performanceAudit.qualified, false);
 let restoredCatalog=await call('/api/products/delivery');
-for(const a of restoredCatalog.data.artifacts.filter(a=>a.kind==='indicator')){assert.equal(a.performance_qualified,false);assert.equal(a.download_allowed,a.ready);}
+for(const a of restoredCatalog.data.artifacts.filter(a=>a.kind==='indicator')){assert.equal(a.performance_qualified,false);assert.equal(a.download_allowed,false);assert.equal(a.runtime_license_ready,false);}
 for (const [slug,code] of [['mtf-structure-panel-mt5','mtf_structure_panel_mt4'],['neckline-mtf-mt5','neckline_mtf_mt4'],['progress-candle-mt5','progress_candle_mt4']]) {
-  stored=null;grants=[];gets=0;puts=0;downloads=0;
+  email='u1@example.test';stored=null;grants=[];gets=0;puts=0;downloads=0;
   const route='/api/member/indicators/'+slug+'/download';
   let r=await call(route);assert.equal(r.status,401);
   r=await call(route,signed);assert.equal(r.status,403);assert.equal(gets,0);
   grants=['structure_decision_map_mt4'];r=await call(route,signed);assert.equal(r.status,403);
-  grants=[code];r=await call(route,signed);assert.equal(r.status,503);assert.equal(r.data.code,'ARTIFACT_NOT_READY');
+  grants=[code];r=await call(route,signed);assert.equal(r.status,503);assert.equal(r.data.code,'LICENSE_UPGRADE_PENDING');email='cvvcvv2025@gmail.com';
   const upload='/api/admin/indicator-artifacts/upload?artifact='+slug;
   const fixture=new Uint8Array([80,75,3,4,1,2,3]);
   r=await call(upload,{},'PUT',fixture);assert.equal(r.status,403);

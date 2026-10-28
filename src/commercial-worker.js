@@ -1,3 +1,4 @@
+import { alipayPrice, alipayConfigured, alipayEnabled, alipayResponse } from './alipay.js';
 import { TRAINING_TERMS, trainingCheckoutOpen } from './training-product.js';
 import core from "./gated-worker.js";
 
@@ -143,7 +144,9 @@ function coreEnv(env) {
   return {
     ...env,
     CODE_WORKSHOP_PRICE_USD_MINOR: String(passPriceUsdMinor(env)),
-    CODE_WORKSHOP_PRICE_CNY_MINOR: "",
+    CODE_WORKSHOP_PRICE_CNY_MINOR: String(alipayPrice(env,PASS_PRODUCT_CODE)||""),
+    INDICATOR_MEMBERSHIP_PRICE_CNY_MINOR: String(alipayPrice(env,INDICATOR_PRODUCT_CODE)||""),
+    PREMIUM_MEMBERSHIP_PRICE_CNY_MINOR: String(alipayPrice(env,PREMIUM_PRODUCT_CODE)||""),
     INDICATOR_MEMBERSHIP_PRICE_USD_MINOR: String(indicatorPriceUsdMinor(env)),
     PREMIUM_MEMBERSHIP_PRICE_USD_MINOR: String(premiumPriceUsdMinor(env))
   };
@@ -167,24 +170,24 @@ function handleCatalog(env) {
       analyze_credits: PASS_ANALYZE_CREDITS,
       modify_credits: PASS_MODIFY_CREDITS,
       expires_days: PASS_EXPIRES_DAYS,
-      prices: { CNY: null, USD: passPriceUsdMinor(env) }
+      prices: { CNY: alipayPrice(env,PASS_PRODUCT_CODE), USD: passPriceUsdMinor(env) }
     }, {
       code: INDICATOR_PRODUCT_CODE,
       name: INDICATOR_NAME,
       analyze_credits: 0,
       modify_credits: 0,
       expires_days: INDICATOR_EXPIRES_DAYS,
-      prices: { CNY: null, USD: indicatorPriceUsdMinor(env) }
+      prices: { CNY: alipayPrice(env,INDICATOR_PRODUCT_CODE), USD: indicatorPriceUsdMinor(env) }
     }, {
       code: PREMIUM_PRODUCT_CODE,
       name: PREMIUM_NAME,
       analyze_credits: 0,
       modify_credits: 0,
       expires_days: PREMIUM_EXPIRES_DAYS,
-      prices: { CNY: null, USD: premiumPriceUsdMinor(env) }
+      prices: { CNY: alipayPrice(env,PREMIUM_PRODUCT_CODE), USD: premiumPriceUsdMinor(env) }
     }],
     providers: {
-      alipay: { enabled: false, configured: false, adapter_ready: false, currency: "CNY" },
+      alipay: { enabled: alipayEnabled(env), configured: alipayConfigured(env), adapter_ready: true, currency: "CNY" },
       wechat: { enabled: false, configured: false, adapter_ready: false, currency: "CNY" },
       paypal: {
         enabled: paypalConfigured(env),
@@ -234,7 +237,7 @@ async function handleCreateOrder(request, env, ctx) {
       terms_version: acceptedTermsVersion
     }, 400);
   }
-  if (String(body?.currency || "USD").toUpperCase() !== "USD") {
+  if (String(body?.currency || "USD").toUpperCase() !== "USD" && !(String(body.currency).toUpperCase() === "CNY" && alipayEnabled(env) && alipayPrice(env,productCode))) {
     return json({ ok: false, error: "当前首发阶段仅开放 PayPal / USD。", code: "PAYPAL_ONLY_LAUNCH" }, 400);
   }
   if (productCode === PASS_PRODUCT_CODE && await hasUsableAccess(request, env)) {
@@ -526,6 +529,7 @@ export default {
   async fetch(request, env, ctx) {
     const url = new URL(request.url);
     await ensureCommercialDb(env);
+    if (url.pathname.startsWith('/api/payment/alipay/')) return alipayResponse(request,env,{...core.paymentServices,applyPassEntitlement});
 
     if (url.pathname === "/api/payments/catalog" && request.method === "GET") {
       return handleCatalog(env);

@@ -38,9 +38,7 @@
     "RUNTIME_SIGNED3_PRODUCTS": "structure_decision_map_mt4,mtf_structure_panel_mt4,neckline_mtf_mt4,progress_candle_mt4,attack_completion_c_mt5_v3,trend_capture_mt5_v3,range_martingale_mt4_v3,range_aggressive_mt4_mt5_v3"
   },
   "triggers": {
-    "crons": [
-      "*/15 * * * *"
-    ]
+    "crons": ["*/15 * * * *"]
   },
   "r2_buckets": [
     {

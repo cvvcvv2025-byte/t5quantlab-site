@@ -7,7 +7,7 @@ export function alipayPrice(env,product){const v=String(env[PRODUCTS[product]]||
 export function alipayConfigured(env){return /^\d{16,32}$/.test(String(env.ALIPAY_APP_ID||''))&&/^2088\d{12}$/.test(String(env.ALIPAY_SELLER_ID||''))&&Boolean(env.ALIPAY_PRIVATE_KEY&&env.ALIPAY_PUBLIC_KEY);}
 export function alipayEnabled(env){return env.ALIPAY_CHECKOUT_ENABLED==='true'&&alipayConfigured(env);}
 export function alipayCanonical(params,notification=false){return Object.keys(params).filter(k=>k!=='sign'&&(!notification||k!=='sign_type')&&params[k]!==''&&params[k]!=null).sort().map(k=>k+'='+params[k]).join('&');}
-function bytes(text){const s=String(text).replace(/-----[^-]+-----/g,'').replace(/\s/g,'');return Uint8Array.from(atob(s),c=>c.charCodeAt(0));}
+function bytes(text){let value=String(text).trim();if(value.startsWith('"')&&value.endsWith('"')){try{value=JSON.parse(value);}catch{}}value=value.replace(/\\r\\n|\\n|\\r/g,'\n');const s=value.replace(/-----[^-]+-----/g,'').replace(/\s/g,'');return Uint8Array.from(atob(s),c=>c.charCodeAt(0));}
 const encode=a=>btoa(String.fromCharCode(...new Uint8Array(a)));
 function der(tag,value) {
  const n=value.length, length=n<128?[n]:n<256?[0x81,n]:[0x82,n>>8,n&255];
@@ -21,7 +21,7 @@ async function privateKey(env) {
   return crypto.subtle.importKey('pkcs8',wrapped,algorithm,false,['sign']);
  }
 }
-async function publicKey(env){return crypto.subtle.importKey('spki',bytes(env.ALIPAY_PUBLIC_KEY),{name:'RSASSA-PKCS1-v1_5',hash:'SHA-256'},false,['verify']);}
+async function publicKey(env){const raw=bytes(env.ALIPAY_PUBLIC_KEY),algorithm={name:'RSASSA-PKCS1-v1_5',hash:'SHA-256'};try{return await crypto.subtle.importKey('spki',raw,algorithm,false,['verify']);}catch{const wrapped=der(0x30,Uint8Array.from([0x30,0x0d,6,9,0x2a,0x86,0x48,0x86,0xf7,0x0d,1,1,1,5,0,...der(3,Uint8Array.from([0,...raw]))]));return crypto.subtle.importKey('spki',wrapped,algorithm,false,['verify']);}}
 export async function alipaySign(env,params){return encode(await crypto.subtle.sign('RSASSA-PKCS1-v1_5',await privateKey(env),new TextEncoder().encode(alipayCanonical(params))));}
 export async function alipayVerify(env,params){try{return params.sign_type==='RSA2'&&await crypto.subtle.verify('RSASSA-PKCS1-v1_5',await publicKey(env),bytes(params.sign),new TextEncoder().encode(alipayCanonical(params,true)));}catch{return false;}}
 export function alipayMinor(v){const m=String(v??'').match(/^(0|[1-9]\d{0,9})(?:\.(\d{1,2}))?$/);return m?Number(m[1])*100+Number((m[2]||'').padEnd(2,'0')):null;}
@@ -38,12 +38,13 @@ export async function alipayPreflightResponse(request,env){
  if(request.method!=='POST')return failure('METHOD_NOT_ALLOWED',405);
  if(!originAllowed(request))return failure('ORIGIN_MISMATCH',403);
  if(!alipayConfigured(env))return failure('ALIPAY_NOT_READY',503);
+ try{await privateKey(env);}catch{return json({ok:false,code:'ALIPAY_PRIVATE_KEY_FORMAT_INVALID',failure_stage:'private_key_import',private_key_format_valid:false,no_payment_attempted:true,payment_acceptance_verified:false},503);}
+ try{await publicKey(env);}catch{return json({ok:false,code:'ALIPAY_PUBLIC_KEY_FORMAT_INVALID',failure_stage:'platform_public_key_import',private_key_format_valid:true,platform_public_key_format_valid:false,no_payment_attempted:true,payment_acceptance_verified:false},503);}
  try{
-  await privateKey(env);await publicKey(env);
   const remote=await rpc(env,'alipay.trade.query',{out_trade_no:'T5PREFLIGHT'+crypto.randomUUID().replaceAll('-','')});
   const verified=remote.code==='40004'&&remote.sub_code==='ACQ.TRADE_NOT_EXIST';
   return json({ok:verified,environment:'live',gateway:GATEWAY,signed_gateway_verified:verified,no_payment_attempted:true,customer_payment_enabled:alipayEnabled(env),payment_acceptance_verified:false,checked_at:new Date().toISOString(),...(!verified?{code:'ALIPAY_PREFLIGHT_FAILED',provider_code:String(remote.code||'').slice(0,32),provider_sub_code:String(remote.sub_code||'').slice(0,80)}:{})},verified?200:502);
- }catch(error){return json({ok:false,code:['ALIPAY_RESPONSE_SIGNATURE','ALIPAY_HTTP_ERROR','INVALID_RESPONSE'].includes(error.message)?error.message:'ALIPAY_PREFLIGHT_UNAVAILABLE',signed_gateway_verified:false,no_payment_attempted:true,payment_acceptance_verified:false},502);}
+ }catch(error){return json({ok:false,code:['ALIPAY_RESPONSE_SIGNATURE','ALIPAY_HTTP_ERROR','INVALID_RESPONSE'].includes(error.message)?error.message:error.name==='TimeoutError'?'ALIPAY_GATEWAY_TIMEOUT':'ALIPAY_GATEWAY_UNAVAILABLE',failure_stage:'signed_gateway_query',private_key_format_valid:true,platform_public_key_format_valid:true,signed_gateway_verified:false,no_payment_attempted:true,payment_acceptance_verified:false},502);}
 }
 async function setup(env){await env.BUILDER_DB.prepare(`CREATE TABLE IF NOT EXISTS alipay_receipts(order_id TEXT PRIMARY KEY,app_id TEXT NOT NULL,seller_id TEXT NOT NULL,created_at TEXT NOT NULL,lease_token TEXT,lease_until INTEGER,closed INTEGER NOT NULL DEFAULT 0)`).run();}
 function originAllowed(request){const origin=request.headers.get('Origin');return (!origin||origin===new URL(request.url).origin)&&request.headers.get('Sec-Fetch-Site')!=='cross-site';}

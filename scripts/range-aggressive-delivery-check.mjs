@@ -1,3 +1,4 @@
+import {signingKeyAdmin,signingPublicKey,signedLeaseResponse,ownerProfileResponse} from '../src/signed-runtime-license.js';
 import { TRAINING_TERMS } from '../src/training-product.js';
 import { trainingResponse, TRAINING_CONTENT_KEY } from '../src/training-worker.js';
 import { runtimeLicenseResponse, adminRuntimeLicenseQa } from '../src/runtime-license.js';
@@ -10,8 +11,9 @@ const source=fs.readFileSync('src/account-worker.js','utf8')
  .replace('import app from "./final-worker.js";','const app={fetch:()=>new Response("unused",{status:404})};')
  .replace("import { runtimeLicenseResponse, adminRuntimeLicenseQa } from './runtime-license.js';",'')
  .replace(/^import .*from '.\/training-(?:product|worker)\.js';$/gm,'')
+ .replace("import {signingKeyAdmin,signingPublicKey,signedLeaseResponse,ownerProfileResponse} from './signed-runtime-license.js';",'')
  .replace('export default {','globalThis.worker = {');
-const context=vm.createContext({Request,Response,Headers,URL,TextEncoder,crypto:webcrypto,console,runtimeLicenseResponse,adminRuntimeLicenseQa,TRAINING_TERMS,trainingResponse,TRAINING_CONTENT_KEY});
+const context=vm.createContext({signingKeyAdmin,signingPublicKey,signedLeaseResponse,ownerProfileResponse,Request,Response,Headers,URL,TextEncoder,crypto:webcrypto,console,runtimeLicenseResponse,adminRuntimeLicenseQa,TRAINING_TERMS,trainingResponse,TRAINING_CONTENT_KEY});
 vm.runInContext(source+'\nensureAccountDb=async()=>{};',context);
 let grants=[],gets=0,puts=0,downloads=0,stored=null,corruptReadback=false;
 const env={RUNTIME_LICENSE_PRODUCTS:'range_aggressive_mt4_mt5_v2',RUNTIME_LICENSE_V2_PRODUCTS:'range_aggressive_mt4_mt5_v2',ACCOUNT_AUTH_SECRET:'test-secret',BUILDER_ACCESS_KEY:'test-admin-only',

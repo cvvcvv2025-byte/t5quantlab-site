@@ -42,7 +42,7 @@ export async function signedLeaseResponse(request,env,resolveSession){
  const raw=await request.text();if(raw.length>4096)return json({ok:false,code:'INVALID_REQUEST'},400);
  let b;try{b=JSON.parse(raw);}catch{return json({ok:false,code:'INVALID_REQUEST'},400);}
  if(b.protocol_version!==3||!/^[a-f0-9]{64}$/.test(String(b.nonce||''))||!/^[a-f0-9]{64}$/.test(String(b.terminal_id||'')))return json({ok:false,code:'CLIENT_UPGRADE_REQUIRED'},400);
- if(!LICENSE_PRODUCTS[b.product_code]?.platforms.includes(b.platform))return json({ok:false,code:'INVALID_BINDING'},400);
+ if(!LICENSE_PRODUCTS[b.product_code]?.platforms?.includes(b.platform))return json({ok:false,code:'INVALID_BINDING'},400);
  // Existing verifier retains active-entitlement checks, revoked token handling,
  // rate limits and the atomic single-terminal slot. No client email is trusted.
  const headers=new Headers(request.headers);headers.set('Accept','application/json');headers.delete('Content-Length');
@@ -87,7 +87,7 @@ export async function installProfileResponse(request,env,resolveSession){
  if((request.headers.get('Origin')&&request.headers.get('Origin')!==new URL(request.url).origin)||request.headers.get('Sec-Fetch-Site')==='cross-site')return json({ok:false,code:'ORIGIN_MISMATCH'},403);
  const raw=await request.text();if(raw.length>4096)return json({ok:false,code:'INVALID_REQUEST'},400);
  let b;try{b=JSON.parse(raw);}catch{return json({ok:false,code:'INVALID_REQUEST'},400);}
- if(!b||!LICENSE_PRODUCTS[b.product_code]?.platforms.includes(b.platform)||LICENSE_PRODUCTS[b.product_code].protocol_version!==3||!/^[1-9][0-9]{0,19}$/.test(String(b.account_login||''))||typeof b.broker_server!=='string'||!b.broker_server.trim()||b.broker_server.length>120||/[\x00-\x1f\x7f]/.test(b.broker_server)||b.license_policy_version!=='signed-v3-20261028')return json({ok:false,code:'INVALID_BINDING'},400);
+ if(!b||!LICENSE_PRODUCTS[b.product_code]?.platforms?.includes(b.platform)||LICENSE_PRODUCTS[b.product_code].protocol_version!==3||!/^[1-9][0-9]{0,19}$/.test(String(b.account_login||''))||typeof b.broker_server!=='string'||!b.broker_server.trim()||b.broker_server.length>120||/[\x00-\x1f\x7f]/.test(b.broker_server)||b.license_policy_version!=='signed-v3-20261028')return json({ok:false,code:'INVALID_BINDING'},400);
  b.account_login=String(b.account_login);b.broker_server=b.broker_server.trim();
  const catalog=await runtimeLicenseResponse(new Request(new URL('/api/account/runtime-licenses',request.url),{headers:request.headers}),env,resolveSession);
  if(!catalog.ok)return catalog;

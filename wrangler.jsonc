@@ -13,7 +13,9 @@
   "assets": {
     "directory": ".",
     "binding": "ASSETS",
-    "run_worker_first": ["/*"],
+    "run_worker_first": [
+      "/*"
+    ],
     "not_found_handling": "404-page",
     "html_handling": "auto-trailing-slash"
   },
@@ -32,7 +34,8 @@
     "T5_PREMIUM_MEMBERSHIP_PRICE_USD_MINOR": "5990",
     "T5_BUILDER_PASS_PRICE_CNY_MINOR": "10008",
     "T5_INDICATOR_MEMBERSHIP_PRICE_CNY_MINOR": "9336",
-    "T5_PREMIUM_MEMBERSHIP_PRICE_CNY_MINOR": "40232"
+    "T5_PREMIUM_MEMBERSHIP_PRICE_CNY_MINOR": "40232",
+    "RUNTIME_SIGNED3_PRODUCTS": "structure_decision_map_mt4,mtf_structure_panel_mt4,neckline_mtf_mt4,progress_candle_mt4,attack_completion_c_mt5_v3,trend_capture_mt5_v3,range_martingale_mt4_v3,range_aggressive_mt4_mt5_v3"
   },
   "triggers": {
     "crons": ["*/15 * * * *"]

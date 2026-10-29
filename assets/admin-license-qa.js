@@ -25,6 +25,7 @@
       card.append(actions);box.append(card);
     }
   }
+  const alipayCheck=$('qaAlipayCheck');if(alipayCheck)alipayCheck.onclick=async()=>{alipayCheck.disabled=true;const box=$('qaAlipayStatus');box.textContent='正在核对支付宝正式网关的签名响应，不发起扣款…';try{const d=await api('/api/admin/alipay-preflight',{});box.textContent=d.signed_gateway_verified?'正式网关签名连接通过；未创建订单、未扣款。真实付款到账仍需单独验收。检查时间：'+d.checked_at:'网关检查未通过；请核对生产配置。';}catch(e){box.textContent='支付宝生产连接未通过：'+e.message;}finally{alipayCheck.disabled=false;}};
   $('qaLoad').onclick=()=>load().catch(e=>status.textContent=e.message);
   $('qaIssue').onclick=async()=>{
     const bindings=[];

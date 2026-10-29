@@ -14,6 +14,7 @@ const source=fs.readFileSync('src/account-worker.js','utf8')
  .replace(/^import .*from '.\/training-(?:product|worker)\.js';$/gm,'')
  .replace("import {signingKeyAdmin,signingPublicKey,signedLeaseResponse,ownerProfileResponse,installProfileResponse} from './signed-runtime-license.js';",'')
  .replace("import {boundInstallPackage} from './install-package.js';",'')
+ .replace("import {alipayPreflightResponse} from './alipay.js';",'')
  .replace('export default {','globalThis.worker = {');
 const context=vm.createContext({boundInstallPackage,signingKeyAdmin,signingPublicKey,signedLeaseResponse,ownerProfileResponse,installProfileResponse,Request,Response,Headers,URL,TextEncoder,crypto:webcrypto,console,runtimeLicenseResponse,adminRuntimeLicenseQa,TRAINING_TERMS,trainingResponse,TRAINING_CONTENT_KEY});
 vm.runInContext(source+'\nensureAccountDb=async()=>{};',context);

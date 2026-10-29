@@ -25,3 +25,9 @@ A successful server handshake is not native compilation, visual acceptance, or b
 Production-root native clients passed connected demo HTTPS signature/binding checks, all eight indicator platform mounts with offline expiry/resume and server revoke/renew/entitlement-expiry cases, and six EA platform broker-position management fixtures with unauthorized entry guards. These functional results do not qualify trading performance.
 
 The explicit signed-v3 activation list is configured to permit entitled, authenticated account binding and the verified owner's signed credential download for final client acceptance. This activation stage does not change artifact hashes, stored ZIPs, indicator download holds, checkout readiness, payment configuration, or existing v2 licenses. Customer artifacts must still pass independent private storage/readback and release gates before downloads are restored. Private source, binaries, credentials and native identities are excluded from this repository.
+
+## Accepted artifact registration
+
+The twelve signed-v3 customer ZIPs are pinned in `runtime-v3-artifacts.json`. The account registry requires the accepted client generation, production public-key ID, signed activation gate and exact stored version/hash. A signed indicator release cannot resolve a legacy fallback. Performance qualification remains false. Old files already shared outside the service cannot be remotely locked.
+
+The admin QA surface supports audited cleanup only for the verified owner’s binding that exactly matches a successful protocol-v3 demo QA record, with explicit admin demo confirmation. It revokes that test credential and releases its test cooldown while preserving the existing terminal lease slot. It cannot reset ordinary customers, unverified QA, other bindings or their cooldowns. This prevents acceptance fixtures from occupying the owner's later production binding.

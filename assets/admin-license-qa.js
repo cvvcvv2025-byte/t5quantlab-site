@@ -17,9 +17,9 @@
       const card=node('article');card.className='account-card';
       card.append(node('h3',names[test.product_code]+' · '+test.platform),node('p',test.account_login+' · '+test.broker_server),node('p','状态：'+test.status+'；到期：'+test.expires_at),node('p','服务端成功校验：'+test.verified_count+'次；最近：'+(test.last_verified_at||'未收到')));
       const actions=node('div');actions.className='account-actions';
-      for(const [label,action,minutes] of [['撤销测试授权','revoke',60],['续期60分钟','renew',60],['设为1分钟后到期','renew',1]]){
+      for(const [label,action,minutes] of [['撤销测试授权','revoke',60],['续期60分钟','renew',60],['设为1分钟后到期','renew',1],...(test.product_code && /_v3$/.test(test.product_code) || ['structure_decision_map_mt4','mtf_structure_panel_mt4','neckline_mtf_mt4','progress_candle_mt4'].includes(test.product_code) ? [['清理站主匹配的模拟测试绑定','cleanup_owner_demo',60]] : [])]){
         const button=node('button',label);button.className='btn';button.type='button';
-        button.onclick=async()=>{button.disabled=true;try{await api('/api/admin/runtime-license-qa/update',{qa_id:test.qa_id,action,minutes});await load();}catch(e){status.textContent=e.message;button.disabled=false;}};
+        button.onclick=async()=>{button.disabled=true;try{await api('/api/admin/runtime-license-qa/update',{qa_id:test.qa_id,action,minutes,...(action==='cleanup_owner_demo'?{demo_confirmed:true}:{})});await load();}catch(e){status.textContent=e.message;button.disabled=false;}};
         actions.append(button);
       }
       card.append(actions);box.append(card);

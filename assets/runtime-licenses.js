@@ -14,7 +14,7 @@
   async function render() {
     const data = await api('/api/account/runtime-licenses');
     box.replaceChildren();
-    const enabled = data.products.filter(p => p.enabled);
+    const enabled = data.products.filter(p => p.enabled && !(p.protocol_version === 2 && data.products.some(v => v.enabled && v.protocol_version === 3 && v.code === p.code.replace(/_v2$/, '_v3'))));
     if (!enabled.length && !data.licenses.length) { box.textContent = '所有客户交付统一采用终端授权。尚未完成授权客户端验收的产品暂停客户下载，已有权益保留；已流出的旧文件无法事后加锁。'; return; }
     box.append(node('p', '授权绑定产品、平台、交易账号与服务器。到期后 EA 停止新开仓及加仓，已有持仓继续管理。具体联网宽限、终端与换绑规则以对应产品下方说明为准；旧安装包不因此自动获得防共享能力。'));
     for (const license of data.licenses) {

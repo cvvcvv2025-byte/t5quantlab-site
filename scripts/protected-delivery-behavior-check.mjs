@@ -32,10 +32,19 @@ for(const slug of eas){
  user={user_id:'customer',email:'paid@example.test'};grant=true;gets=0;
  let r=await call('downloadEa',slug);assert.equal(r.data.code,'LICENSE_UPGRADE_PENDING');assert.equal(gets,0);
  const product=vm.runInContext('EA_ARTIFACTS[slug].license_product',context);
- env.RUNTIME_LICENSE_PRODUCTS=product;env.RUNTIME_LICENSE_V2_PRODUCTS=product;
+ env.RUNTIME_SIGNED3_PRODUCTS=product;env.RUNTIME_LICENSE_PRODUCTS=product;env.RUNTIME_LICENSE_V2_PRODUCTS=product;
  r=await call('downloadEa',slug);assert.equal(r.data.code,'ARTIFACT_NOT_READY','accepted EA release still uses existing hash gate');
- env.RUNTIME_LICENSE_V2_PRODUCTS='';r=await call('downloadEa',slug);assert.equal(r.data.code,'LICENSE_UPGRADE_PENDING','both release gates required');
+ env.RUNTIME_SIGNED3_PRODUCTS='';env.RUNTIME_LICENSE_V2_PRODUCTS='';r=await call('downloadEa',slug);assert.equal(r.data.code,'LICENSE_UPGRADE_PENDING','signed-v3 gate required independently of old flags');
  env.RUNTIME_LICENSE_PRODUCTS='';
+}
+for(const slug of indicators){
+ user={user_id:'customer',email:'paid@example.test'};grant=true;
+ context.slug=slug;const product=vm.runInContext('INDICATOR_ARTIFACTS[slug].license_product',context);
+ env.RUNTIME_SIGNED3_PRODUCTS=product;
+ let enabled=await vm.runInContext('protectedRelease(env,INDICATOR_ARTIFACTS[slug])',context);assert.equal(enabled,true);
+ let allowed=await call('downloadIndicator',slug);assert.equal(allowed.data.code,'ARTIFACT_NOT_READY','protected upload still requires exact stored content');
+ user.email='manual@example.test';allowed=await call('downloadIndicator',slug);assert.equal(allowed.data.code,'ARTIFACT_NOT_READY','manual uses same signed delivery');
+ env.RUNTIME_SIGNED3_PRODUCTS='';
 }
 assert.equal(events,0,'blocked downloads cannot count as fulfillment');
 context.user=null;user=null;grant=true;

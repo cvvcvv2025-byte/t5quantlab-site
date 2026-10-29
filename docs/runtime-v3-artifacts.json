@@ -1,0 +1,110 @@
+[
+  {
+    "artifact": "mtf-structure-panel-mt5",
+    "kind": "indicator",
+    "version": "0.1.1-display.1-license.3",
+    "license_product": "mtf_structure_panel_mt4",
+    "filename": "T5_mtf_structure_panel_mt5_LicenseV3_Customer_Pack.zip",
+    "sha256": "77818578ebfbc3f870d1fd2074f55dc00d0cf7692a280805194bb53f4f63d63f",
+    "bytes": 84991
+  },
+  {
+    "artifact": "neckline-mtf-mt5",
+    "kind": "indicator",
+    "version": "0.1.2-display.1-license.3",
+    "license_product": "neckline_mtf_mt4",
+    "filename": "T5_neckline_mtf_mt5_LicenseV3_Customer_Pack.zip",
+    "sha256": "71e7e0d424ca8939215998a7338f2d38a6f92d636ff7d47157c3ce371386b738",
+    "bytes": 84600
+  },
+  {
+    "artifact": "progress-candle-mt5",
+    "kind": "indicator",
+    "version": "0.1.2-display.1-license.3",
+    "license_product": "progress_candle_mt4",
+    "filename": "T5_progress_candle_mt5_LicenseV3_Customer_Pack.zip",
+    "sha256": "8d52e157f304a05651c2a88e2c67473680dde164570e535d93e9bc422dbe86e4",
+    "bytes": 87188
+  },
+  {
+    "artifact": "mtf-structure-panel",
+    "kind": "indicator",
+    "version": "0.1.1-license.3",
+    "license_product": "mtf_structure_panel_mt4",
+    "filename": "T5_mtf_structure_panel_LicenseV3_Customer_Pack.zip",
+    "sha256": "780f39d9da869d61b8dce6e6b1d439b111435137f22151d10c231def92eab88c",
+    "bytes": 104222
+  },
+  {
+    "artifact": "neckline-mtf",
+    "kind": "indicator",
+    "version": "0.1.2-license.3",
+    "license_product": "neckline_mtf_mt4",
+    "filename": "T5_neckline_mtf_LicenseV3_Customer_Pack.zip",
+    "sha256": "bc8b4620630a05a1982396caa27471b84816e0ac9255b2bfb559f5088a4f10c8",
+    "bytes": 99330
+  },
+  {
+    "artifact": "progress-candle",
+    "kind": "indicator",
+    "version": "0.1.2-license.3",
+    "license_product": "progress_candle_mt4",
+    "filename": "T5_progress_candle_LicenseV3_Customer_Pack.zip",
+    "sha256": "39246be933880c47daa840af23f7733146cb537b24714f233d326934243e58b6",
+    "bytes": 97978
+  },
+  {
+    "artifact": "structure-decision-map-mt5",
+    "kind": "indicator",
+    "version": "0.3.0-license.3",
+    "license_product": "structure_decision_map_mt4",
+    "filename": "T5_structure_decision_map_mt5_LicenseV3_Customer_Pack.zip",
+    "sha256": "99fc491d22c9000e8a85a8c973ddc153de945b37972224b752fecdecc3ba2bdd",
+    "bytes": 186438
+  },
+  {
+    "artifact": "structure-decision-map",
+    "kind": "indicator",
+    "version": "0.3.0-license.3",
+    "license_product": "structure_decision_map_mt4",
+    "filename": "T5_structure_decision_map_LicenseV3_Customer_Pack.zip",
+    "sha256": "bc83b63c2987644e6c5ec61894920807ac288533c502c7f3f3293a73e1f5a7e1",
+    "bytes": 470032
+  },
+  {
+    "artifact": "trend-capture",
+    "kind": "ea",
+    "version": "0.1.0-license.3",
+    "license_product": "trend_capture_mt5_v3",
+    "filename": "T5_trend_capture_LicenseV3_Customer_Pack.zip",
+    "sha256": "30bed5655073e725706d4582fdd695d29591a8fc9a150ade2d6e6960c5de2940",
+    "bytes": 83106
+  },
+  {
+    "artifact": "attack-completion-c",
+    "kind": "ea",
+    "version": "6.10.8-license.3",
+    "license_product": "attack_completion_c_mt5_v3",
+    "filename": "T5_attack_completion_c_LicenseV3_Customer_Pack.zip",
+    "sha256": "cb0a6f5d3633e0ef2960833d65a4a23a05bbca2e1eb7237c7b239ee95c2150e5",
+    "bytes": 142456
+  },
+  {
+    "artifact": "range-martingale",
+    "kind": "ea",
+    "version": "0.3.4-license.3",
+    "license_product": "range_martingale_mt4_v3",
+    "filename": "T5_range_martingale_LicenseV3_Customer_Pack.zip",
+    "sha256": "b1e62f026d9cf0564c97981a2801f529ae918d40e996777f694f74825dc1b0b3",
+    "bytes": 248831
+  },
+  {
+    "artifact": "range-aggressive",
+    "kind": "ea",
+    "version": "0.3.6-license.3",
+    "license_product": "range_aggressive_mt4_mt5_v3",
+    "filename": "T5_range_aggressive_LicenseV3_Customer_Pack.zip",
+    "sha256": "f6bd510c57800c5e01f3e1d19d3af43aeb95e7167cff7e767ef4205ea3d63fab",
+    "bytes": 274351
+  }
+]

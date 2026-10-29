@@ -19,21 +19,21 @@ for (const slug of ['mtf-structure-panel', 'neckline-mtf', 'progress-candle', 'm
   need(worker, `"${slug}": {`, `artifact catalog ${slug}`);
   need(member, `data-download="${slug}"`, `member download control ${slug}`);
 }
-need(worker, '5c2e1a0532171206de52194cca6fbd765402d84f61429981d50e96d7e761b458', 'mtf-structure-panel-mt5 pinned hash');
+need(worker, '77818578ebfbc3f870d1fd2074f55dc00d0cf7692a280805194bb53f4f63d63f', 'mtf-structure-panel-mt5 pinned hash');
 need(admin, 'value="mtf-structure-panel-mt5"', 'mtf-structure-panel-mt5 admin upload option');
-need(worker, 'f853277884d3bf90b37d7380c0db5f77b65df9f259955b3acef0db0bdd0ca276', 'neckline-mtf-mt5 pinned hash');
+need(worker, '71e7e0d424ca8939215998a7338f2d38a6f92d636ff7d47157c3ce371386b738', 'neckline-mtf-mt5 pinned hash');
 need(admin, 'value="neckline-mtf-mt5"', 'neckline-mtf-mt5 admin upload option');
-need(worker, '4130a5e4d0d5b3c39dcb373f4452f5f6dbabb3a77fcb985a69ca5aa606d62c7e', 'progress-candle-mt5 pinned hash');
+need(worker, '8d52e157f304a05651c2a88e2c67473680dde164570e535d93e9bc422dbe86e4', 'progress-candle-mt5 pinned hash');
 need(admin, 'value="progress-candle-mt5"', 'progress-candle-mt5 admin upload option');
 need(worker, 'const indicatorRoute = p.match', 'generic protected indicator route');
 
 need(worker, 'const INDICATOR_MEMBERSHIP_PRODUCTS = ["indicator_membership", "premium_membership"]', 'tier allowlist');
-need(worker, '97897c8925f964b140e314c96b6d6a5365d129e3abee31193a0d4d9e488de345', 'pinned customer-pack sha256');
-need(worker, 'c857653ace97cc3f98254b1bbd6ca5ff939a7e393aea2dc53b36a01080e8c952', 'pinned neckline customer-pack sha256');
-need(worker, 'c5ef1fc912b20f0446142cb3fbc005bdfa043313f078fa108bb4294f26a07d01', 'pinned progress customer-pack sha256');
-need(worker, 'member-artifacts/mtf-structure-panel/0.1.1/', 'private R2 artifact key');
-need(worker, 'member-artifacts/neckline-mtf/0.1.2/', 'private neckline R2 artifact key');
-need(worker, 'member-artifacts/progress-candle/0.1.2/', 'private progress R2 artifact key');
+need(worker, '780f39d9da869d61b8dce6e6b1d439b111435137f22151d10c231def92eab88c', 'pinned customer-pack sha256');
+need(worker, 'bc8b4620630a05a1982396caa27471b84816e0ac9255b2bfb559f5088a4f10c8', 'pinned neckline customer-pack sha256');
+need(worker, '39246be933880c47daa840af23f7733146cb537b24714f233d326934243e58b6', 'pinned progress customer-pack sha256');
+need(worker, 'member-artifacts/mtf-structure-panel/0.1.1-license.3/', 'private R2 artifact key');
+need(worker, 'member-artifacts/neckline-mtf/0.1.2-license.3/', 'private neckline R2 artifact key');
+need(worker, 'member-artifacts/progress-candle/0.1.2-license.3/', 'private progress R2 artifact key');
 need(worker, 'INDICATOR_ENTITLEMENT_REQUIRED', 'fail-closed entitlement response');
 need(worker, 'Cache-Control": "private, no-store, max-age=0"', 'download cache boundary');
 need(worker, 'Content-Disposition', 'attachment response');

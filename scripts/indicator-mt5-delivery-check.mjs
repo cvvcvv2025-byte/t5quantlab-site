@@ -56,13 +56,12 @@ for (const [slug,code] of [['mtf-structure-panel-mt5','mtf_structure_panel_mt4']
   r=await call(upload,admin,'PUT',fixture);assert.equal(r.status,400);assert.equal(r.data.code,'ARTIFACT_HASH_MISMATCH');assert.equal(puts,0);
   const artifact=vm.runInContext('INDICATOR_ARTIFACTS['+JSON.stringify(slug)+']',context);
   assert.equal(artifact.code,code);assert.equal(artifact.membershipRequired,false);assert.equal(artifact.releaseStatus,'awaiting_upload');
-  const previousHash=artifact.previous.sha256;
-  artifact.previous.sha256=Buffer.from(await webcrypto.subtle.digest('SHA-256',fixture)).toString('hex');
+  assert.equal(artifact.runtime_client_version,3);assert.equal(artifact.previous,undefined);
+  // Even a stored, hash-valid legacy fallback must never substitute for a signed-v3 client.
+  artifact.previous={version:'legacy-test',filename:'unprotected.zip',r2Key:'legacy-test.zip',sha256:Buffer.from(await webcrypto.subtle.digest('SHA-256',fixture)).toString('hex')};
   stored={key:artifact.previous.r2Key,bytes:fixture,metadata:{sha256:artifact.previous.sha256,version:artifact.previous.version}};
-  r=await call(route,signed);assert.equal(r.status,200);assert.deepEqual(Array.from(r.data),Array.from(fixture));
-  assert(r.headers.get('Content-Disposition').includes(artifact.previous.filename));
-  corruptReadback=true;r=await call(route,signed);assert.equal(r.status,503);assert.equal(r.data.code,'ARTIFACT_CONTENT_MISMATCH');corruptReadback=false;
-  artifact.previous.sha256=previousHash;stored=null;downloads=0;
+  r=await call(route,signed);assert.equal(r.status,503);assert.equal(r.data.code,'ARTIFACT_NOT_READY');assert.equal(downloads,0);
+  delete artifact.previous;stored=null;downloads=0;
   const originalHash=artifact.sha256;
   // Replace only the in-memory fixture pin; paid customer binaries never enter this repository.
   artifact.sha256=Buffer.from(await webcrypto.subtle.digest('SHA-256',fixture)).toString('hex');

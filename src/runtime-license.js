@@ -104,6 +104,24 @@ export async function adminRuntimeLicenseQa(request, env) {
   const body = await bodyOf(request);
   if (!body) return json({ ok: false, code: 'INVALID_REQUEST' }, 400);
   if (p.endsWith('/update')) {
+    if (body.action === 'cleanup_owner_demo') {
+      const qa = await env.BUILDER_DB.prepare('SELECT * FROM runtime_license_qa WHERE qa_id=?').bind(String(body.qa_id || '')).first();
+      if (body.demo_confirmed !== true || !qa || LICENSE_PRODUCTS[qa.product_code]?.protocol_version !== 3 || qa.verified_count < 1 || !/demo/i.test(qa.broker_server)) return json({ok:false,code:'VERIFIED_DEMO_QA_REQUIRED'},409);
+      const license = await env.BUILDER_DB.prepare(`SELECT l.* FROM runtime_licenses l JOIN users u ON u.user_id=l.user_id
+        WHERE u.email='cvvcvv2025@gmail.com' AND l.product_code=? AND l.platform=? AND l.account_login=? AND l.broker_server=?`).bind(qa.product_code,qa.platform,qa.account_login,qa.broker_server).first();
+      if (!license) return json({ok:false,code:'OWNER_DEMO_BINDING_NOT_FOUND'},404);
+      await env.BUILDER_DB.prepare(`CREATE TABLE IF NOT EXISTS runtime_owner_demo_cleanup (
+        license_id TEXT PRIMARY KEY,qa_id TEXT NOT NULL,previous_status TEXT NOT NULL,previous_updated_at TEXT NOT NULL,cleaned_at TEXT NOT NULL
+      )`).run();
+      const cleaned=now(),cooldownComplete=new Date(Date.now()-REBIND_SECONDS*1000-1000).toISOString();
+      await env.BUILDER_DB.batch([
+        env.BUILDER_DB.prepare('INSERT OR IGNORE INTO runtime_owner_demo_cleanup(license_id,qa_id,previous_status,previous_updated_at,cleaned_at) VALUES(?,?,?,?,?)').bind(license.license_id,qa.qa_id,license.status,license.updated_at,cleaned),
+        env.BUILDER_DB.prepare("UPDATE runtime_licenses SET status='revoked',updated_at=? WHERE license_id=? AND user_id=?").bind(cooldownComplete,license.license_id,license.user_id)
+      ]);
+      // Keep the existing terminal slot until its signed leases expire. This
+      // audited admin-only test cleanup never changes normal customer cooldowns.
+      return json({ok:true,action:body.action,owner_demo_binding_revoked:true,terminal_lease_slot_preserved:true});
+    }
     if (!['revoke','renew'].includes(body.action)) return json({ ok: false, code: 'INVALID_ACTION' }, 400);
     const minutes = Number(body.minutes || 60);
     if (!Number.isInteger(minutes) || minutes < 1 || minutes > 1440) return json({ ok: false, code: 'INVALID_DURATION' }, 400);

@@ -53,6 +53,8 @@ jobs:
           node scripts/runtime-health-behavior-check.mjs
           node scripts/alipay-behavior-check.mjs
           node scripts/runtime-license-behavior-check.mjs
+          node scripts/signed-runtime-license-behavior-check.mjs
+          node scripts/signed-runtime-ui-behavior-check.mjs
           node scripts/runtime-client-state-check.mjs
           node scripts/release-origin-behavior-check.mjs
       - name: Check payment contract

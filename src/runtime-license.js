@@ -1,13 +1,18 @@
 // Runtime licensing is opt-in per compiled release. Download entitlement alone
 // must never be advertised as enforcement inside an existing executable.
 export const LICENSE_PRODUCTS = {
-  mtf_structure_panel_mt4: { membership: 'indicator_membership', platforms: ['MT4'], kind: 'indicator' },
-  neckline_mtf_mt4: { membership: 'indicator_membership', platforms: ['MT4'], kind: 'indicator' },
-  progress_candle_mt4: { membership: 'indicator_membership', platforms: ['MT4'], kind: 'indicator' },
+  structure_decision_map_mt4: {membership:'indicator_membership',platforms:['MT4','MT5'],kind:'indicator',protocol_version:3},
+  mtf_structure_panel_mt4: { membership: 'indicator_membership', platforms: ['MT4','MT5'], kind: 'indicator', protocol_version:3 },
+  neckline_mtf_mt4: { membership: 'indicator_membership', platforms: ['MT4','MT5'], kind: 'indicator', protocol_version:3 },
+  progress_candle_mt4: { membership: 'indicator_membership', platforms: ['MT4','MT5'], kind: 'indicator', protocol_version:3 },
   attack_completion_c_mt5: { platforms: ['MT5'], kind: 'ea' },
   trend_capture_mt5: { platforms: ['MT5'], kind: 'ea' },
   range_martingale_mt4: { platforms: ['MT4', 'MT5'], kind: 'ea' },
   range_aggressive_mt4_mt5: { platforms: ['MT4', 'MT5'], kind: 'ea' },
+  attack_completion_c_mt5_v3: {entitlement_product:'attack_completion_c_mt5',protocol_version:3,platforms:['MT5'],kind:'ea'},
+  trend_capture_mt5_v3: {entitlement_product:'trend_capture_mt5',protocol_version:3,platforms:['MT5'],kind:'ea'},
+  range_martingale_mt4_v3: {entitlement_product:'range_martingale_mt4',protocol_version:3,platforms:['MT4', 'MT5'],kind:'ea'},
+  range_aggressive_mt4_mt5_v3: {entitlement_product:'range_aggressive_mt4_mt5',protocol_version:3,platforms:['MT4', 'MT5'],kind:'ea'},
   attack_completion_c_mt5_v2: { entitlement_product:'attack_completion_c_mt5', protocol_version:2, platforms:['MT5'], kind:'ea' },
   trend_capture_mt5_v2: { entitlement_product:'trend_capture_mt5', protocol_version:2, platforms:['MT5'], kind:'ea' },
   range_martingale_mt4_v2: { entitlement_product:'range_martingale_mt4', protocol_version:2, platforms:['MT4','MT5'], kind:'ea' },
@@ -23,11 +28,12 @@ function enabled(env, product) {
   // typo must not accidentally sell them an unsupported activation flow.
   const accepted = String(env.RUNTIME_LICENSE_PRODUCTS || '').split(',').map(x => x.trim()).includes(product);
   const acceptedV2 = String(env.RUNTIME_LICENSE_V2_PRODUCTS || '').split(',').map(x => x.trim()).includes(product);
+  if(LICENSE_PRODUCTS[product]?.protocol_version===3)return String(env.RUNTIME_SIGNED3_PRODUCTS||'').split(',').map(x=>x.trim()).includes(product);
   return LICENSE_PRODUCTS[product]?.kind === 'ea' && accepted && (LICENSE_PRODUCTS[product].protocol_version !== 2 || acceptedV2);
 }
 // Independently gated: never silently change the contract of existing clients.
 function hardened(env, product) {
-  return LICENSE_PRODUCTS[product]?.protocol_version === 2;
+  return Number(LICENSE_PRODUCTS[product]?.protocol_version)>=2;
 }
 const V2_LEASE_SECONDS = 300, REBIND_SECONDS = 7 * 86400;
 async function setup(env) {
@@ -109,9 +115,9 @@ export async function adminRuntimeLicenseQa(request, env) {
     return Number(r.meta?.changes) === 1 ? json({ ok: true, action: body.action, expires_at: body.action === 'renew' ? expires : undefined }) : json({ ok: false, code: 'QA_NOT_FOUND' }, 404);
   }
   const minutes = Number(body.minutes || 60), leaseSeconds = Number(body.lease_seconds || 600);
-  if (body.demo_confirmed !== true || !Number.isInteger(minutes) || minutes < 1 || minutes > 1440 || !Number.isInteger(leaseSeconds) || leaseSeconds < 10 || leaseSeconds > 600 || !Array.isArray(body.bindings) || body.bindings.length < 1 || body.bindings.length > 6) return json({ ok: false, code: 'INVALID_QA_REQUEST' }, 400);
+  if (body.demo_confirmed !== true || !Number.isInteger(minutes) || minutes < 1 || minutes > 1440 || !Number.isInteger(leaseSeconds) || leaseSeconds < 10 || leaseSeconds > 600 || !Array.isArray(body.bindings) || body.bindings.length < 1 || body.bindings.length > (body.protocol_version===3?16:6)) return json({ ok: false, code: 'INVALID_QA_REQUEST' }, 400);
   const bindings = body.bindings.map(binding);
-  if (bindings.some(b => !b || LICENSE_PRODUCTS[b.product].kind !== 'ea' || !/demo/i.test(b.server))) return json({ ok: false, code: 'DEMO_EA_BINDING_REQUIRED' }, 400);
+  if (bindings.some(b => !b || (body.protocol_version===3 ? LICENSE_PRODUCTS[b.product].protocol_version!==3 : LICENSE_PRODUCTS[b.product].kind !== 'ea') || !/demo/i.test(b.server))) return json({ ok: false, code: 'DEMO_EA_BINDING_REQUIRED' }, 400);
   // Demo in a server name is an additional input check, not proof of account
   // type. The administrator must independently confirm the broker's demo label.
   const unique = new Set(bindings.map(b => [b.product,b.platform,b.login,b.server].join('|')));
@@ -146,9 +152,9 @@ export async function runtimeLicenseResponse(request, env, resolveSession) {
   if (!verifying && request.method === 'GET') {
     const rows = await env.BUILDER_DB.prepare('SELECT license_id,product_code,platform,account_login,broker_server,status,created_at,updated_at FROM runtime_licenses WHERE user_id=? ORDER BY created_at DESC').bind(user.user_id).all();
     return json({ ok: true, products: Object.entries(LICENSE_PRODUCTS).map(([code, v]) => ({ code, kind: v.kind, enabled: enabled(env, code), platforms: v.platforms,
-      protocol_version: hardened(env,code) ? 2 : 1,
+      protocol_version: LICENSE_PRODUCTS[code].protocol_version || 1,
       offline_grace_seconds: hardened(env,code) ? V2_LEASE_SECONDS : 86400,
-      rebind_cooldown_seconds: hardened(env,code) ? REBIND_SECONDS : 0 })), licenses: rows.results || [], legacy_downloads_require_activation: false });
+      rebind_cooldown_seconds: hardened(env,code) ? REBIND_SECONDS : 0 })), licenses: rows.results || [], owner_profile_supported: user.email === 'cvvcvv2025@gmail.com', legacy_downloads_require_activation: false });
   }
   const body = await bodyOf(request);
   if (!body) return json({ ok: false, code: 'INVALID_REQUEST' }, 400);
@@ -159,10 +165,10 @@ export async function runtimeLicenseResponse(request, env, resolveSession) {
   }
   const b = binding(body);
   if (!b) return json({ ok: false, code: 'INVALID_BINDING' }, 400);
-  if (!verifying && !enabled(env, b.product)) return json({ ok: false, code: 'LICENSE_RELEASE_NOT_ENABLED', error: '当前安装包仍按原交付方式使用，无需激活。' }, 409);
+  if (!verifying && !enabled(env, b.product)) return json({ ok: false, code: 'LICENSE_RELEASE_NOT_ENABLED', error: '当前产品授权版尚未完成验收，暂不可激活。' }, 409);
   if (!verifying) {
     const entitlement = await activeEntitlement(env, user.user_id, b.product);
-    if (hardened(env,b.product) && body.license_policy_version !== 'terminal-v2-20261023') return json({ok:false,code:'LICENSE_POLICY_REQUIRED'},400);
+    if (hardened(env,b.product) && body.license_policy_version !== (LICENSE_PRODUCTS[b.product]?.protocol_version===3?'signed-v3-20261028':'terminal-v2-20261023')) return json({ok:false,code:'LICENSE_POLICY_REQUIRED'},400);
     if (!entitlement) return json({ ok: false, code: 'ENTITLEMENT_REQUIRED' }, 403);
     // One active trading account per product. Revoke first to replace a binding;
     // renewing membership never changes the stored client credential.
@@ -180,7 +186,7 @@ export async function runtimeLicenseResponse(request, env, resolveSession) {
       if (v2 && current?.status === 'revoked') return json({ ok:false, code:'REBIND_COOLDOWN', retry_at:new Date(Date.parse(current.updated_at) + REBIND_SECONDS * 1000).toISOString() },409);
       return json({ ok: false, code: 'ACTIVE_BINDING_EXISTS', error: '已有激活账号。更换前请先撤销原授权。' }, 409);
     }
-    return json({ ok: true, license_id: id, license_key: token, expires_at: entitlement.expires_at, protocol_version:v2 ? 2 : 1, offline_grace_seconds: v2 ? V2_LEASE_SECONDS : 86400 });
+    return json({ ok: true, license_id: id, license_key: token, expires_at: entitlement.expires_at, protocol_version:LICENSE_PRODUCTS[b.product].protocol_version || 1, offline_grace_seconds: v2 ? V2_LEASE_SECONDS : 86400 });
   }
   const nonce = String(body.nonce || '');
   if (!/^[a-f0-9]{32}$/.test(nonce)) return json({ ok: false, code: 'INVALID_NONCE' }, 400);

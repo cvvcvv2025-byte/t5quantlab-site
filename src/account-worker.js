@@ -1,3 +1,4 @@
+import {signingKeyAdmin,signingPublicKey,signedLeaseResponse,ownerProfileResponse} from './signed-runtime-license.js';
 import app from "./final-worker.js";
 import { TRAINING_TERMS } from './training-product.js';
 import { trainingResponse, TRAINING_CONTENT_KEY } from './training-worker.js';
@@ -947,6 +948,13 @@ export default {
           return response;
         }
       }
+      if (p === '/api/admin/runtime-signing-key') {
+        if (!(await isAdmin(request,env))) return json({ok:false,code:'ADMIN_REQUIRED'},403);
+        return signingKeyAdmin(request,env);
+      }
+      if (p === '/api/licenses/signing-public-key' && request.method === 'GET') return signingPublicKey(request,env);
+      if (p === '/api/licenses/lease-v3') { await ensureAccountDb(env); return signedLeaseResponse(request,env,resolveSession); }
+      if (p === '/api/account/runtime-licenses/owner-profile') { await ensureAccountDb(env); return ownerProfileResponse(request,env,resolveSession); }
       if (p === '/api/admin/runtime-license-qa' || p === '/api/admin/runtime-license-qa/update') {
         if (!(await isAdmin(request,env))) return json({ ok: false, error: 'Unauthorized' },403);
         await ensureAccountDb(env);

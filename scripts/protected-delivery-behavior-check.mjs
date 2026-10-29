@@ -1,11 +1,13 @@
+import {signingKeyAdmin,signingPublicKey,signedLeaseResponse,ownerProfileResponse} from '../src/signed-runtime-license.js';
 import fs from 'node:fs';
 import vm from 'node:vm';
 import assert from 'node:assert/strict';
 import {webcrypto} from 'node:crypto';
 const source=fs.readFileSync('src/account-worker.js','utf8')
  .replace(/^import .*;$/gm,'')
+ .replace("import {signingKeyAdmin,signingPublicKey,signedLeaseResponse,ownerProfileResponse} from './signed-runtime-license.js';",'')
  .replace('export default {','globalThis.worker = {');
-const context=vm.createContext({Request,Response,Headers,URL,TextEncoder,crypto:webcrypto,console});
+const context=vm.createContext({signingKeyAdmin,signingPublicKey,signedLeaseResponse,ownerProfileResponse,Request,Response,Headers,URL,TextEncoder,crypto:webcrypto,console});
 vm.runInContext(source+'\nensureAccountDb=async()=>{};',context);
 let user={user_id:'customer',email:'paid@example.test'},grant=true,gets=0,events=0;
 const env={BUILDER_DB:{prepare(){return{bind(){return this;},async first(){return grant?{entitlement_id:'e',source_order_id:'manual'}:null;},async run(){events++;}}}},USER_CODE_BUCKET:{async head(){return{size:7,customMetadata:{}};},async get(){gets++;return null;}}};

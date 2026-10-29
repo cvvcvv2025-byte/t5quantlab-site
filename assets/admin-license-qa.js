@@ -1,5 +1,7 @@
 (() => {
   const $=id=>document.getElementById(id), status=$('qaStatus');
+  // Reuse this same-origin tab's existing admin session; never export its key.
+  $('qaAdminKey').value=sessionStorage.getItem('t5_admin_key_session')||'';
   const names={structure_decision_map_mt4:'Structure Decision Map',mtf_structure_panel_mt4:'MTF Structure Panel',neckline_mtf_mt4:'Neckline MTF',progress_candle_mt4:'Progress Candle',range_martingale_mt4:'Range Martingale',range_aggressive_mt4_mt5:'Range Aggressive',attack_completion_c_mt5:'Attack Completion C',trend_capture_mt5:'Trend Capture'};
   for(const [code,name] of Object.entries({...names})){names[code+'_v2']=name+' v2';names[code+'_v3']=name+' v3';}
   const node=(tag,text)=>{const el=document.createElement(tag);if(text)el.textContent=text;return el;};

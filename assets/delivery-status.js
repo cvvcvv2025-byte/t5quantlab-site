@@ -13,12 +13,12 @@
       const upgrading = a.blocked_reason === 'LICENSE_UPGRADE_PENDING' && !owner;
       const held = !owner && !upgrading && a.performance_qualified === false && a.download_allowed === false;
       const allowed = a.ready && (a.download_allowed === true || owner);
-      for (const node of document.querySelectorAll('[data-artifact-state="' + a.slug + '"]')) node.textContent = upgrading ? '防共享授权版升级中 · 已有权益保留' : held ? '绩效审计未通过 · 下载暂停' : allowed ? '安装包已就绪 · v' + a.version + (a.performance_qualified === false ? ' · 历史绩效审计未通过' : '') : '安装包暂不可下载，请稍后重试';
+      for (const node of document.querySelectorAll('[data-artifact-state="' + a.slug + '"]')) node.textContent = upgrading ? '防共享授权版升级中 · 已有权益保留' : held ? '当前版本下载暂停 · 请查看产品说明' : allowed ? '安装包已就绪 · v' + a.version : '安装包暂不可下载，请稍后重试';
       const button = document.querySelector('[data-' + (a.kind === 'ea' ? 'ea-download' : 'download') + '="' + a.slug + '"]');
       if (button) {
         button.disabled = !allowed;
         const state = button.closest('article')?.querySelector('.member-state');
-        if (state && (held || button.closest('article').querySelectorAll('[data-download],[data-ea-download]').length === 1)) { state.textContent = upgrading ? '防共享授权版升级中 · 已有权益保留' : held ? '绩效审计未通过 · 下载暂停' : allowed ? '安装包已就绪' : '安装包暂不可下载'; state.classList.toggle('ready', allowed); }
+        if (state && (held || button.closest('article').querySelectorAll('[data-download],[data-ea-download]').length === 1)) { state.textContent = upgrading ? '防共享授权版升级中 · 已有权益保留' : held ? '当前版本下载暂停 · 请查看产品说明' : allowed ? '安装包已就绪' : '安装包暂不可下载'; state.classList.toggle('ready', allowed); }
       }
     }
   } catch {

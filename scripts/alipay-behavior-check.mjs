@@ -27,6 +27,12 @@ try{
  let preflight=await alipayPreflightResponse(new Request('https://example.invalid/api/admin/alipay-preflight',{method:'POST'}),env);let preflightBody=await preflight.json();assert.equal(preflight.status,200);assert.equal(preflightBody.signed_gateway_verified,true);assert.equal(preflightBody.payment_acceptance_verified,false);assert.equal(preflightBody.customer_payment_enabled,false);
  queryBadSign=true;preflight=await alipayPreflightResponse(new Request('https://example.invalid/api/admin/alipay-preflight',{method:'POST'}),env);assert.equal(preflight.status,502);queryBadSign=false;
  preflight=await alipayPreflightResponse(new Request('https://example.invalid/api/admin/alipay-preflight',{method:'POST',headers:{Origin:'https://evil.invalid'}}),env);assert.equal(preflight.status,403);
+ const savedPrivate=env.ALIPAY_PRIVATE_KEY,savedPublic=env.ALIPAY_PUBLIC_KEY;
+ env.ALIPAY_PRIVATE_KEY=JSON.stringify(savedPrivate);env.ALIPAY_PUBLIC_KEY=JSON.stringify(ali.publicKey.export({format:'pem',type:'pkcs1'}));
+ preflight=await alipayPreflightResponse(new Request('https://example.invalid/api/admin/alipay-preflight',{method:'POST'}),env);assert.equal(preflight.status,200,'JSON escaped PEM and PKCS1 public key supported');
+ env.ALIPAY_PRIVATE_KEY='not a key';preflight=await alipayPreflightResponse(new Request('https://example.invalid/api/admin/alipay-preflight',{method:'POST'}),env);assert.equal((await preflight.json()).code,'ALIPAY_PRIVATE_KEY_FORMAT_INVALID');
+ env.ALIPAY_PRIVATE_KEY=savedPrivate;env.ALIPAY_PUBLIC_KEY='not a key';preflight=await alipayPreflightResponse(new Request('https://example.invalid/api/admin/alipay-preflight',{method:'POST'}),env);assert.equal((await preflight.json()).code,'ALIPAY_PUBLIC_KEY_FORMAT_INVALID');
+ env.ALIPAY_PUBLIC_KEY=savedPublic;
  queryCode='10000';querySubCode=undefined;env.ALIPAY_CHECKOUT_ENABLED='true';
  const schema=fs.readFileSync('builder-schema.sql','utf8');sql(schema.replace(/^--.*$/gm,'').split(';').filter(s=>s.trim()).map(sql=>({sql})));
  const now=new Date().toISOString(),future=new Date(Date.now()+86400000).toISOString();for(const id of ['a','b']){await run("INSERT INTO users(user_id,email,email_verified_at,status,created_at,updated_at) VALUES(?,?,?,'active',?,?)",id,id+'@example.invalid',now,now,now);await run('INSERT INTO auth_sessions(token_hash,user_id,created_at,expires_at) VALUES(?,?,?,?)',createHash('sha256').update(id).digest('hex'),id,now,future);}

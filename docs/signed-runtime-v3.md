@@ -19,3 +19,9 @@ Only the verified session belonging to the configured owner email can request `P
 The existing admin QA route accepts an explicit `protocol_version:3` request for up to 16 signed-client bindings, only with admin authorization and demo confirmation. Such QA tokens are short-lived and bound to the specified platform/account/server. They do not enable customer activation or downloads. The QA UI can save a local private JSON test configuration; it is not persistent browser storage and must not enter a public repository or customer package.
 
 A successful server handshake is not native compilation, visual acceptance, or broker-position management acceptance. Native source, binaries, logs and account identities remain private. Keep each product held until its actual native compile, mount, expiry/revocation/offline/restart/copy and management scenarios pass. Previously distributed unlocked executables cannot be remotely locked by this service.
+
+## Activation acceptance stage — 2026-10-29
+
+Production-root native clients passed connected demo HTTPS signature/binding checks, all eight indicator platform mounts with offline expiry/resume and server revoke/renew/entitlement-expiry cases, and six EA platform broker-position management fixtures with unauthorized entry guards. These functional results do not qualify trading performance.
+
+The explicit signed-v3 activation list is configured to permit entitled, authenticated account binding and the verified owner's signed credential download for final client acceptance. This activation stage does not change artifact hashes, stored ZIPs, indicator download holds, checkout readiness, payment configuration, or existing v2 licenses. Customer artifacts must still pass independent private storage/readback and release gates before downloads are restored. Private source, binaries, credentials and native identities are excluded from this repository.

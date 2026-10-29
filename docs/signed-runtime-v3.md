@@ -31,3 +31,13 @@ The explicit signed-v3 activation list is configured to permit entitled, authent
 The twelve signed-v3 customer ZIPs are pinned in `runtime-v3-artifacts.json`. The account registry requires the accepted client generation, production public-key ID, signed activation gate and exact stored version/hash. A signed indicator release cannot resolve a legacy fallback. Performance qualification remains false. Old files already shared outside the service cannot be remotely locked.
 
 The admin QA surface supports audited cleanup only for the verified owner’s binding that exactly matches a successful protocol-v3 demo QA record, with explicit admin demo confirmation. It revokes that test credential and releases its test cooldown while preserving the existing terminal lease slot. It cannot reset ordinary customers, unverified QA, other bindings or their cooldowns. This prevents acceptance fixtures from occupying the owner's later production binding.
+
+
+## 2026-10-29 customer install simplification
+- Member catalog lists only products covered by active rights, labeled indicator/EA.
+- The authenticated install-package endpoint embeds a signed bound credential in a private ZIP, reusing existing accepted native readers. T5OWNER3 is a compatibility envelope name; owner privilege remains derived only from the server license record.
+- Existing manual-key customers can explicitly upgrade the same binding; its token rotates once. Re-download retrieves the encrypted stored credential and preserves terminal slots. A per-binding issuance lock prevents concurrent rotation. Revoked bindings still obey cooldown.
+- Rebind cooldown is now 1800 seconds, calculated from the original revocation timestamp, including preexisting records. Lease deadlines and existing-position management are unchanged.
+- Download uses the existing artifact SHA256/entitlement/release gates. The 12 shared originals in R2 are unchanged; personal wrappers are generated per authenticated request and never cached or uploaded to public storage.
+- Windows helper copies files as the current user and does not enable trading/DLL or change security settings. Indicator template loading verified on native MT4 and MT5 demo terminals; Windows dialog interaction has not been exercised on native Windows in this macOS environment. Mac/Wine retains documented manual file placement.
+- All strategy and licensing binaries stay byte-for-byte unchanged. No new indicator/EA native compilation is claimed; only new QA probes were natively compiled.

@@ -35,7 +35,7 @@ function enabled(env, product) {
 function hardened(env, product) {
   return Number(LICENSE_PRODUCTS[product]?.protocol_version)>=2;
 }
-const V2_LEASE_SECONDS = 300, REBIND_SECONDS = 7 * 86400;
+const V2_LEASE_SECONDS = 300, REBIND_SECONDS = 30 * 60;
 async function setup(env) {
   await env.BUILDER_DB.batch([
     env.BUILDER_DB.prepare(`CREATE TABLE IF NOT EXISTS runtime_licenses (
@@ -61,7 +61,7 @@ async function setup(env) {
     last_verified_at TEXT, verified_count INTEGER NOT NULL DEFAULT 0
   )`).run();
 }
-async function activeEntitlement(env, userId, product) {
+export async function activeEntitlement(env, userId, product) {
   const spec = LICENSE_PRODUCTS[product];
   const products = [product, ...(spec.entitlement_product ? [spec.entitlement_product] : []), 'premium_membership', ...(spec.membership ? [spec.membership] : [])];
   // Compare actual dates: null expiry means perpetual; an overlapping later
@@ -169,10 +169,13 @@ export async function runtimeLicenseResponse(request, env, resolveSession) {
   await setup(env);
   if (!verifying && request.method === 'GET') {
     const rows = await env.BUILDER_DB.prepare('SELECT license_id,product_code,platform,account_login,broker_server,status,created_at,updated_at FROM runtime_licenses WHERE user_id=? ORDER BY created_at DESC').bind(user.user_id).all();
-    return json({ ok: true, products: Object.entries(LICENSE_PRODUCTS).map(([code, v]) => ({ code, kind: v.kind, enabled: enabled(env, code), platforms: v.platforms,
+    const grants=await env.BUILDER_DB.prepare("SELECT product_code FROM product_entitlements WHERE user_id=? AND status='active' AND starts_at<=? AND (expires_at IS NULL OR expires_at>?)").bind(user.user_id,now(),now()).all();
+    const rights=new Set((grants.results||[]).map(g=>g.product_code));
+    const entitled=new Set(Object.entries(LICENSE_PRODUCTS).filter(([code,spec])=>[code,spec.entitlement_product,'premium_membership',spec.membership].some(p=>p&&rights.has(p))).map(([code])=>code));
+    return json({ ok: true, products: Object.entries(LICENSE_PRODUCTS).filter(([code])=>entitled.has(code)).map(([code, v]) => ({ code, kind: v.kind, enabled: enabled(env, code), platforms: v.platforms,
       protocol_version: LICENSE_PRODUCTS[code].protocol_version || 1,
       offline_grace_seconds: hardened(env,code) ? V2_LEASE_SECONDS : 86400,
-      rebind_cooldown_seconds: hardened(env,code) ? REBIND_SECONDS : 0 })), licenses: rows.results || [], owner_profile_supported: user.email === 'cvvcvv2025@gmail.com', legacy_downloads_require_activation: false });
+      rebind_cooldown_seconds: hardened(env,code) ? REBIND_SECONDS : 0 })), licenses: rows.results || [], owner_profile_supported: user.email === 'cvvcvv2025@gmail.com', install_package_supported:true, legacy_downloads_require_activation: false });
   }
   const body = await bodyOf(request);
   if (!body) return json({ ok: false, code: 'INVALID_REQUEST' }, 400);

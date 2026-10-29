@@ -1,6 +1,6 @@
 // Signed lease transport for native indicators and opt-in EA v3 clients.
 // Private signing material is generated server-side and encrypted in private R2.
-import { runtimeLicenseResponse, LICENSE_PRODUCTS } from './runtime-license.js';
+import { runtimeLicenseResponse, LICENSE_PRODUCTS, activeEntitlement } from './runtime-license.js';
 const KEY_PATH='private-runtime-signing/rsa2048-v3.enc.json';
 const OWNER_EMAIL='cvvcvv2025@gmail.com';
 const json=(v,status=200)=>Response.json(v,{status,headers:{'Cache-Control':'no-store'}});
@@ -77,3 +77,59 @@ export async function ownerProfileResponse(request,env,resolveSession){
  const profileSignature=hex(new Uint8Array(await crypto.subtle.sign('RSASSA-PKCS1-v1_5',signingKey,bytes(profile))));
  return new Response(profile+'\n'+profileSignature+'\n',{headers:{'Content-Type':'application/octet-stream','Cache-Control':'no-store','Content-Disposition':`attachment; filename="T5Owner3_${b.product_code}_${b.platform}.credential"`}});
 }
+
+// Customer install credentials use the already compiled, signed profile envelope.
+// T5OWNER3 is a legacy wire name, NOT an owner entitlement: lease-v3 derives the
+// owner claim from the authenticated license record, never from this envelope.
+export async function installProfileResponse(request,env,resolveSession){
+ if(request.method!=='POST')return json({ok:false,code:'METHOD_NOT_ALLOWED'},405);
+ const user=await resolveSession(request,env);if(!user)return json({ok:false,code:'ACCOUNT_REQUIRED'},401);
+ if((request.headers.get('Origin')&&request.headers.get('Origin')!==new URL(request.url).origin)||request.headers.get('Sec-Fetch-Site')==='cross-site')return json({ok:false,code:'ORIGIN_MISMATCH'},403);
+ const raw=await request.text();if(raw.length>4096)return json({ok:false,code:'INVALID_REQUEST'},400);
+ let b;try{b=JSON.parse(raw);}catch{return json({ok:false,code:'INVALID_REQUEST'},400);}
+ if(!b||!LICENSE_PRODUCTS[b.product_code]?.platforms.includes(b.platform)||LICENSE_PRODUCTS[b.product_code].protocol_version!==3||!/^[1-9][0-9]{0,19}$/.test(String(b.account_login||''))||typeof b.broker_server!=='string'||!b.broker_server.trim()||b.broker_server.length>120||/[\x00-\x1f\x7f]/.test(b.broker_server)||b.license_policy_version!=='signed-v3-20261028')return json({ok:false,code:'INVALID_BINDING'},400);
+ b.account_login=String(b.account_login);b.broker_server=b.broker_server.trim();
+ const catalog=await runtimeLicenseResponse(new Request(new URL('/api/account/runtime-licenses',request.url),{headers:request.headers}),env,resolveSession);
+ if(!catalog.ok)return catalog;
+ const data=await catalog.json();if(!data.products.some(p=>p.code===b.product_code&&p.enabled))return json({ok:false,code:'ENTITLEMENT_OR_RELEASE_REQUIRED'},403);
+ if(!await activeEntitlement(env,user.user_id,b.product_code))return json({ok:false,code:'ENTITLEMENT_REQUIRED'},403);
+ await env.BUILDER_DB.prepare('CREATE TABLE IF NOT EXISTS runtime_install_locks (lock_id TEXT PRIMARY KEY,nonce TEXT NOT NULL,lease_until INTEGER NOT NULL)').run();
+ const lockId=user.user_id+':'+b.product_code,nonce=hex(crypto.getRandomValues(new Uint8Array(16))),now=Date.now();
+ const lock=await env.BUILDER_DB.prepare('INSERT INTO runtime_install_locks(lock_id,nonce,lease_until) VALUES(?,?,?) ON CONFLICT(lock_id) DO UPDATE SET nonce=excluded.nonce,lease_until=excluded.lease_until WHERE runtime_install_locks.lease_until<=?').bind(lockId,nonce,now+30000,now).run();
+ if(!Number(lock.meta?.changes))return json({ok:false,code:'INSTALL_RETRY'},409);
+ try{return await issueInstallProfile(request,env,resolveSession,user,b);}finally{await env.BUILDER_DB.prepare('DELETE FROM runtime_install_locks WHERE lock_id=? AND nonce=?').bind(lockId,nonce).run();}
+}
+async function issueInstallProfile(request,env,resolveSession,user,b){
+ const k=await readSigningKey(env);if(!k)return json({ok:false,code:'SIGNING_KEY_NOT_PROVISIONED'},503);
+ let record=await env.BUILDER_DB.prepare('SELECT * FROM runtime_licenses WHERE user_id=? AND product_code=?').bind(user.user_id,b.product_code).first(),token;
+ if(record?.status==='active'){
+  if(record.platform!==b.platform||record.account_login!==b.account_login||record.broker_server!==b.broker_server)return json({ok:false,code:'ACTIVE_BINDING_EXISTS'},409);
+  const path='private-runtime-install/'+record.license_id+'/'+record.token_hash+'.enc.json',obj=await env.USER_CODE_BUCKET.get(path);
+  if(obj){
+   const doc=await obj.json();
+   const plain=await crypto.subtle.decrypt({name:'AES-GCM',iv:un64(doc.iv),additionalData:bytes(path)},await wrappingKey(env),un64(doc.encrypted));
+   const profile=new TextDecoder().decode(plain),f=profile.split('\n')[0].split('|');
+   if(f.length!==8||await sha(f[6])!==record.token_hash)throw Error('INSTALL_PROFILE_STORAGE_INVALID');
+   return profileDownload(profile,b);
+  }
+  // Upgrade an existing manual-key binding without revoke/cooldown bypass or
+  // releasing its live terminal slot. CAS prevents parallel downloads rotating
+  // each other's key. Existing short leases retain their original deadlines.
+  token=hex(crypto.getRandomValues(new Uint8Array(32)));
+  const changed=await env.BUILDER_DB.prepare("UPDATE runtime_licenses SET token_hash=? WHERE license_id=? AND token_hash=? AND status='active'").bind(await sha(token),record.license_id,record.token_hash).run();
+  if(!Number(changed.meta?.changes))return json({ok:false,code:'INSTALL_RETRY'},409);
+  record={...record,token_hash:await sha(token)};
+ }else{
+  const activated=await runtimeLicenseResponse(new Request(new URL('/api/account/runtime-licenses',request.url),{method:'POST',headers:request.headers,body:JSON.stringify(b)}),env,resolveSession);
+  const result=await activated.json();if(!activated.ok)return json(result,activated.status);
+  token=result.license_key;record={license_id:result.license_id,token_hash:await sha(token)};
+ }
+ const wire=['T5OWNER3',k.kid,b.product_code,b.platform,b.account_login,hex(bytes(b.broker_server)),token,Math.floor(Date.now()/1000)].join('|');
+ const key=await crypto.subtle.importKey('jwk',k.jwk,{name:'RSASSA-PKCS1-v1_5',hash:'SHA-256'},false,['sign']);
+ const profile=wire+'\n'+hex(new Uint8Array(await crypto.subtle.sign('RSASSA-PKCS1-v1_5',key,bytes(wire))))+'\n';
+ const path='private-runtime-install/'+record.license_id+'/'+record.token_hash+'.enc.json',iv=crypto.getRandomValues(new Uint8Array(12));
+ const encrypted=await crypto.subtle.encrypt({name:'AES-GCM',iv,additionalData:bytes(path)},await wrappingKey(env),bytes(profile));
+ await env.USER_CODE_BUCKET.put(path,JSON.stringify({version:3,iv:b64(iv),encrypted:b64(encrypted)}),{httpMetadata:{contentType:'application/json'}});
+ return profileDownload(profile,b);
+}
+function profileDownload(profile,b){return new Response(profile,{headers:{'Content-Type':'application/octet-stream','Cache-Control':'private, no-store','X-Content-Type-Options':'nosniff','Content-Disposition':`attachment; filename="T5Owner3_${b.product_code}_${b.platform}.credential"`}});}

@@ -58,7 +58,8 @@ need('admin/accounts/index.html','X-Builder-Access-Key','admin emails protected 
 need('admin/accounts/index.html','sessionStorage','admin key must not be persisted in localStorage');
 need('unsubscribe/index.html','/api/marketing/unsubscribe','unsubscribe page');
 need('account/member-center/index.html','/api/account/summary','member center account summary');
-need('account/member-center/index.html',"/api/member/${isEa?'eas':'indicators'}/${encodeURIComponent(slug)}/download",'member center protected member-tool download');
+need('account/member-center/index.html',"t5-install-select",'member center preselects private install flow');
+need('assets/runtime-licenses.js',"/api/account/runtime-licenses/install-package",'authenticated private install download');
 need('account/member-center/index.html','mtf_structure_panel_mt4','member center single-product entitlement support');
 need('account/member-center/index.html','neckline_mtf_mt4','member center neckline entitlement support');
 need('account/member-center/index.html','progress_candle_mt4','member center progress entitlement support');

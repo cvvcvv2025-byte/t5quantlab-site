@@ -1,5 +1,6 @@
 import {signingKeyAdmin,signingPublicKey,signedLeaseResponse,ownerProfileResponse,installProfileResponse} from './signed-runtime-license.js';
 import {boundInstallPackage} from './install-package.js';
+import {alipayPreflightResponse} from './alipay.js';
 import app from "./final-worker.js";
 import { TRAINING_TERMS } from './training-product.js';
 import { trainingResponse, TRAINING_CONTENT_KEY } from './training-worker.js';
@@ -988,6 +989,10 @@ export default {
       if (p === '/api/admin/runtime-signing-key') {
         if (!(await isAdmin(request,env))) return json({ok:false,code:'ADMIN_REQUIRED'},403);
         return signingKeyAdmin(request,env);
+      }
+      if(p==='/api/admin/alipay-preflight'){
+        if(!(await isAdmin(request,env)))return json({ok:false,code:'ADMIN_REQUIRED'},403);
+        return alipayPreflightResponse(request,env);
       }
       if (p === '/api/licenses/signing-public-key' && request.method === 'GET') return signingPublicKey(request,env);
       if (p === '/api/licenses/lease-v3') { await ensureAccountDb(env); return signedLeaseResponse(request,env,resolveSession); }

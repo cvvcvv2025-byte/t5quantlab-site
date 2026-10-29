@@ -93,3 +93,7 @@ Amounts are rounded half-up to a fen using decimal arithmetic, without a markup:
 These are fixed catalog prices, not a live conversion or a processor settlement
 rate. This configuration does not change the existing USD prices or enable
 Alipay sales. Merchant PID and live payment acceptance remain outstanding.
+
+
+## 2026-10-29 production launch preparation
+The owner requested formal Alipay launch. The existing approved CNY amounts and all merchant secrets remain unchanged. An admin-only POST /api/admin/alipay-preflight queries a random nonexistent order against the real gateway and verifies its raw RSA2 signature; it does not create or pay an order. This probe remains available while new sales are disabled. Its success is connectivity evidence, not a live payment receipt or completed refund test. The customer Alipay entry is placed below PayPal and remains hidden until the existing enabled/price/delivery gates pass.

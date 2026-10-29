@@ -31,6 +31,20 @@ async function signed(env,method,biz,extra={}){const p={app_id:String(env.ALIPAY
 // property order are signature significant). Reject duplicate top-level keys.
 export function responseObject(raw,key){let i=0;const ws=()=>{while(/\s/.test(raw[i]||'')&&i<raw.length)i++;};const string=()=>{const start=i++;while(i<raw.length){if(raw[i]==='\\'){i+=2;continue;}if(raw[i++]==='"')return JSON.parse(raw.slice(start,i));}throw Error('INVALID_RESPONSE');};ws();if(raw[i++]!=='{')throw Error('INVALID_RESPONSE');const seen=new Set();let found;while(i<raw.length){ws();if(raw[i]==='}'){i++;break;}if(raw[i]!=='"')throw Error('INVALID_RESPONSE');const name=string();if(seen.has(name))throw Error('INVALID_RESPONSE');seen.add(name);ws();if(raw[i++]!==':')throw Error('INVALID_RESPONSE');ws();const start=i;if(raw[i]==='{'){let depth=0;do{if(raw[i]==='"'){string();continue;}if(raw[i]==='{')depth++;if(raw[i]==='}')depth--;i++;}while(i<raw.length&&depth);if(depth)throw Error('INVALID_RESPONSE');}else if(raw[i]==='"'){string();}else{while(i<raw.length&&!['}',','].includes(raw[i]))i++;}if(name===key)found=raw.slice(start,i);ws();if(raw[i]===','){i++;continue;}if(raw[i]==='}'){i++;break;}throw Error('INVALID_RESPONSE');}ws();if(i!==raw.length||!found)throw Error('INVALID_RESPONSE');return found;}
 async function rpc(env,method,biz){const p=await signed(env,method,biz);const r=await fetch(GATEWAY,{method:'POST',headers:{'Content-Type':'application/x-www-form-urlencoded;charset=UTF-8'},body:new URLSearchParams(p).toString(),signal:AbortSignal.timeout(15000)});if(!r.ok)throw Error('ALIPAY_HTTP_ERROR');const raw=await r.text();if(raw.length>131072)throw Error('INVALID_RESPONSE');const d=JSON.parse(raw),key=method.replaceAll('.','_')+'_response',object=responseObject(raw,key);if(!d.sign||!await crypto.subtle.verify('RSASSA-PKCS1-v1_5',await publicKey(env),bytes(d.sign),new TextEncoder().encode(object)))throw Error('ALIPAY_RESPONSE_SIGNATURE');return JSON.parse(object);}
+// Read-only production connectivity probe. A random, nonexistent merchant order
+// is queried; no order, payment, refund, entitlement or config is created.
+// Caller MUST enforce admin authentication before invoking this function.
+export async function alipayPreflightResponse(request,env){
+ if(request.method!=='POST')return failure('METHOD_NOT_ALLOWED',405);
+ if(!originAllowed(request))return failure('ORIGIN_MISMATCH',403);
+ if(!alipayConfigured(env))return failure('ALIPAY_NOT_READY',503);
+ try{
+  await privateKey(env);await publicKey(env);
+  const remote=await rpc(env,'alipay.trade.query',{out_trade_no:'T5PREFLIGHT'+crypto.randomUUID().replaceAll('-','')});
+  const verified=remote.code==='40004'&&remote.sub_code==='ACQ.TRADE_NOT_EXIST';
+  return json({ok:verified,environment:'live',gateway:GATEWAY,signed_gateway_verified:verified,no_payment_attempted:true,customer_payment_enabled:alipayEnabled(env),payment_acceptance_verified:false,checked_at:new Date().toISOString(),...(!verified?{code:'ALIPAY_PREFLIGHT_FAILED',provider_code:String(remote.code||'').slice(0,32),provider_sub_code:String(remote.sub_code||'').slice(0,80)}:{})},verified?200:502);
+ }catch(error){return json({ok:false,code:['ALIPAY_RESPONSE_SIGNATURE','ALIPAY_HTTP_ERROR','INVALID_RESPONSE'].includes(error.message)?error.message:'ALIPAY_PREFLIGHT_UNAVAILABLE',signed_gateway_verified:false,no_payment_attempted:true,payment_acceptance_verified:false},502);}
+}
 async function setup(env){await env.BUILDER_DB.prepare(`CREATE TABLE IF NOT EXISTS alipay_receipts(order_id TEXT PRIMARY KEY,app_id TEXT NOT NULL,seller_id TEXT NOT NULL,created_at TEXT NOT NULL,lease_token TEXT,lease_until INTEGER,closed INTEGER NOT NULL DEFAULT 0)`).run();}
 function originAllowed(request){const origin=request.headers.get('Origin');return (!origin||origin===new URL(request.url).origin)&&request.headers.get('Sec-Fetch-Site')!=='cross-site';}
 async function receipt(env,orderId){return env.BUILDER_DB.prepare('SELECT * FROM alipay_receipts WHERE order_id=?').bind(orderId).first();}

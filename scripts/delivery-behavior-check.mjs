@@ -111,7 +111,7 @@ try {
   assert.equal(missing.status, 503); assert.equal(missing.data.code, 'DELIVERY_NOT_READY');
   // Metadata fixtures allow checkout; the existing artifact tests verify byte hashes separately.
   const catalogSource = fs.readFileSync('src/account-worker.js', 'utf8');
-  for (const match of catalogSource.matchAll(/r2Key: "([^"]+)"[\s\S]*?sha256: "([^"]+)"/g)) {
+  for (const match of catalogSource.matchAll(/"?r2Key"?: "([^"]+)"[\s\S]*?"?sha256"?: "([^"]+)"/g)) {
     const version = match[1].split('/').at(-2);
     await bucket.put(match[1], 'fixture', { customMetadata: { sha256: match[2], version } });
   }
@@ -124,7 +124,7 @@ try {
     const saved = objects.get(key);objects.delete(key);
     const pending = (await call('/api/products/delivery')).data.artifacts.find(x=>x.slug===slug);
     assert.equal(pending.ready,false,'map maintenance must not silently serve old package');
-    assert.equal(pending.version,'0.3.0');objects.set(key,saved);
+    assert.equal(pending.version,'0.3.0-license.3');objects.set(key,saved);
   }
   const stagedKey = [...objects.keys()].find(key => key.includes('/structure-decision-map/'));
   assert.ok(stagedKey, 'staged Decision Map must be registered');

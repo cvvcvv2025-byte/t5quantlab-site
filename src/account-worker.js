@@ -1,4 +1,5 @@
-import {signingKeyAdmin,signingPublicKey,signedLeaseResponse,ownerProfileResponse} from './signed-runtime-license.js';
+import {signingKeyAdmin,signingPublicKey,signedLeaseResponse,ownerProfileResponse,installProfileResponse} from './signed-runtime-license.js';
+import {boundInstallPackage} from './install-package.js';
 import app from "./final-worker.js";
 import { TRAINING_TERMS } from './training-product.js';
 import { trainingResponse, TRAINING_CONTENT_KEY } from './training-worker.js';
@@ -991,6 +992,26 @@ export default {
       if (p === '/api/licenses/signing-public-key' && request.method === 'GET') return signingPublicKey(request,env);
       if (p === '/api/licenses/lease-v3') { await ensureAccountDb(env); return signedLeaseResponse(request,env,resolveSession); }
       if (p === '/api/account/runtime-licenses/owner-profile') { await ensureAccountDb(env); return ownerProfileResponse(request,env,resolveSession); }
+      if (p === '/api/account/runtime-licenses/install-package') {
+        if(request.method!=='POST')return json({ok:false,code:'METHOD_NOT_ALLOWED'},405);
+        if((request.headers.get('Origin')&&request.headers.get('Origin')!==url.origin)||request.headers.get('Sec-Fetch-Site')==='cross-site')return json({ok:false,code:'ORIGIN_MISMATCH'},403);
+        const raw=await request.text();if(raw.length>4096)return json({ok:false,code:'INVALID_REQUEST'},400);
+        let binding;try{binding=JSON.parse(raw);}catch{return json({ok:false,code:'INVALID_REQUEST'},400);}
+        if(!binding||!['MT4','MT5'].includes(binding.platform))return json({ok:false,code:'INVALID_BINDING'},400);
+        const indicator=Object.entries(INDICATOR_ARTIFACTS).find(([slug,a])=>a.license_product===binding.product_code&&slug.endsWith('-mt5')===(binding.platform==='MT5'))?.[1];
+        const ea=Object.values(EA_ARTIFACTS).find(a=>a.license_product===binding.product_code);
+        const artifact=indicator||ea;if(!artifact||artifact.runtime_client_version!==3)return json({ok:false,code:'LICENSE_RELEASE_NOT_ENABLED'},409);
+        await ensureAccountDb(env);
+        // The original download path enforces payment/manual entitlement, release
+        // gates, stored artifact SHA256 and the normal download audit event.
+        const profile=await installProfileResponse(new Request(request.url,{method:'POST',headers:request.headers,body:raw}),env,resolveSession);
+        if(!profile.ok)return profile;
+        const baseRequest=new Request(request.url,{headers:request.headers});
+        const original=indicator?await downloadIndicator(baseRequest,env,artifact):await downloadEa(baseRequest,env,artifact);
+        if(!original.ok)return original;
+        const archive=await boundInstallPackage(await original.arrayBuffer(),await profile.text(),binding,artifact,indicator?'indicator':'ea');
+        return new Response(archive,{headers:{'Content-Type':'application/zip','Content-Disposition':`attachment; filename="T5_${binding.product_code}_${binding.platform}_Personal_Install.zip"`,'Cache-Control':'private, no-store, max-age=0','X-Content-Type-Options':'nosniff'}});
+      }
       if (p === '/api/admin/runtime-license-qa' || p === '/api/admin/runtime-license-qa/update') {
         if (!(await isAdmin(request,env))) return json({ ok: false, error: 'Unauthorized' },403);
         await ensureAccountDb(env);

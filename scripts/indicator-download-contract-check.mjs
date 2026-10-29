@@ -56,8 +56,9 @@ if (!(sessionAt >= 0 && entitlementAt > sessionAt && objectAt > entitlementAt)) 
 for (const text of ['CREATE TABLE IF NOT EXISTS product_entitlements', 'UNIQUE(user_id, product_code)', 'CREATE TABLE IF NOT EXISTS member_download_events']) {
   need(schema, text, 'membership schema');
 }
-need(member, "/api/member/${isEa?'eas':'indicators'}/${encodeURIComponent(slug)}/download", 'generic member download client');
-need(member, '检查权限并下载', 'download control');
+need(member, 't5-install-select', 'member selects bound install flow');
+need(fs.readFileSync('assets/runtime-licenses.js','utf8'), '/api/account/runtime-licenses/install-package', 'private authenticated package client');
+need(member, '激活并下载安装', 'bound install control');
 forbid(member, /href=["'][^"']+\.(?:zip|ex4|ex5|mq4|mq5)(?:[?#][^"']*)?["']/i, 'public binary link');
 need(admin, 'noindex,nofollow', 'admin indexing boundary');
 need(admin, 'sessionStorage', 'tab-scoped admin key');

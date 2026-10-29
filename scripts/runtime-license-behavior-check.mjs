@@ -143,7 +143,10 @@ try {
   assert.equal((await db.prepare('SELECT updated_at FROM runtime_licenses WHERE license_id=?').bind(hardenedId).first()).updated_at,revoked.updated_at);
   r=await call('/api/account/runtime-licenses',{...hardenedBinding,license_policy_version:'terminal-v2-20261023'});assert.equal(r.data.code,'REBIND_COOLDOWN');assert.ok(r.data.retry_at);
   r=await v2(terminalB);assert.equal(r.status,403,'revoked key cannot renew its lease');
-  await run('UPDATE runtime_licenses SET updated_at=? WHERE license_id=?',new Date(Date.now()-7*86400000-1000).toISOString(),hardenedId);
+  await run('UPDATE runtime_licenses SET updated_at=? WHERE license_id=?',new Date(Date.now()-29*60000).toISOString(),hardenedId);
+  r=await call('/api/account/runtime-licenses',{...hardenedBinding,license_policy_version:'terminal-v2-20261023'});assert.equal(r.data.code,'REBIND_COOLDOWN','29 minutes still held');
+  assert.ok(Date.parse(r.data.retry_at)-Date.now()<=61000,'retry deadline uses 30 minutes, including old records');
+  await run('UPDATE runtime_licenses SET updated_at=? WHERE license_id=?',new Date(Date.now()-30*60000-1000).toISOString(),hardenedId);
   r=await call('/api/account/runtime-licenses',{...hardenedBinding,account_login:'999888',license_policy_version:'terminal-v2-20261023'});assert.equal(r.status,200);
   assert.notEqual(r.data.license_key,token);r=await v2(terminalB);assert.equal(r.status,403,'old token invalid after cooldown/rebinding');
   // Independent QA grants can test v2 while every customer release stays closed.
@@ -158,5 +161,5 @@ try {
     INSERT INTO runtime_license_requests(ip_hash,created_at) SELECT ?,? FROM n`,hash(env.ACCOUNT_AUTH_SECRET+':license:192.0.2.10'),new Date().toISOString());
   r = await verify(); assert.equal(r.status, 429);
   r = await verify({}, {'CF-Connecting-IP':'192.0.2.11'});assert.equal(r.status,200,'rate buckets isolate unrelated clients');
-  console.log('Runtime licensing v1/v2: isolation, expiry, revocation, atomic terminal leases, migration, policy consent, 7-day rebind cooldown, closed-production QA and rate limits passed.');
+  console.log('Runtime licensing v1/v2: isolation, expiry, revocation, atomic terminal leases, migration, policy consent, 30-minute rebind cooldown, closed-production QA and rate limits passed.');
 } finally { fs.rmSync(dir, { recursive: true, force: true }); }

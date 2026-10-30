@@ -49,7 +49,7 @@
       const v2 = spec.protocol_version >= 2;
       button.textContent = spec.protocol_version === 3 ? '激活并下载专属安装包' : '生成旧版激活密钥';
       policy.textContent = v2 ? '新版：同一授权同时允许一个MT终端安装实例，可在该终端多个图表使用。每分钟联网校验，断网宽限最多5分钟；迁移前退出原终端并等待原租期结束。撤销后30分钟才能自助重新绑定。终端标识不等于硬件锁，不能保证抵御环境克隆或程序篡改。' : '旧授权：按交易账号绑定，断网宽限最多24小时；尚无终端并发限制。';
-      if(spec.code==='structure_decision_map_mt4'){policy.textContent+=' 本产品为单文件只读图表程序：放入 Experts 后加载，无需密钥、授权助手、模板或SET，不下单。';}
+      if(['structure_decision_map_mt4','mtf_structure_panel_mt4','neckline_mtf_mt4','progress_candle_mt4'].includes(spec.code)){policy.textContent+=' 本产品为单文件只读图表程序：放入 Experts 后加载，无需密钥、授权助手、模板或SET，不下单。';}
       else if(spec.protocol_version===3)policy.textContent+=' 首次从手动密钥升级会更换旧密钥：安装后请移除同产品旧授权助手，再加载新模板；EA原来填过密钥的请将密钥参数清空。已有专属包再次下载不会更换密钥。';
       accept.checked = false; accept.required = v2; acceptLabel.hidden = !v2;
     }
@@ -83,7 +83,7 @@
             if(job.status!=='ready')throw Error('专属文件仍在制作，任务已保留。稍后重新点击下载即可继续，无需撤销授权。');
             const link=node('a','下载含说明的 ZIP');link.href=job.download_url;link.download='';link.className='btn';
             const file=node('a','下载 '+(job.platform==='MT4'?'EX4':'EX5')+' 单文件');file.href=job.file_url;file.download='';file.className='btn primary';
-            output.replaceChildren(node('p','专属文件已生成。解压后将 EX4／EX5 放入终端数据目录的 Experts 文件夹，在新空白图表加载。无需授权助手、密钥、模板或SET；首次仍需允许 WebRequest 访问 https://t5quantlab.com。程序仅显示图表，无需开启算法交易或DLL。'),file,document.createTextNode(' '),link);
+            output.replaceChildren(node('p','专属文件已生成。将下载的 EX4／EX5（ZIP 请先解压） 放入终端数据目录的 Experts 文件夹，在新空白图表加载。无需授权助手、密钥、模板或SET；首次仍需允许 WebRequest 访问 https://t5quantlab.com。程序仅显示图表，无需开启算法交易或DLL。'),file,document.createTextNode(' '),link);
             file.click();button.disabled=false;return;
           }
           const url=URL.createObjectURL(await response.blob()),link=node('a','下载已准备好的专属安装包');link.href=url;link.download='T5_'+product.value+'_'+platform.value+'_Personal_Install.zip';

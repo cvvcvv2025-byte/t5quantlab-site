@@ -81,10 +81,10 @@
               if(job.compiler_online===false&&job.status!=='ready')output.textContent='制作服务暂时离线，任务已保留；稍后重新下载可继续。';
             }
             if(job.status!=='ready')throw Error('专属文件仍在制作，任务已保留。稍后重新点击下载即可继续，无需撤销授权。');
-            const link=node('a','下载专属安装包');link.href=job.download_url;link.download='';
-            const file=node('a','只下载 EX4／EX5 文件');file.href=job.file_url;file.download='';
-            output.replaceChildren(node('p','专属文件已生成。解压后将 EX4／EX5 放入终端数据目录的 Experts 文件夹，在新空白图表加载。无需授权助手、密钥、模板或SET；首次仍需允许 WebRequest 访问 https://t5quantlab.com。程序仅显示图表，无需开启算法交易或DLL。'),link,document.createTextNode(' · '),file);
-            link.click();button.disabled=false;return;
+            const link=node('a','下载含说明的 ZIP');link.href=job.download_url;link.download='';link.className='btn';
+            const file=node('a','下载 '+(job.platform==='MT4'?'EX4':'EX5')+' 单文件');file.href=job.file_url;file.download='';file.className='btn primary';
+            output.replaceChildren(node('p','专属文件已生成。解压后将 EX4／EX5 放入终端数据目录的 Experts 文件夹，在新空白图表加载。无需授权助手、密钥、模板或SET；首次仍需允许 WebRequest 访问 https://t5quantlab.com。程序仅显示图表，无需开启算法交易或DLL。'),file,document.createTextNode(' '),link);
+            file.click();button.disabled=false;return;
           }
           const url=URL.createObjectURL(await response.blob()),link=node('a','下载已准备好的专属安装包');link.href=url;link.download='T5_'+product.value+'_'+platform.value+'_Personal_Install.zip';
           output.replaceChildren(node('p','专属包已准备好，无需手动输入密钥。Windows 完整解压后运行 Install-Windows.cmd，按提示选终端数据文件夹；新开空白图表加载包内说明指定的 T5 模板，指标与授权服务一起加载。首次仍需允许网站联网；Mac/Wine 见包内说明。EA 安装不启用自动交易，请自行确认交易参数。'),link,node('p','再次下载同一绑定无需撤销。请保管专属包，不要转发。首次从旧手动密钥升级会替换旧密钥，但不会取消账号绑定或绕过换绑冷却。'));

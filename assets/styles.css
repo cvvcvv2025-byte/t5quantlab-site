@@ -5,3 +5,6 @@
 .support-contact{margin:24px 0}.support-contact a{color:var(--mint,#73e2c0);overflow-wrap:anywhere}
 .support-contact-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:24px}.support-contact-grid h3{margin-top:0}
 @media(max-width:600px){.support-contact-grid{grid-template-columns:1fr;gap:12px}.contact-footer{flex-direction:column;gap:12px}}
+
+/* Alipay is a full-width payment choice below PayPal. */
+.alipay-payment-card{display:flex;align-items:center;justify-content:center;width:100%;box-sizing:border-box;min-height:88px;margin:18px 0;padding:24px 28px;border:2px solid #38bdf8;border-radius:16px;background:#073452;color:#f0f9ff;font-size:22px;font-weight:800;line-height:1.5;text-align:center;text-decoration:none;transition:background .18s,border-color .18s}.alipay-payment-card:hover{background:#0a476d;border-color:#7dd3fc}.alipay-payment-card:focus-visible{outline:3px solid #e0f2fe;outline-offset:4px}@media(max-width:600px){.alipay-payment-card{min-height:76px;padding:18px 16px;font-size:20px}}

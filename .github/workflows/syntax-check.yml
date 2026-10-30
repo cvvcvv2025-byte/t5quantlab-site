@@ -55,6 +55,8 @@ jobs:
           node scripts/alipay-entry-behavior-check.mjs
           node scripts/runtime-license-behavior-check.mjs
           node scripts/signed-runtime-license-behavior-check.mjs
+          node scripts/single-file-delivery-behavior-check.mjs
+          node scripts/single-file-ui-behavior-check.mjs
           node scripts/signed-runtime-ui-behavior-check.mjs
           node scripts/simple-install-behavior-check.mjs
           node scripts/runtime-client-state-check.mjs

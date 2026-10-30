@@ -1,3 +1,4 @@
+import {singleFileProduct,enqueueSingleFile,customerBuildResponse,compilerResponse} from '../src/single-file-delivery.js';
 import {boundInstallPackage} from '../src/install-package.js';
 import {signingKeyAdmin,signingPublicKey,signedLeaseResponse,ownerProfileResponse,installProfileResponse} from '../src/signed-runtime-license.js';
 import { TRAINING_TERMS } from '../src/training-product.js';
@@ -13,10 +14,11 @@ const source=fs.readFileSync('src/account-worker.js','utf8')
  .replace("import { runtimeLicenseResponse, adminRuntimeLicenseQa } from './runtime-license.js';",'')
  .replace(/^import .*from '.\/training-(?:product|worker)\.js';$/gm,'')
  .replace("import {signingKeyAdmin,signingPublicKey,signedLeaseResponse,ownerProfileResponse,installProfileResponse} from './signed-runtime-license.js';",'')
+ .replace("import {singleFileProduct,enqueueSingleFile,customerBuildResponse,compilerResponse} from './single-file-delivery.js';",'')
  .replace("import {boundInstallPackage} from './install-package.js';",'')
  .replace("import {alipayPreflightResponse} from './alipay.js';",'')
  .replace('export default {','globalThis.worker = {');
-const context=vm.createContext({boundInstallPackage,signingKeyAdmin,signingPublicKey,signedLeaseResponse,ownerProfileResponse,installProfileResponse,Request,Response,Headers,URL,TextEncoder,crypto:webcrypto,console,runtimeLicenseResponse,adminRuntimeLicenseQa,TRAINING_TERMS,trainingResponse,TRAINING_CONTENT_KEY});
+const context=vm.createContext({singleFileProduct,enqueueSingleFile,customerBuildResponse,compilerResponse,boundInstallPackage,signingKeyAdmin,signingPublicKey,signedLeaseResponse,ownerProfileResponse,installProfileResponse,Request,Response,Headers,URL,TextEncoder,crypto:webcrypto,console,runtimeLicenseResponse,adminRuntimeLicenseQa,TRAINING_TERMS,trainingResponse,TRAINING_CONTENT_KEY});
 vm.runInContext(source+'\nensureAccountDb=async()=>{};',context);
 let grants=[],gets=0,puts=0,downloads=0,stored=null,corruptReadback=false;
 const env={RUNTIME_SIGNED3_PRODUCTS:'range_martingale_mt4_v3',RUNTIME_LICENSE_PRODUCTS:'range_martingale_mt4_v2',RUNTIME_LICENSE_V2_PRODUCTS:'range_martingale_mt4_v2',ACCOUNT_AUTH_SECRET:'test-secret',BUILDER_ACCESS_KEY:'test-admin-only',

@@ -1,3 +1,4 @@
+import {singleFileProduct,enqueueSingleFile,customerBuildResponse,compilerResponse} from '../src/single-file-delivery.js';
 import vm from 'node:vm';
 import {installProfileResponse} from '../src/signed-runtime-license.js';
 import {installZip,releaseNames,boundInstallPackage} from '../src/install-package.js';
@@ -34,7 +35,7 @@ try{
  const z=spawnSync('python3',['-c',"import zipfile,sys\nwith zipfile.ZipFile(sys.argv[1]) as z:\n assert z.testzip() is None\n assert z.read('product.zip')\n assert z.read('MQL5/Files/T5Owner3_mtf_structure_panel_mt4_MT5.credential').startswith(b'T5OWNER3|')\n assert z.read('T5_Start.tpl').startswith(b'\\xff\\xfe')\n assert b'InpT5LicenseKey=\\n' in z.read('T5_Bound.set')",dest],{encoding:'utf8'});check(z.status===0,z.stderr);check(!releaseNames(await zipped.arrayBuffer()).some(n=>/\.mq[45h]$/.test(n)),'binary-only install package');
 
  const workerSource=fs.readFileSync('src/account-worker.js','utf8').replace(/^import .*;$/gm,'').replace('export default {','globalThis.worker = {');
- const context=vm.createContext({installProfileResponse,boundInstallPackage,Request,Response,Headers,URL,TextEncoder,TextDecoder,crypto:webcrypto,console});vm.runInContext(workerSource,context);
+ const context=vm.createContext({singleFileProduct,enqueueSingleFile,customerBuildResponse,compilerResponse,installProfileResponse,boundInstallPackage,Request,Response,Headers,URL,TextEncoder,TextDecoder,crypto:webcrypto,console});vm.runInContext(workerSource,context);
  context.fixtureHash=hash(Buffer.from(innerBytes));context.fixtureKey='test/install.zip';vm.runInContext('INDICATOR_ARTIFACTS["mtf-structure-panel-mt5"].sha256=fixtureHash;INDICATOR_ARTIFACTS["mtf-structure-panel-mt5"].r2Key=fixtureKey;',context);stored.set('test/install.zip',new Uint8Array(innerBytes));
  const route=async(body=b,headers={})=>context.worker.fetch(new Request('https://example.invalid/api/account/runtime-licenses/install-package',{method:'POST',headers:{Cookie:'t5_session='+session,'Content-Type':'application/json',...headers},body:JSON.stringify(body)}),env,{});
  r=await route();check(r.status===200,'actual Worker route creates private ZIP');check(r.headers.get('Cache-Control').includes('no-store'),'private package never cached');check(releaseNames(await r.arrayBuffer()).includes('T5_Start.tpl'),'route ships bound template');

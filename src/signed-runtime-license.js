@@ -133,3 +133,10 @@ async function issueInstallProfile(request,env,resolveSession,user,b){
  return profileDownload(profile,b);
 }
 function profileDownload(profile,b){return new Response(profile,{headers:{'Content-Type':'application/octet-stream','Cache-Control':'private, no-store','X-Content-Type-Options':'nosniff','Content-Disposition':`attachment; filename="T5Owner3_${b.product_code}_${b.platform}.credential"`}});}
+
+// Compiler-only caller; the public router never returns this helper directly.
+export async function readInstallProfile(env,licenseId,tokenHash){
+ const path='private-runtime-install/'+licenseId+'/'+tokenHash+'.enc.json',obj=await env.USER_CODE_BUCKET.get(path);if(!obj)return null;
+ const doc=await obj.json();const plain=await crypto.subtle.decrypt({name:'AES-GCM',iv:un64(doc.iv),additionalData:bytes(path)},await wrappingKey(env),un64(doc.encrypted));
+ const profile=new TextDecoder().decode(plain),f=profile.split('\n')[0].split('|');if(f.length!==8||await sha(f[6])!==tokenHash)throw Error('INSTALL_PROFILE_STORAGE_INVALID');return profile;
+}

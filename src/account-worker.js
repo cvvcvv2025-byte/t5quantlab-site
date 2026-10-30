@@ -1,3 +1,4 @@
+import {singleFileProduct,enqueueSingleFile,customerBuildResponse,compilerResponse} from './single-file-delivery.js';
 import {signingKeyAdmin,signingPublicKey,signedLeaseResponse,ownerProfileResponse,installProfileResponse} from './signed-runtime-license.js';
 import {boundInstallPackage} from './install-package.js';
 import {alipayPreflightResponse} from './alipay.js';
@@ -997,12 +998,15 @@ export default {
       if (p === '/api/licenses/signing-public-key' && request.method === 'GET') return signingPublicKey(request,env);
       if (p === '/api/licenses/lease-v3') { await ensureAccountDb(env); return signedLeaseResponse(request,env,resolveSession); }
       if (p === '/api/account/runtime-licenses/owner-profile') { await ensureAccountDb(env); return ownerProfileResponse(request,env,resolveSession); }
+      if (p.startsWith('/api/native-chart-compiler/')) { await ensureAccountDb(env); return compilerResponse(request,env); }
+      if (p.startsWith('/api/account/runtime-licenses/single-file-builds/')) { await ensureAccountDb(env); return customerBuildResponse(request,env,resolveSession); }
       if (p === '/api/account/runtime-licenses/install-package') {
         if(request.method!=='POST')return json({ok:false,code:'METHOD_NOT_ALLOWED'},405);
         if((request.headers.get('Origin')&&request.headers.get('Origin')!==url.origin)||request.headers.get('Sec-Fetch-Site')==='cross-site')return json({ok:false,code:'ORIGIN_MISMATCH'},403);
         const raw=await request.text();if(raw.length>4096)return json({ok:false,code:'INVALID_REQUEST'},400);
         let binding;try{binding=JSON.parse(raw);}catch{return json({ok:false,code:'INVALID_REQUEST'},400);}
         if(!binding||!['MT4','MT5'].includes(binding.platform))return json({ok:false,code:'INVALID_BINDING'},400);
+        if(singleFileProduct(binding.product_code)){await ensureAccountDb(env);return enqueueSingleFile(new Request(request.url,{method:'POST',headers:request.headers,body:raw}),env,resolveSession);}
         const indicator=Object.entries(INDICATOR_ARTIFACTS).find(([slug,a])=>a.license_product===binding.product_code&&slug.endsWith('-mt5')===(binding.platform==='MT5'))?.[1];
         const ea=Object.values(EA_ARTIFACTS).find(a=>a.license_product===binding.product_code);
         const artifact=indicator||ea;if(!artifact||artifact.runtime_client_version!==3)return json({ok:false,code:'LICENSE_RELEASE_NOT_ENABLED'},409);

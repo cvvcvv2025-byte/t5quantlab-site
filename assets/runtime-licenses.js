@@ -2,7 +2,7 @@
   const box = document.getElementById('runtimeLicenses');
   if (!box) return;
   const names = { structure_decision_map_mt4: '结构决策面板', mtf_structure_panel_mt4: '多周期结构面板', neckline_mtf_mt4: '多周期颈线', progress_candle_mt4: '推进K线', attack_completion_c_mt5: 'Attack Completion C', trend_capture_mt5: 'Trend Capture', range_martingale_mt4: 'Range Martingale', range_aggressive_mt4_mt5: 'Range Aggressive' };
-  const messages = { ACCOUNT_REQUIRED: '请先登录后查看授权。', ENTITLEMENT_REQUIRED: '当前会员权益不包含该产品，或已经到期。', ACTIVE_BINDING_EXISTS: '该产品已绑定其他账号。重装请使用原绑定账号；确需换绑时再撤销，撤销后有30分钟冷却期。', INSTALL_RETRY: '另一下载请求正在处理，请稍后再次点击。', ENTITLEMENT_OR_RELEASE_REQUIRED: '当前权益不包含该产品，或该安装包暂未开放。', INVALID_BINDING: '请检查平台、交易账号和服务器名称。', LICENSE_RELEASE_NOT_ENABLED: '该产品授权版升级中，已有权益保留，请等待新版交付。' };
+  const messages = { ACCOUNT_REQUIRED: '请先登录后查看授权。', ENTITLEMENT_REQUIRED: '当前会员权益不包含该产品，或已经到期。', ACTIVE_BINDING_EXISTS: '该产品已绑定其他账号。重装请使用原绑定账号；确需换绑时再撤销，撤销后有30分钟冷却期。', INSTALL_RETRY: '另一下载请求正在处理，请稍后再次点击。', ENTITLEMENT_OR_RELEASE_REQUIRED: '当前权益不包含该产品，或该安装包暂未开放。', INVALID_BINDING: '请检查平台、交易账号和服务器名称。', LICENSE_RELEASE_NOT_ENABLED: '该产品授权版升级中，已有权益保留，请等待新版交付。', NATIVE_COMPILER_UNAVAILABLE: '专属文件制作服务暂时离线，请稍后重试。已有文件仍按原授权规则使用。', NATIVE_BUILD_FAILED: '专属文件制作未完成，请稍后重新点击下载。', ENTITLEMENT_OR_BINDING_REVOKED: '权益已到期或账号授权已撤销，无法下载。' };
   for (const [code,name] of Object.entries({...names})) {names[code+'_v2'] = name+' · 终端授权新版';if(!['structure_decision_map_mt4','mtf_structure_panel_mt4','neckline_mtf_mt4','progress_candle_mt4'].includes(code))names[code+'_v3']=name+' · 签名授权版';}
   async function api(url, body) {
     const r = await fetch(url, { method: body ? 'POST' : 'GET', credentials: 'same-origin', cache: 'no-store', headers: body ? { 'Content-Type': 'application/json' } : {}, body: body ? JSON.stringify(body) : undefined });
@@ -49,7 +49,8 @@
       const v2 = spec.protocol_version >= 2;
       button.textContent = spec.protocol_version === 3 ? '激活并下载专属安装包' : '生成旧版激活密钥';
       policy.textContent = v2 ? '新版：同一授权同时允许一个MT终端安装实例，可在该终端多个图表使用。每分钟联网校验，断网宽限最多5分钟；迁移前退出原终端并等待原租期结束。撤销后30分钟才能自助重新绑定。终端标识不等于硬件锁，不能保证抵御环境克隆或程序篡改。' : '旧授权：按交易账号绑定，断网宽限最多24小时；尚无终端并发限制。';
-      if(spec.protocol_version===3)policy.textContent+=' 首次从手动密钥升级会更换旧密钥：安装后请移除同产品旧授权助手，再加载新模板；EA原来填过密钥的请将密钥参数清空。已有专属包再次下载不会更换密钥。';
+      if(spec.code==='structure_decision_map_mt4'){policy.textContent+=' 本产品为单文件只读图表程序：放入 Experts 后加载，无需密钥、授权助手、模板或SET，不下单。';}
+      else if(spec.protocol_version===3)policy.textContent+=' 首次从手动密钥升级会更换旧密钥：安装后请移除同产品旧授权助手，再加载新模板；EA原来填过密钥的请将密钥参数清空。已有专属包再次下载不会更换密钥。';
       accept.checked = false; accept.required = v2; acceptLabel.hidden = !v2;
     }
     product.addEventListener('change', platforms);
@@ -70,6 +71,21 @@
           output.textContent='正在核对权益并制作你的专属安装包…';
           const response=await fetch('/api/account/runtime-licenses/install-package',{method:'POST',credentials:'same-origin',cache:'no-store',headers:{'Content-Type':'application/json'},body:JSON.stringify(binding)});
           if(!response.ok){const error=await response.json();throw Error(error.code==='REBIND_COOLDOWN'?'原授权已撤销，冷却期内无法重新绑定。可再次绑定时间：'+new Date(error.retry_at).toLocaleString():messages[error.code]||error.error||'专属包暂时无法下载，请稍后重试。');}
+          if((response.headers?.get('Content-Type')||'').includes('application/json')){
+            let job=await response.json();
+            for(let attempt=0;job.status!=='ready'&&attempt<90;attempt++){
+              if(['failed','cancelled'].includes(job.status))throw Error(messages[job.code]||'专属文件制作未完成，请重新点击下载。');
+              output.textContent=job.status==='building'?'正在为你的账号原生编译专属文件，请稍候…':'专属文件排队制作中，请保留页面…';
+              await new Promise(resolve=>setTimeout(resolve,3000));
+              job=await api('/api/account/runtime-licenses/single-file-builds/'+job.job_id);
+              if(job.compiler_online===false&&job.status!=='ready')output.textContent='制作服务暂时离线，任务已保留；稍后重新下载可继续。';
+            }
+            if(job.status!=='ready')throw Error('专属文件仍在制作，任务已保留。稍后重新点击下载即可继续，无需撤销授权。');
+            const link=node('a','下载专属安装包');link.href=job.download_url;link.download='';
+            const file=node('a','只下载 EX4／EX5 文件');file.href=job.file_url;file.download='';
+            output.replaceChildren(node('p','专属文件已生成。解压后将 EX4／EX5 放入终端数据目录的 Experts 文件夹，在新空白图表加载。无需授权助手、密钥、模板或SET；首次仍需允许 WebRequest 访问 https://t5quantlab.com。程序仅显示图表，无需开启算法交易或DLL。'),link,document.createTextNode(' · '),file);
+            link.click();button.disabled=false;return;
+          }
           const url=URL.createObjectURL(await response.blob()),link=node('a','下载已准备好的专属安装包');link.href=url;link.download='T5_'+product.value+'_'+platform.value+'_Personal_Install.zip';
           output.replaceChildren(node('p','专属包已准备好，无需手动输入密钥。Windows 完整解压后运行 Install-Windows.cmd，按提示选终端数据文件夹；新开空白图表加载包内说明指定的 T5 模板，指标与授权服务一起加载。首次仍需允许网站联网；Mac/Wine 见包内说明。EA 安装不启用自动交易，请自行确认交易参数。'),link,node('p','再次下载同一绑定无需撤销。请保管专属包，不要转发。首次从旧手动密钥升级会替换旧密钥，但不会取消账号绑定或绕过换绑冷却。'));
           const oldRow=licenseRows.get(product.value);if(oldRow){oldRow.replaceChildren(node('p',(names[product.value]||product.value)+' · '+platform.value+' · '+login.value.trim()+' · '+server.value.trim()+' · 已绑定（重装无需撤销）'));}

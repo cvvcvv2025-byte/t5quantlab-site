@@ -20,6 +20,7 @@
     "html_handling": "auto-trailing-slash"
   },
   "vars": {
+    "ALIPAY_CHECKOUT_ENABLED": "true",
     "RUNTIME_LICENSE_PRODUCTS": "attack_completion_c_mt5_v2,trend_capture_mt5_v2,range_martingale_mt4_v2,range_aggressive_mt4_mt5_v2",
     "RUNTIME_LICENSE_V2_PRODUCTS": "attack_completion_c_mt5_v2,trend_capture_mt5_v2,range_martingale_mt4_v2,range_aggressive_mt4_mt5_v2",
     "AUTH_EMAIL_FROM": "T5 Quant Lab <login@t5quantlab.com>",

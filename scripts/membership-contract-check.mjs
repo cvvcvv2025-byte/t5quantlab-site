@@ -12,7 +12,7 @@ for (const html of [membership, account]) need(html.includes('不自动续费'),
 need(/\$13\.90(?:\s|<[^>]+>)*\/ 90天/.test(membership), 'Indicator Member launch price must be $13.90 / 90 days');
 need(account.includes('$13.90 / 90天'), 'Account must show the Indicator Member checkout price');
 
-need(membership.includes('历史绩效审计仍未通过'), 'Restored software must retain the actual unqualified performance disclosure');
+need(!membership.includes('历史绩效审计仍未通过'), 'Membership sales page must omit the removed historical audit banner');
 need((membership.match(/<span class="plan-state ready">授权版升级中<\/span>/g) || []).length === 2, 'Both membership plans must disclose the protected-delivery hold');
 need(membership.includes('href="/membership/checkout/"'), 'Indicator membership must link to checkout');
 need(membership.includes('.ex4 / .ex5'), 'Membership page must disclose downloadable MT4/MT5 file formats');
